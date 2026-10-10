@@ -115,28 +115,54 @@ final class Updater {
 			return $result;
 		}
 
+		$plugin  = get_plugin_data( MLAB_MF_FILE, false, false );
+		$readme  = $this->read_local_file( 'readme.txt' );
 		$release = $this->latest_release();
-		if ( ! $release ) {
-			return $result;
+
+		// Without a newer release the dialog describes the installed version.
+		$changelog = $this->read_local_file( 'CHANGELOG.md' );
+		$changelog = preg_replace( '/\A.*?(?=^## )/ms', '', $changelog );
+		$version   = $plugin['Version'];
+		$package   = '';
+		$updated   = '';
+		if ( $release && version_compare( $release['version'], $plugin['Version'], '>' ) ) {
+			$changelog = '## ' . $release['version'] . "\n" . $release['notes'] . "\n" . $changelog;
+			$version   = $release['version'];
+			$package   = $release['package'];
+			$updated   = $release['published'];
 		}
 
-		$plugin = get_plugin_data( MLAB_MF_FILE, false, false );
+		$tested = preg_match( '/^Tested up to:\s*(\S+)/mi', $readme, $m ) ? $m[1] : '';
+		$about  = preg_match( '/^== Description ==\s*(.*?)(?=^== |\z)/ms', $readme, $m ) ? $m[1] : $plugin['Description'];
 
 		return (object) array(
 			'name'          => $plugin['Name'],
 			'slug'          => $this->slug(),
-			'version'       => $release['version'],
-			'author'        => $plugin['Author'],
+			'version'       => $version,
+			'author'        => '<a href="' . esc_url( $plugin['AuthorURI'] ) . '">' . esc_html( $plugin['Author'] ) . '</a>',
 			'homepage'      => 'https://github.com/' . $this->repository(),
 			'requires'      => $plugin['RequiresWP'],
 			'requires_php'  => $plugin['RequiresPHP'],
-			'last_updated'  => $release['published'],
-			'download_link' => $release['package'],
+			'tested'        => $tested,
+			'last_updated'  => $updated,
+			'download_link' => $package,
 			'sections'      => array(
-				'description' => '<p>' . esc_html( $plugin['Description'] ) . '</p>',
-				'changelog'   => $this->markdown_to_html( $release['notes'] ),
+				'description' => $this->markdown_to_html( $about ),
+				'changelog'   => $this->markdown_to_html( $changelog ),
 			),
 		);
+	}
+
+	/**
+	 * Reads a text file from the plugin folder.
+	 *
+	 * @param string $name File name relative to the plugin folder.
+	 * @return string Empty string when the file is missing.
+	 */
+	private function read_local_file( $name ) {
+		$path = MLAB_MF_DIR . $name;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local plugin file.
+		return is_readable( $path ) ? (string) file_get_contents( $path ) : '';
 	}
 
 	/**
@@ -265,14 +291,17 @@ final class Updater {
 				$html   .= '</ul>';
 				$in_list = false;
 			}
-			if ( preg_match( '/^#{1,6}\s+(.*)$/', $line, $m ) ) {
-				$html .= '<h4>' . esc_html( $m[1] ) . '</h4>';
+			if ( preg_match( '/^(#{1,6})\s+(.*)$/', $line, $m ) ) {
+				$tag   = strlen( $m[1] ) <= 2 ? 'h3' : 'h4';
+				$html .= '<' . $tag . '>' . esc_html( str_replace( array( '[', ']' ), '', $m[2] ) ) . '</' . $tag . '>';
 			} elseif ( '' !== $line ) {
 				$html .= '<p>' . esc_html( $line ) . '</p>';
 			}
 		}
 
-		return $in_list ? $html . '</ul>' : $html;
+		$html = $in_list ? $html . '</ul>' : $html;
+
+		return (string) preg_replace( '/`([^`]+)`/', '<code>$1</code>', $html );
 	}
 
 	/**

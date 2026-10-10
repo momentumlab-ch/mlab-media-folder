@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,9 @@ Developer hooks
 * Define `MLAB_MF_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 1.1.2 =
+* Fix: "View details" on the Plugins page no longer says "Plugin not found". It shows the description, requirements and the full changelog, plus the notes of a newer release when one exists.
 
 = 1.1.1 =
 * Fix: the "Enable auto-updates" link now shows on the Plugins page even when no newer release exists or GitHub cannot be reached.

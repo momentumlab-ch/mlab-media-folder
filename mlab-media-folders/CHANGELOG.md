@@ -3,6 +3,11 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.2] - 2026-10-10
+
+### Fixed
+- "View details" on the Plugins page no longer says "Plugin not found" when no newer GitHub release exists. The dialog is built from the installed plugin (description, requirements, full changelog) and adds the notes of a newer release when there is one.
+
 ## [1.1.1] - 2026-10-10
 
 ### Fixed
