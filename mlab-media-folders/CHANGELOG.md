@@ -3,6 +3,14 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.5] - 2026-10-10
+
+### Changed
+- Tested with WordPress 7.1.3.
+
+### Fixed
+- The update list showed "Compatibility with WordPress: not tested". The update check now passes "Tested up to", "Requires at least" and "Requires PHP" from the release's readme.txt to WordPress.
+
 ## [1.1.4] - 2026-10-10
 
 ### Added

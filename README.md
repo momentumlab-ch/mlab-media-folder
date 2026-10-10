@@ -6,8 +6,8 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 1.1.4 |
-| WordPress | ab 6.5 |
+| Aktuelle Version | 1.1.5 |
+| WordPress | ab 6.5, getestet bis 7.1.3 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
 | Sprachen | Englisch, Deutsch (de_DE, de_DE_formal, de_CH, de_CH_informal) |
@@ -108,6 +108,7 @@ phpcs --standard=mlab-media-folders/phpcs.xml.dist mlab-media-folders
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.1.5 | 2026-10-10 | Getestet mit WordPress 7.1.3; Kompatibilität wird in der Update-Liste angezeigt |
 | 1.1.4 | 2026-10-10 | Plugin-Icon |
 | 1.1.3 | 2026-10-10 | Update-Prüfung reagiert schneller; Releases entstehen automatisch beim Merge |
 | 1.1.2 | 2026-10-10 | «Details anzeigen» funktioniert auch ohne neueres Release |

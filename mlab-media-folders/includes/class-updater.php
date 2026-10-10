@@ -91,16 +91,19 @@ final class Updater {
 				'version' => $plugin_data['Version'],
 				'url'     => 'https://github.com/' . $this->repository(),
 				'package' => '',
-			);
+			) + $this->readme_requirements( $this->read_local_file( 'readme.txt' ) );
 		}
 
 		return array(
-			'id'      => $plugin_data['UpdateURI'],
-			'slug'    => $this->slug(),
-			'version' => $release['version'],
-			'url'     => $release['url'],
-			'package' => $release['package'],
-			'icons'   => $this->icons(),
+			'id'           => $plugin_data['UpdateURI'],
+			'slug'         => $this->slug(),
+			'version'      => $release['version'],
+			'url'          => $release['url'],
+			'package'      => $release['package'],
+			'tested'       => $release['tested'] ?? '',
+			'requires'     => $release['requires'] ?? '',
+			'requires_php' => $release['requires_php'] ?? '',
+			'icons'        => $this->icons(),
 		);
 	}
 
@@ -134,7 +137,7 @@ final class Updater {
 			$updated   = $release['published'];
 		}
 
-		$tested = preg_match( '/^Tested up to:\s*(\S+)/mi', $readme, $m ) ? $m[1] : '';
+		$tested = $this->readme_requirements( $readme )['tested'];
 		$about  = preg_match( '/^== Description ==\s*(.*?)(?=^== |\z)/ms', $readme, $m ) ? $m[1] : $plugin['Description'];
 
 		return (object) array(
@@ -264,13 +267,38 @@ final class Updater {
 			return null;
 		}
 
+		// Requirements of the new version come from its readme.txt at the release tag.
+		$readme = wp_remote_get(
+			'https://raw.githubusercontent.com/' . $this->repository() . '/' . rawurlencode( (string) $data['tag_name'] ) . '/' . self::ASSET_NAME . '/readme.txt',
+			array( 'timeout' => 10 )
+		);
+		$readme = ( ! is_wp_error( $readme ) && 200 === wp_remote_retrieve_response_code( $readme ) ) ? wp_remote_retrieve_body( $readme ) : '';
+
 		return array(
 			'version'   => $version,
 			'url'       => esc_url_raw( (string) ( $data['html_url'] ?? '' ) ),
 			'package'   => esc_url_raw( $package ),
 			'notes'     => (string) ( $data['body'] ?? '' ),
 			'published' => (string) ( $data['published_at'] ?? '' ),
+		) + $this->readme_requirements( $readme );
+	}
+
+	/**
+	 * Reads "Tested up to", "Requires at least" and "Requires PHP" from a readme.txt.
+	 *
+	 * @param string $readme Contents of readme.txt.
+	 * @return array Keys: tested, requires, requires_php (empty strings when missing).
+	 */
+	private function readme_requirements( $readme ) {
+		$fields = array(
+			'tested'       => 'Tested up to',
+			'requires'     => 'Requires at least',
+			'requires_php' => 'Requires PHP',
 		);
+		foreach ( $fields as $key => $label ) {
+			$fields[ $key ] = preg_match( '/^' . $label . ':\s*([0-9.]+)/mi', $readme, $m ) ? $m[1] : '';
+		}
+		return $fields;
 	}
 
 	/**

@@ -2,9 +2,9 @@
 Contributors: momentumlab
 Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
-Tested up to: 7.1
+Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 1.1.4
+Stable tag: 1.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,10 @@ Developer hooks
 * Define `MLAB_MF_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 1.1.5 =
+* Tested with WordPress 7.1.3.
+* Fix: the update list now shows the WordPress and PHP compatibility of the new version instead of "not tested".
 
 = 1.1.4 =
 * New: plugin icon, shown under Dashboard > Updates and in the details dialog.
