@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,10 @@ Developer hooks
 * Define `MLAB_MF_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 1.0.2 =
+* New: the folder panel can be collapsed to a narrow strip and resized by dragging its right edge (or with the arrow keys). Both settings are remembered per browser.
+* Change: narrower default width (220 px); the panel stays beside the files down to tablet width.
 
 = 1.0.1 =
 * Fix: new uploads now appear right away (with progress) while a folder is selected, and folder counts update after the upload.

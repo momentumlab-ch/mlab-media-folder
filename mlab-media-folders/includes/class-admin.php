@@ -71,6 +71,9 @@ final class Admin {
 				'actions'         => __( 'Folder actions', 'mlab-media-folders' ),
 				'filterLabel'     => __( 'Filter by folder', 'mlab-media-folders' ),
 				'credit'          => __( 'Media Folders by MomentumLab', 'mlab-media-folders' ),
+				'collapse'        => __( 'Collapse folders', 'mlab-media-folders' ),
+				'expand'          => __( 'Show folders', 'mlab-media-folders' ),
+				'resize'          => __( 'Resize folder panel (double-click to reset)', 'mlab-media-folders' ),
 			),
 		);
 	}

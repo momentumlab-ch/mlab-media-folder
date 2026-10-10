@@ -15,6 +15,10 @@
 	var UNFILED = data.unfiled;
 	var i18n = data.i18n;
 	var STORAGE_KEY = 'mlab-mf-expanded';
+	var LAYOUT_KEY = 'mlab-mf-layout';
+	var WIDTH_MIN = 180;
+	var WIDTH_MAX = 480;
+	var WIDTH_DEFAULT = 220;
 	var DRAG_FILES = 'mlab-mf-files:';
 	var DRAG_FOLDER = 'mlab-mf-folder:';
 
@@ -23,9 +27,11 @@
 		totals: data.totals || { all: 0, unfiled: 0 },
 		current: data.current === '' || data.current === undefined ? '' : String( data.current ),
 		expanded: loadExpanded(),
+		layout: loadLayout(),
 		dragging: null,
 	};
 
+	var $panel;
 	var $sidebar;
 	var $tree;
 	var $status;
@@ -44,6 +50,51 @@
 		try {
 			window.localStorage.setItem( STORAGE_KEY, JSON.stringify( state.expanded ) );
 		} catch ( e ) {}
+	}
+
+	function loadLayout() {
+		var layout = { width: WIDTH_DEFAULT, collapsed: false };
+		try {
+			var saved = JSON.parse( window.localStorage.getItem( LAYOUT_KEY ) || '{}' ) || {};
+			if ( typeof saved.width === 'number' ) {
+				layout.width = clampWidth( saved.width );
+			}
+			layout.collapsed = true === saved.collapsed;
+		} catch ( e ) {}
+		return layout;
+	}
+
+	function saveLayout() {
+		try {
+			window.localStorage.setItem( LAYOUT_KEY, JSON.stringify( state.layout ) );
+		} catch ( e ) {}
+	}
+
+	function clampWidth( width ) {
+		return Math.max( WIDTH_MIN, Math.min( WIDTH_MAX, Math.round( width ) ) );
+	}
+
+	/**
+	 * The media grid computes its columns on window resize, so tell it
+	 * whenever the space next to the sidebar changes.
+	 */
+	function relayout() {
+		window.clearTimeout( relayout.timer );
+		relayout.timer = window.setTimeout( function () {
+			$( window ).trigger( 'resize' );
+		}, 60 );
+	}
+
+	function applyLayout() {
+		$panel.css( '--mlab-mf-width', state.layout.width + 'px' );
+		$panel.toggleClass( 'is-collapsed', state.layout.collapsed );
+		$panel
+			.find( '.mlab-mf-collapse' )
+			.attr( 'aria-expanded', state.layout.collapsed ? 'false' : 'true' )
+			.attr( 'aria-label', state.layout.collapsed ? i18n.expand : i18n.collapse )
+			.attr( 'title', state.layout.collapsed ? i18n.expand : i18n.collapse );
+		$panel.find( '.mlab-mf-resizer' ).attr( 'aria-valuenow', state.layout.width );
+		relayout();
 	}
 
 	function api( path, options ) {
@@ -399,11 +450,18 @@
 
 	function buildSidebar() {
 		$sidebar = $( '<aside class="mlab-mf-sidebar"></aside>' ).attr( 'aria-label', i18n.title );
-		var $head = $( '<div class="mlab-mf-head"></div>' ).append( $( '<h2></h2>' ).text( i18n.title ) );
+		var $head = $( '<div class="mlab-mf-head"></div>' )
+			.append(
+				$( '<button type="button" class="mlab-mf-collapse"></button>' ).append(
+					'<span class="dashicons dashicons-category" aria-hidden="true"></span>'
+				)
+			)
+			.append( $( '<h2></h2>' ).text( i18n.title ) );
 		if ( data.canManage ) {
 			$( '<button type="button" class="button button-small mlab-mf-new"></button>' )
 				.append( '<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' )
-				.append( $( '<span></span>' ).text( i18n.newFolder ) )
+				.attr( 'title', i18n.newFolder )
+				.append( $( '<span class="mlab-mf-new-label"></span>' ).text( i18n.newFolder ) )
 				.appendTo( $head );
 		}
 		$tree = $( '<div class="mlab-mf-tree"></div>' );
@@ -412,7 +470,80 @@
 		var $credit = $( '<p class="mlab-mf-credit"></p>' ).text( i18n.credit + ' · v' + data.version );
 		$sidebar.append( $head, $tree, $status, $hint, $credit );
 		renderTree();
-		return $sidebar;
+
+		var $resizer = $( '<div class="mlab-mf-resizer" role="separator" tabindex="0" aria-orientation="vertical"></div>' )
+			.attr( 'aria-label', i18n.resize )
+			.attr( 'title', i18n.resize )
+			.attr( 'aria-valuemin', WIDTH_MIN )
+			.attr( 'aria-valuemax', WIDTH_MAX );
+		$panel = $( '<div class="mlab-mf-panel"></div>' ).append( $sidebar, $resizer );
+		applyLayout();
+		return $panel;
+	}
+
+	/* ---------- collapse and resize ---------- */
+
+	function bindPanel() {
+		$panel.on( 'click', '.mlab-mf-collapse', function () {
+			state.layout.collapsed = ! state.layout.collapsed;
+			closeMenus();
+			applyLayout();
+			saveLayout();
+		} );
+
+		$panel.on( 'pointerdown', '.mlab-mf-resizer', function ( event ) {
+			if ( state.layout.collapsed || event.button > 0 ) {
+				return;
+			}
+			event.preventDefault();
+			var original = event.originalEvent || event;
+			var startX = original.clientX;
+			var startWidth = state.layout.width;
+			var handle = this;
+			if ( handle.setPointerCapture && original.pointerId !== undefined ) {
+				handle.setPointerCapture( original.pointerId );
+			}
+			$panel.addClass( 'is-resizing' );
+
+			$( handle )
+				.on( 'pointermove.mlabmf', function ( e ) {
+					var moved = e.originalEvent || e;
+					state.layout.width = clampWidth( startWidth + moved.clientX - startX );
+					$panel.css( '--mlab-mf-width', state.layout.width + 'px' );
+				} )
+				.on( 'pointerup.mlabmf pointercancel.mlabmf', function () {
+					$( handle ).off( '.mlabmf' );
+					$panel.removeClass( 'is-resizing' );
+					applyLayout();
+					saveLayout();
+				} );
+		} );
+
+		$panel.on( 'keydown', '.mlab-mf-resizer', function ( event ) {
+			var step = event.shiftKey ? 60 : 20;
+			var width = state.layout.width;
+			if ( 'ArrowLeft' === event.key ) {
+				width -= step;
+			} else if ( 'ArrowRight' === event.key ) {
+				width += step;
+			} else if ( 'Home' === event.key ) {
+				width = WIDTH_MIN;
+			} else if ( 'End' === event.key ) {
+				width = WIDTH_MAX;
+			} else {
+				return;
+			}
+			event.preventDefault();
+			state.layout.width = clampWidth( width );
+			applyLayout();
+			saveLayout();
+		} );
+
+		$panel.on( 'dblclick', '.mlab-mf-resizer', function () {
+			state.layout.width = WIDTH_DEFAULT;
+			applyLayout();
+			saveLayout();
+		} );
 	}
 
 	/* ---------- events ---------- */
@@ -608,6 +739,7 @@
 		$layout.append( buildSidebar(), $wrap );
 		$( document.body ).addClass( 'mlab-mf-has-sidebar' );
 		bindSidebar();
+		bindPanel();
 		bindFileDrag();
 
 		$( document ).on( 'mlab-mf:changed', function () {

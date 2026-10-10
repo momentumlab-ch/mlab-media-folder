@@ -11,16 +11,20 @@
 	min-width: 0;
 }
 
-.mlab-mf-sidebar {
-	--mlab-mf-accent: var(--wp-admin-theme-color, #2271b1);
+.mlab-mf-panel {
+	--mlab-mf-width: 220px;
 	position: sticky;
 	top: 42px;
-	flex: 0 0 260px;
-	width: 260px;
+	flex: 0 0 var(--mlab-mf-width);
+	width: var(--mlab-mf-width);
+	margin-top: 10px;
+}
+
+.mlab-mf-sidebar {
+	--mlab-mf-accent: var(--wp-admin-theme-color, #2271b1);
 	max-height: calc(100vh - 62px);
 	overflow-y: auto;
-	margin-top: 10px;
-	padding: 14px 12px;
+	padding: 12px 10px;
 	background: #fff;
 	border: 1px solid #dcdcde;
 	border-radius: 4px;
@@ -36,14 +40,125 @@
 }
 
 .mlab-mf-head h2 {
+	flex: 1 1 auto;
+	min-width: 0;
 	margin: 0;
 	font-size: 14px;
+}
+
+.mlab-mf-collapse {
+	flex: 0 0 28px;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: #50575e;
+	cursor: pointer;
+}
+
+.mlab-mf-collapse:hover {
+	background: #f0f0f1;
+	color: var(--mlab-mf-accent);
+}
+
+.mlab-mf-collapse:focus-visible,
+.mlab-mf-resizer:focus-visible {
+	outline: 2px solid var(--mlab-mf-accent);
+	outline-offset: -2px;
+}
+
+.mlab-mf-collapse .dashicons {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+}
+
+/* Drag handle on the right edge of the panel. */
+.mlab-mf-resizer {
+	position: absolute;
+	top: 0;
+	right: -8px;
+	bottom: 0;
+	width: 8px;
+	cursor: col-resize;
+	touch-action: none;
+}
+
+.mlab-mf-resizer::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 2px;
+	width: 3px;
+	height: 36px;
+	margin-top: -18px;
+	border-radius: 2px;
+	background: #c3c4c7;
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.mlab-mf-panel:hover .mlab-mf-resizer::after,
+.mlab-mf-resizer:focus-visible::after,
+.mlab-mf-panel.is-resizing .mlab-mf-resizer::after {
+	opacity: 1;
+}
+
+.mlab-mf-panel.is-resizing,
+.mlab-mf-panel.is-resizing * {
+	cursor: col-resize;
+	user-select: none;
+}
+
+/* Collapsed: a narrow strip with just the folder button. */
+.mlab-mf-panel.is-collapsed {
+	flex-basis: 46px;
+	width: 46px;
+}
+
+.mlab-mf-panel.is-collapsed .mlab-mf-sidebar {
+	padding: 8px;
+}
+
+.mlab-mf-panel.is-collapsed .mlab-mf-head {
+	margin: 0;
+}
+
+.mlab-mf-panel.is-collapsed .mlab-mf-sidebar > :not(.mlab-mf-head),
+.mlab-mf-panel.is-collapsed .mlab-mf-head > :not(.mlab-mf-collapse),
+.mlab-mf-panel.is-collapsed .mlab-mf-resizer {
+	display: none !important;
 }
 
 .mlab-mf-new {
 	display: inline-flex !important;
 	align-items: center;
 	gap: 2px;
+	white-space: nowrap;
+}
+
+.mlab-mf-head h2 {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Narrow panel: "New folder" shows only its plus icon (label stays for screen readers). */
+.mlab-mf-sidebar {
+	container-type: inline-size;
+}
+
+@container (max-width: 250px) {
+	.mlab-mf-new .mlab-mf-new-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
 }
 
 .mlab-mf-new .dashicons {
@@ -305,21 +420,35 @@
 	cursor: grab;
 }
 
-@media screen and (max-width: 960px) {
+@media screen and (max-width: 782px) {
 	.mlab-mf-layout {
 		flex-direction: column;
+		align-items: stretch;
 		gap: 0;
 	}
 
 	.mlab-mf-layout > .wrap {
-		width: 100%;
+		width: auto;
+	}
+
+	.mlab-mf-panel,
+	.mlab-mf-panel.is-collapsed {
+		position: static;
+		flex-basis: auto;
+		width: auto;
+		margin-right: 10px;
 	}
 
 	.mlab-mf-sidebar {
-		position: static;
-		flex-basis: auto;
-		width: calc(100% - 20px);
-		max-height: 320px;
+		max-height: 240px;
+	}
+
+	.mlab-mf-resizer {
+		display: none;
+	}
+
+	.mlab-mf-layout .mlab-mf-panel.is-collapsed .mlab-mf-head > h2 {
+		display: block !important;
 	}
 
 	.mlab-mf-more {

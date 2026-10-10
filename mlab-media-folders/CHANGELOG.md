@@ -3,6 +3,16 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.0.2] - 2026-10-10
+
+### Added
+- Collapse button that shrinks the folder panel to a narrow strip.
+- Resizable folder panel: drag the right edge (180 to 480 px), use the arrow keys on the handle, double-click to reset. Width and collapsed state are stored per browser.
+
+### Changed
+- Default panel width reduced from 260 px to 220 px.
+- The panel stays next to the files down to 782 px (previously it stacked above them below 960 px); stacked, it is limited to 240 px height.
+
 ## [1.0.1] - 2026-10-10
 
 ### Fixed
