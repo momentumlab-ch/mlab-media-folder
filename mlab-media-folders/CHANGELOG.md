@@ -3,6 +3,12 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.3] - 2026-10-10
+
+### Changed
+- The update check keeps the GitHub answer for 1 hour instead of 12, so a new release shows up with WordPress' next update check instead of up to 12 hours later.
+- Releases are now published automatically when a new version lands on `main` (no tag needed).
+
 ## [1.1.2] - 2026-10-10
 
 ### Fixed

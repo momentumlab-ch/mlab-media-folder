@@ -34,9 +34,10 @@ final class Updater {
 	const CACHE_KEY = 'mlab_mf_github_release';
 
 	/**
-	 * Cache lifetime after a successful check.
+	 * Cache lifetime after a successful check. Short, because WordPress itself
+	 * only checks for plugin updates every 12 hours.
 	 */
-	const CACHE_TTL = 12 * HOUR_IN_SECONDS;
+	const CACHE_TTL = HOUR_IN_SECONDS;
 
 	/**
 	 * Cache lifetime after a failed check, so GitHub is not asked on every page load.
