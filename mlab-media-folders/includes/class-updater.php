@@ -81,7 +81,16 @@ final class Updater {
 
 		$release = $this->latest_release();
 		if ( ! $release ) {
-			return $update;
+			/*
+			 * No release found (none published yet, or GitHub unreachable). Report the
+			 * installed version so WordPress lists the plugin under "no_update": only
+			 * plugins it knows an update source for get the auto-update toggle.
+			 */
+			$release = array(
+				'version' => $plugin_data['Version'],
+				'url'     => 'https://github.com/' . $this->repository(),
+				'package' => '',
+			);
 		}
 
 		return array(

@@ -4,7 +4,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 1.1.0 |
+| Aktuelle Version | 1.1.1 |
 | WordPress | ab 6.5 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
@@ -107,6 +107,7 @@ phpcs --standard=mlab-media-folders/phpcs.xml.dist mlab-media-folders
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.1.1 | 2026-10-10 | Link «Automatische Aktualisierung aktivieren» erscheint immer, auch ohne neueres Release |
 | 1.1.0 | 2026-10-10 | Automatische Updates aus den GitHub-Releases |
 | 1.0.2 | 2026-10-10 | Ordner-Leiste einklappbar und in der Breite verstellbar; schmalere Standardbreite |
 | 1.0.1 | 2026-10-10 | Uploads erscheinen sofort im geöffneten Ordner; «Alle Dateien» sendet keinen leeren Ordner-Parameter mehr |
