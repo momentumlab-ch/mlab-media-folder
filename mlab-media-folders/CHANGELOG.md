@@ -3,6 +3,12 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.0] - 2026-10-10
+
+### Added
+- Automatic updates from the GitHub releases of `momentumlab-ch/wp-media-folder`: WordPress shows new versions under Dashboard > Updates and on the Plugins page, with release notes under "View details". One-click updates and auto-updates work as for any other plugin.
+- Filter `mlab_media_folders_update_repository` to point the update check at another repository.
+
 ## [1.0.2] - 2026-10-10
 
 ### Added

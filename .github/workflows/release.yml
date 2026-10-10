@@ -1,0 +1,63 @@
+# Builds the plugin archive and attaches it to a GitHub release.
+# Installed sites pick the release up through the plugin's update check.
+#
+# Start it by pushing a tag (git tag v1.1.0 && git push origin v1.1.0)
+# or by publishing a release with a new v* tag on GitHub.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref_name }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Check version
+        id: version
+        run: |
+          tag="${{ github.event.release.tag_name || github.ref_name }}"
+          version="${tag#v}"
+          header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folders/mlab-media-folders.php)
+          constant=$(sed -n "s/^define( 'MLAB_MF_VERSION', '\(.*\)' );/\1/p" mlab-media-folders/mlab-media-folders.php)
+          if [ "$version" != "$header" ] || [ "$version" != "$constant" ]; then
+            echo "::error::Tag $tag does not match plugin version (header $header, constant $constant)."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build archive
+        run: |
+          git archive --format=zip --prefix=mlab-media-folders/ \
+            -o "mlab-media-folders-${{ steps.version.outputs.version }}.zip" HEAD:mlab-media-folders
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="${{ steps.version.outputs.version }}" '
+            /^## \[/ { if (found) exit; if (index($0, "[" v "]")) { found=1; next } }
+            found' mlab-media-folders/CHANGELOG.md > notes.md
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          zip="mlab-media-folders-${{ steps.version.outputs.version }}.zip"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$zip" --clobber
+          else
+            gh release create "$tag" "$zip" --title "$tag" --notes-file notes.md
+          fi

@@ -48,6 +48,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( new Rest_Controller(), 'register_routes' ) );
 
 		( new Query() )->hooks();
+		( new Updater() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
