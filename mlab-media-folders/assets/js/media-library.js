@@ -111,10 +111,28 @@
 		if ( ! library ) {
 			return;
 		}
+		// Drop cached queries and fetch the current view again.
 		if ( wp.media.model && wp.media.model.Query && wp.media.model.Query.cleanQueries ) {
 			wp.media.model.Query.cleanQueries();
 		}
-		library.props.set( { ignore: Date.now() } );
+		if ( library._requery ) {
+			library._requery();
+		}
+	}
+
+	/**
+	 * Sets the folder on the grid library. "All files" removes the argument
+	 * entirely, so core's own upload handling stays untouched there.
+	 *
+	 * @param {Object} library Attachments collection.
+	 * @param {string} value   Folder value.
+	 */
+	function setLibraryFolder( library, value ) {
+		if ( value ) {
+			library.props.set( PARAM, value );
+		} else {
+			library.props.unset( PARAM );
+		}
 	}
 
 	function applyFilter( value ) {
@@ -135,7 +153,7 @@
 
 		var library = gridLibrary();
 		if ( library ) {
-			library.props.set( PARAM, value );
+			setLibraryFolder( library, value );
 		}
 		try {
 			var current = new URL( window.location.href );
@@ -602,7 +620,7 @@
 			( function waitForFrame() {
 				var library = gridLibrary();
 				if ( library ) {
-					library.props.set( PARAM, state.current );
+					setLibraryFolder( library, state.current );
 				} else if ( tries++ < 100 ) {
 					window.setTimeout( waitForFrame, 50 );
 				}

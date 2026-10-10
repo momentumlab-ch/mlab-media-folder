@@ -4,7 +4,7 @@ return array(
 	'domain' => 'mlab-media-folders',
 	'plural-forms' => 'nplurals=2; plural=n != 1;',
 	'language' => 'de_DE_formal',
-	'project-id-version' => 'MomentumLab Media Folders 1.0.0',
+	'project-id-version' => 'MomentumLab Media Folders 1.0.1',
 	'messages' => array(
 		'%d file(s) moved.' => '%d Datei(en) verschoben.',
 		'A folder cannot be moved into itself.' => 'Ein Ordner kann nicht in sich selbst verschoben werden.',

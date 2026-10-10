@@ -3,6 +3,13 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.0.1] - 2026-10-10
+
+### Fixed
+- New uploads now appear right away (with progress) while a folder is selected; previously the grid only showed them after a page reload.
+- "All files" removes the folder argument instead of sending an empty one.
+- Refreshing the grid after moving files no longer uses a cache-busting prop that stopped upload tracking.
+
 ## [1.0.0] - 2026-10-10
 
 ### Added

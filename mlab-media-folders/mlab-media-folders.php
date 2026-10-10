@@ -3,7 +3,7 @@
  * Plugin Name:       MomentumLab Media Folders
  * Plugin URI:        https://momentumlab.ch/
  * Description:       Organise the media library in folders: folder tree, drag and drop, upload into the current folder and a folder filter in every media dialog.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Author:            MomentumLab
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MLAB_MF_VERSION', '1.0.0' );
+define( 'MLAB_MF_VERSION', '1.0.1' );
 define( 'MLAB_MF_FILE', __FILE__ );
 define( 'MLAB_MF_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MLAB_MF_URL', plugin_dir_url( __FILE__ ) );

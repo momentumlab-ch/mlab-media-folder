@@ -106,6 +106,25 @@
 	} );
 
 	/**
+	 * Core only lets a query watch the upload queue when it has no unknown
+	 * arguments, so a folder-filtered view would not show new uploads until
+	 * the page is reloaded. Uploads go into the open folder, so they always
+	 * match: let folder queries watch the queue too.
+	 */
+	var Query = media.model && media.model.Query;
+	if ( Query && Query.prototype && Query.prototype.initialize ) {
+		var queryInit = Query.prototype.initialize;
+		var observable = [ 's', 'order', 'orderby', 'posts_per_page', 'post_mime_type', 'post_parent', 'author', PARAM ];
+		Query.prototype.initialize = function () {
+			queryInit.apply( this, arguments );
+			var keys = _.keys( this.args || {} );
+			if ( wp.Uploader && wp.Uploader.queue && _.has( this.args, PARAM ) && _.isEmpty( _.difference( keys, observable ) ) ) {
+				this.observe( wp.Uploader.queue );
+			}
+		};
+	}
+
+	/**
 	 * Sends the current folder with every upload made through the media
 	 * uploader (plupload), so new files land in the open folder.
 	 */
