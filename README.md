@@ -1,10 +1,12 @@
+<img src="mlab-media-folders/assets/images/icon-128x128.png" width="64" height="64" alt="" align="right">
+
 # MomentumLab Media Folders
 
 Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in den geöffneten Ordner und ein Ordner-Filter in jedem Medien-Dialog.
 
 | | |
 |---|---|
-| Aktuelle Version | 1.1.3 |
+| Aktuelle Version | 1.1.4 |
 | WordPress | ab 6.5 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
@@ -61,7 +63,7 @@ Mehr braucht es nicht. Die GitHub Action [`release.yml`](.github/workflows/relea
 mlab-media-folders/        Quellcode des Plugins (Inhalt des ZIPs)
   mlab-media-folders.php   Plugin-Datei mit Header und Version
   includes/                PHP-Klassen (Taxonomie, Ordner, REST, Abfragen, Admin, Updater)
-  assets/                  JavaScript und CSS für Mediathek und Medien-Dialoge
+  assets/                  JavaScript, CSS und Plugin-Icon (images/)
   languages/               Deutsche Übersetzungen (.l10n.php)
   readme.txt               Readme im WordPress-Format
   CHANGELOG.md             Änderungen pro Version
@@ -106,6 +108,7 @@ phpcs --standard=mlab-media-folders/phpcs.xml.dist mlab-media-folders
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.1.4 | 2026-10-10 | Plugin-Icon |
 | 1.1.3 | 2026-10-10 | Update-Prüfung reagiert schneller; Releases entstehen automatisch beim Merge |
 | 1.1.2 | 2026-10-10 | «Details anzeigen» funktioniert auch ohne neueres Release |
 | 1.1.1 | 2026-10-10 | Link «Automatische Aktualisierung aktivieren» erscheint immer, auch ohne neueres Release |

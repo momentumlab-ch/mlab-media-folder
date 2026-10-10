@@ -3,6 +3,11 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.4] - 2026-10-10
+
+### Added
+- Plugin icon (SVG, 128 and 256 px PNG in `assets/images/`), shown under Dashboard > Updates and in the details dialog.
+
 ## [1.1.3] - 2026-10-10
 
 ### Changed
