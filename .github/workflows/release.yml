@@ -1,21 +1,24 @@
-# Builds the plugin archive and attaches it to a GitHub release.
-# Installed sites pick the release up through the plugin's update check.
+# Publishes a GitHub release with the plugin archive whenever main carries a
+# plugin version that has no release yet. Installed sites pick the release up
+# through the plugin's update check.
 #
-# Start it by pushing a tag (git tag v1.1.0 && git push origin v1.1.0)
-# or by publishing a release with a new v* tag on GitHub.
+# It also runs for a pushed v* tag or a release published on GitHub, and can
+# be started by hand under Actions > Release > Run workflow.
 name: Release
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  group: release
 
 jobs:
   release:
@@ -25,32 +28,52 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name || github.ref }}
 
-      - name: Check version
+      - name: Read version
         id: version
         run: |
-          tag="${{ github.event.release.tag_name || github.ref_name }}"
-          version="${tag#v}"
           header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folders/mlab-media-folders.php)
           constant=$(sed -n "s/^define( 'MLAB_MF_VERSION', '\(.*\)' );/\1/p" mlab-media-folders/mlab-media-folders.php)
-          if [ "$version" != "$header" ] || [ "$version" != "$constant" ]; then
-            echo "::error::Tag $tag does not match plugin version (header $header, constant $constant)."
+          if [ "$header" != "$constant" ]; then
+            echo "::error::Plugin header version $header and MLAB_MF_VERSION $constant differ."
             exit 1
           fi
+          tag="v$header"
+          if [ "${{ github.ref_type }}" = "tag" ] || [ -n "${{ github.event.release.tag_name }}" ]; then
+            pushed="${{ github.event.release.tag_name || github.ref_name }}"
+            if [ "$pushed" != "$tag" ]; then
+              echo "::error::Tag $pushed does not match plugin version $header."
+              exit 1
+            fi
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version=$header" >> "$GITHUB_OUTPUT"
+
+      - name: Check for an existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null \
+            | grep -qx "mlab-media-folders-${{ steps.version.outputs.version }}.zip"; then
+            echo "Release ${{ steps.version.outputs.tag }} already has its archive."
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build archive
+        if: steps.existing.outputs.done != 'true'
         run: |
           git archive --format=zip --prefix=mlab-media-folders/ \
             -o "mlab-media-folders-${{ steps.version.outputs.version }}.zip" HEAD:mlab-media-folders
 
       - name: Release notes from CHANGELOG.md
+        if: steps.existing.outputs.done != 'true'
         run: |
           awk -v v="${{ steps.version.outputs.version }}" '
             /^## \[/ { if (found) exit; if (index($0, "[" v "]")) { found=1; next } }
             found' mlab-media-folders/CHANGELOG.md > notes.md
 
       - name: Create or update release
+        if: steps.existing.outputs.done != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -59,5 +82,5 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$zip" --clobber
           else
-            gh release create "$tag" "$zip" --title "$tag" --notes-file notes.md
+            gh release create "$tag" "$zip" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
           fi

@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,7 +27,7 @@ Security
 * Every REST route checks capabilities (`upload_files` by default) and uses the core REST nonce.
 * Each moved file is checked against `edit_post` for the current user.
 * Input is validated (types, ranges, existing folders, no cycles) and folder names are sanitised and escaped on output.
-* No tracking and no custom database tables (uses a private taxonomy). The only external request is the update check against the public GitHub releases of the plugin (at most every 12 hours, no site data is sent).
+* No tracking and no custom database tables (uses a private taxonomy). The only external request is the update check against the public GitHub releases of the plugin (when WordPress checks for updates, no site data is sent).
 
 Developer hooks
 
@@ -38,6 +38,9 @@ Developer hooks
 * Define `MLAB_MF_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 1.1.3 =
+* Change: the update check keeps the GitHub answer for 1 hour instead of 12, so new releases show up with WordPress' next update check.
 
 = 1.1.2 =
 * Fix: "View details" on the Plugins page no longer says "Plugin not found". It shows the description, requirements and the full changelog, plus the notes of a newer release when one exists.

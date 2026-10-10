@@ -4,7 +4,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 1.1.2 |
+| Aktuelle Version | 1.1.3 |
 | WordPress | ab 6.5 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
@@ -30,7 +30,7 @@ Ordner ordnen nur die Verwaltung. Die URLs der Dateien auf der Website ändern s
 
 ## Installation
 
-1. Die neueste `mlab-media-folders-x.y.z.zip` herunterladen, entweder aus den [Releases](https://github.com/momentumlab-ch/wp-media-folder/releases) oder aus dem Ordner [`releases/`](releases/).
+1. Die neueste `mlab-media-folders-x.y.z.zip` herunterladen aus den [Releases](https://github.com/momentumlab-ch/wp-media-folder/releases).
 2. In WordPress unter **Plugins › Installieren › Plugin hochladen** die ZIP-Datei wählen und installieren.
 3. Das Plugin aktivieren. Die Ordner-Leiste erscheint unter **Medien › Mediathek**.
 
@@ -41,7 +41,8 @@ Ab Version 1.1.0 holt sich das Plugin Updates selbst aus diesem Repo:
 - Der Plugin-Header enthält `Update URI: https://github.com/momentumlab-ch/wp-media-folder`. Dadurch fragt WordPress nicht WordPress.org, sondern das Plugin selbst nach Updates.
 - Das Plugin liest das neueste veröffentlichte Release über die GitHub-API (`/releases/latest`). Entwürfe und Pre-Releases werden ignoriert.
 - Als Update gilt nur die angehängte Datei `mlab-media-folders-<version>.zip`, nie das automatisch erzeugte Quellcode-ZIP von GitHub.
-- Das Ergebnis wird 12 Stunden zwischengespeichert, nach einem Fehler 1 Stunde. Ein Klick auf **Dashboard › Aktualisierungen › Erneut prüfen** fragt GitHub sofort neu.
+- WordPress sucht von sich aus alle 12 Stunden nach Updates. Das Plugin merkt sich die Antwort von GitHub 1 Stunde lang.
+- Sofort prüfen: **Dashboard › Aktualisierungen › Erneut prüfen**. Das fragt GitHub neu (WordPress lässt das höchstens einmal pro Minute zu).
 - Neue Versionen erscheinen wie gewohnt unter **Dashboard › Aktualisierungen** und auf der Plugin-Seite, mit den Release-Notes unter «Details ansehen». Auto-Updates lassen sich pro Plugin einschalten.
 - Es werden keine Daten der Website übertragen. Das Repo ist öffentlich, ein Token ist nicht nötig.
 
@@ -51,9 +52,8 @@ Wer noch 1.0.x installiert hat, muss 1.1.0 einmal von Hand hochladen. Danach lau
 
 1. Version in `mlab-media-folders/mlab-media-folders.php` erhöhen (Header `Version` und Konstante `MLAB_MF_VERSION`), dazu `Stable tag` und Changelog in `readme.txt` sowie einen Abschnitt in `CHANGELOG.md`.
 2. Änderungen in `main` mergen.
-3. Ein Tag `v<version>` auf `main` setzen, entweder per `git tag v1.2.0 && git push origin v1.2.0` oder auf GitHub unter **Releases › Draft a new release** mit neuem Tag und **Publish release**.
 
-Die GitHub Action [`release.yml`](.github/workflows/release.yml) prüft, ob Tag und Plugin-Version übereinstimmen, baut das ZIP aus `mlab-media-folders/` und hängt es an das Release. Die Release-Notes kommen aus dem passenden Abschnitt in `CHANGELOG.md`. Ab dann bieten alle installierten Websites das Update an.
+Mehr braucht es nicht. Die GitHub Action [`release.yml`](.github/workflows/release.yml) läuft bei jedem Push auf `main`. Gibt es für die Plugin-Version noch kein Release, baut sie das ZIP aus `mlab-media-folders/`, erstellt Tag und Release `v<version>` und nimmt die Notizen aus dem passenden Abschnitt in `CHANGELOG.md`. Ab dann bieten alle installierten Websites das Update an. Die Action lässt sich auch von Hand starten (**Actions › Release › Run workflow**).
 
 ## Aufbau des Repos
 
@@ -65,7 +65,6 @@ mlab-media-folders/        Quellcode des Plugins (Inhalt des ZIPs)
   languages/               Deutsche Übersetzungen (.l10n.php)
   readme.txt               Readme im WordPress-Format
   CHANGELOG.md             Änderungen pro Version
-releases/                  Unveränderte ZIPs der Versionen 1.0.0 bis 1.0.2
 .github/workflows/         Release-Action
 ```
 
@@ -107,6 +106,7 @@ phpcs --standard=mlab-media-folders/phpcs.xml.dist mlab-media-folders
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.1.3 | 2026-10-10 | Update-Prüfung reagiert schneller; Releases entstehen automatisch beim Merge |
 | 1.1.2 | 2026-10-10 | «Details anzeigen» funktioniert auch ohne neueres Release |
 | 1.1.1 | 2026-10-10 | Link «Automatische Aktualisierung aktivieren» erscheint immer, auch ohne neueres Release |
 | 1.1.0 | 2026-10-10 | Automatische Updates aus den GitHub-Releases |
