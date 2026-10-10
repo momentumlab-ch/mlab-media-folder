@@ -4,8 +4,9 @@ return array(
 	'domain' => 'mlab-media-folders',
 	'plural-forms' => 'nplurals=2; plural=n != 1;',
 	'language' => 'de_CH',
-	'project-id-version' => 'MomentumLab Media Folders 1.0.2',
+	'project-id-version' => 'MomentumLab Media Folders 1.1.0',
 	'messages' => array(
+		'The update folder could not be renamed.' => 'Der Update-Ordner konnte nicht umbenannt werden.',
 		'%d file(s) moved.' => '%d Datei(en) verschoben.',
 		'A folder cannot be moved into itself.' => 'Ein Ordner kann nicht in sich selbst verschoben werden.',
 		'A folder cannot be moved into one of its subfolders.' => 'Ein Ordner kann nicht in einen seiner Unterordner verschoben werden.',

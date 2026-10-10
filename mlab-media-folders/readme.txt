@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.2
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,16 +27,20 @@ Security
 * Every REST route checks capabilities (`upload_files` by default) and uses the core REST nonce.
 * Each moved file is checked against `edit_post` for the current user.
 * Input is validated (types, ranges, existing folders, no cycles) and folder names are sanitised and escaped on output.
-* No external requests, no tracking, no custom database tables (uses a private taxonomy).
+* No tracking and no custom database tables (uses a private taxonomy). The only external request is the update check against the public GitHub releases of the plugin (at most every 12 hours, no site data is sent).
 
 Developer hooks
 
 * `mlab_media_folders_use_capability` (default `upload_files`): who can see folders and move files.
 * `mlab_media_folders_manage_capability` (default `upload_files`): who can create, rename, move and delete folders.
 * REST namespace `mlab-media-folders/v1`: `GET/POST /folders`, `PATCH/DELETE /folders/{id}`, `POST /assign`.
+* `mlab_media_folders_update_repository` (default `momentumlab-ch/wp-media-folder`): GitHub repository that is checked for updates.
 * Define `MLAB_MF_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 1.1.0 =
+* New: WordPress checks the GitHub releases of the plugin for updates. New versions appear under Dashboard > Updates and on the Plugins page and can be installed with one click or by auto-update.
 
 = 1.0.2 =
 * New: the folder panel can be collapsed to a narrow strip and resized by dragging its right edge (or with the arrow keys). Both settings are remembered per browser.
