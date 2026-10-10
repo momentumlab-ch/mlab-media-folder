@@ -3,6 +3,11 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.1] - 2026-10-10
+
+### Fixed
+- The "Enable auto-updates" link now shows on the Plugins page even when no newer release exists or GitHub cannot be reached. Previously WordPress only offered it once a GitHub release had been found.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added
