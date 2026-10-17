@@ -391,6 +391,15 @@
 	border-top: 1px solid #f0f0f1;
 }
 
+.mlab-mf-credit a {
+	color: inherit;
+}
+
+.mlab-mf-credit a:hover,
+.mlab-mf-credit a:focus {
+	color: var(--wp-admin-theme-color, #2271b1);
+}
+
 .mlab-mf-drag-badge {
 	position: absolute;
 	top: -1000px;

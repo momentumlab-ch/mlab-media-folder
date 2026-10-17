@@ -44,6 +44,7 @@ final class Admin {
 	private function script_data() {
 		return array(
 			'version'   => MLAB_MF_VERSION,
+			'creditUrl' => 'https://momentumlab.ch/',
 			'restPath'  => '/' . Rest_Controller::NAMESPACE,
 			'param'     => Query::PARAM,
 			'unfiled'   => Query::UNFILED,
