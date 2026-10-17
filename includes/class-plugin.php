@@ -49,7 +49,6 @@ final class Plugin {
 
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
-		( new Legacy() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
@@ -75,15 +74,9 @@ final class Plugin {
 	 * Runs upgrade routines when the stored version differs from the code version.
 	 */
 	public function maybe_upgrade() {
-		// Up to 1.1.6 the plugin was called mlab-media-folders and stored its version here.
-		$installed = get_option( self::VERSION_OPTION, get_option( 'mlab_mf_version', '0' ) );
+		$installed = get_option( self::VERSION_OPTION, '0' );
 		if ( version_compare( $installed, MLAB_MEDIA_FOLDER_VERSION, '>=' ) ) {
 			return;
-		}
-
-		if ( version_compare( $installed, '2.0.0', '<' ) ) {
-			delete_option( 'mlab_mf_version' );
-			delete_site_transient( 'mlab_mf_github_release' );
 		}
 
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );

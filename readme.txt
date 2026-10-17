@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,12 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 2.1.0 =
+* New: select several files in the grid by dragging across them with the mouse button held down. Starting on a file or between files switches on bulk select; the page scrolls along at the edges and Esc cancels.
+* New: a bar at the bottom shows how many files are selected, with "Select all" (all files of the open folder, also those not loaded yet), "Delete permanently" or "Move to Trash" and "Cancel". Core's own confirmation and permissions apply.
+* Selected files can still be dragged onto a folder together.
+* Removed: the code that moved sites from the old plugin name (`mlab-media-folders`, up to 1.1.6). Releases no longer carry the extra archive for it.
 
 = 2.0.0 =
 * Change: the plugin is now called "MomentumLab Media Folder" with the slug, folder and text domain `mlab-media-folder` (before: `mlab-media-folders`). Sites on 1.1.6 update automatically: the new plugin is installed and activated, the old one is removed. Folders, file assignments and the auto-update setting are kept.

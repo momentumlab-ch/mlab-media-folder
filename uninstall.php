@@ -44,4 +44,3 @@ if ( ! is_wp_error( $mlab_media_folder_terms ) ) {
 }
 
 delete_option( 'mlab_media_folder_version' );
-delete_option( 'mlab_mf_version' );

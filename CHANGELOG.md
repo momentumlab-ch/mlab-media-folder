@@ -3,6 +3,18 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.1.0] - 2026-10-17
+
+### Added
+- Select several files in the grid by dragging across them with the mouse button held down. The drag can start on a file or in the space between files and switches on "Bulk select". The page scrolls along when the pointer reaches the top or bottom edge, and Esc cancels the selection made by that drag.
+- A bar at the bottom of the grid while "Bulk select" is on: number of selected files, "Select all" (every file of the open folder, loading the rest first), "Delete permanently" or "Move to Trash" for the whole selection, and "Cancel". It runs core's own bulk action, so core's confirmation, the trash setting and user permissions apply.
+
+### Changed
+- Dragging a selected file onto a folder still moves the whole selection; outside "Bulk select" dragging a file works as before.
+
+### Removed
+- The move from the old plugin name (`mlab-media-folders`, up to 1.1.6): the code that removed the old plugin, the bridge archive that releases carried for it, and the old version option. All sites run 2.0.0 or newer. The old constant `MLAB_MF_KEEP_DATA` is still honoured on uninstall.
+
 ## [2.0.0] - 2026-10-17
 
 ### Changed
