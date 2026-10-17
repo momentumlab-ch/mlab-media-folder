@@ -30,7 +30,6 @@ require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-rest-controller.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-query.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-admin.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-updater.php';
-require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-legacy.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-plugin.php';
 
 \MomentumLab\MediaFolder\Plugin::instance();

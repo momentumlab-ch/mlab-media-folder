@@ -12,6 +12,9 @@ The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaki
 ### Changed
 - Dragging a selected file onto a folder still moves the whole selection; outside "Bulk select" dragging a file works as before.
 
+### Removed
+- The move from the old plugin name (`mlab-media-folders`, up to 1.1.6): the code that removed the old plugin, the bridge archive that releases carried for it, and the old version option. All sites run 2.0.0 or newer. The old constant `MLAB_MF_KEEP_DATA` is still honoured on uninstall.
+
 ## [2.0.0] - 2026-10-17
 
 ### Changed

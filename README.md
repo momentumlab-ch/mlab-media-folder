@@ -40,16 +40,6 @@ Ordner ordnen nur die Verwaltung. Die URLs der Dateien auf der Website ändern s
 
 Das ZIP aus den Releases ist genau das Plugin und lässt sich direkt hochladen. Auch **Code › Download ZIP** auf GitHub funktioniert, WordPress legt das Plugin dann aber im Ordner `mlab-media-folder-main` ab. Deshalb besser das ZIP aus den Releases nehmen.
 
-### Umstieg vom alten Plugin (mlab-media-folders, bis 1.1.6)
-
-Bis Version 1.1.6 hiess das Plugin «MomentumLab Media Folders» und lag im Ordner `mlab-media-folders`. Der Umstieg läuft von selbst:
-
-- Websites mit 1.1.6 bekommen das Update wie gewohnt. Jedes Release enthält dafür zusätzlich `mlab-media-folders-x.y.z.zip`, eine kleine Brücke unter dem alten Namen.
-- Beim nächsten Aufruf des Admin-Bereichs installiert die Brücke das neue Plugin `mlab-media-folder`, aktiviert es und löscht den alten Ordner.
-- Wird das neue Plugin stattdessen von Hand hochgeladen und aktiviert, deaktiviert und löscht es das alte selbst.
-- Ordner und Zuordnungen bleiben erhalten (gleiche Taxonomie). Die Lösch-Routine des alten Plugins läuft nie. War die automatische Aktualisierung eingeschaltet, bleibt sie es.
-- Kann WordPress nicht direkt ins Dateisystem schreiben (FTP-Zugang nötig), zeigt die Brücke einen Hinweis. Dann das neue ZIP von Hand hochladen.
-
 ## Updates
 
 Ab Version 1.1.0 holt sich das Plugin Updates selbst aus diesem Repo:
@@ -62,14 +52,12 @@ Ab Version 1.1.0 holt sich das Plugin Updates selbst aus diesem Repo:
 - Neue Versionen erscheinen wie gewohnt unter **Dashboard › Aktualisierungen** und auf der Plugin-Seite, mit den Release-Notes unter «Details ansehen». Auto-Updates lassen sich pro Plugin einschalten.
 - Es werden keine Daten der Website übertragen. Das Repo ist öffentlich, ein Token ist nicht nötig.
 
-Wer noch 1.0.x installiert hat, muss 1.1.0 einmal von Hand hochladen. Danach laufen Updates über WordPress.
-
 ### Neue Version veröffentlichen
 
 1. Version in `mlab-media-folder.php` erhöhen (Header `Version` und Konstante `MLAB_MEDIA_FOLDER_VERSION`), dazu `Stable tag` und Changelog in `readme.txt` sowie einen Abschnitt in `CHANGELOG.md`.
 2. Änderungen in `main` mergen.
 
-Mehr braucht es nicht. Die GitHub Action [`release.yml`](.github/workflows/release.yml) läuft bei jedem Push auf `main`. Gibt es für die Plugin-Version noch kein Release, baut sie das Plugin-ZIP und das Brücken-ZIP für alte Installationen, erstellt Tag und Release `v<version>` und nimmt die Notizen aus dem passenden Abschnitt in `CHANGELOG.md`. Ab dann bieten alle installierten Websites das Update an. Die Action lässt sich auch von Hand starten (**Actions › Release › Run workflow**).
+Mehr braucht es nicht. Die GitHub Action [`release.yml`](.github/workflows/release.yml) läuft bei jedem Push auf `main`. Gibt es für die Plugin-Version noch kein Release, baut sie das Plugin-ZIP, erstellt Tag und Release `v<version>` und nimmt die Notizen aus dem passenden Abschnitt in `CHANGELOG.md`. Ab dann bieten alle installierten Websites das Update an. Die Action lässt sich auch von Hand starten (**Actions › Release › Run workflow**).
 
 ## Aufbau des Repos
 
@@ -77,14 +65,13 @@ Das Repo ist das Plugin: alles im Hauptordner landet im ZIP, ausser was `.gitatt
 
 ```
 mlab-media-folder.php      Plugin-Datei mit Header und Version
-includes/                  PHP-Klassen (Taxonomie, Ordner, REST, Abfragen, Admin, Updater, Umstieg)
+includes/                  PHP-Klassen (Taxonomie, Ordner, REST, Abfragen, Admin, Updater)
 assets/                    JavaScript, CSS und Plugin-Icon (images/)
 languages/                 Deutsche Übersetzungen (.l10n.php)
 readme.txt                 Readme im WordPress-Format
 CHANGELOG.md               Änderungen pro Version
 uninstall.php              Aufräumen beim Löschen
 .github/workflows/         Release-Action
-.github/bridge/            Brücke für Websites mit dem alten Plugin
 ```
 
 ## Technik
@@ -125,7 +112,7 @@ phpcs --standard=phpcs.xml.dist .
 
 | Version | Datum | Änderungen |
 |---|---|---|
-| 2.1.0 | 2026-10-17 | Mehrfachauswahl durch Ziehen mit der Maus; Leiste mit «Alle auswählen» und Löschen der ganzen Auswahl |
+| 2.1.0 | 2026-10-17 | Mehrfachauswahl durch Ziehen mit der Maus; Leiste mit «Alle auswählen» und Löschen der ganzen Auswahl; Umstiegs-Code vom alten Plugin entfernt |
 | 2.0.0 | 2026-10-17 | Neuer Name «MomentumLab Media Folder» (`mlab-media-folder`), Plugin liegt im Hauptordner des Repos, automatischer Umstieg vom alten Plugin |
 | 1.1.6 | 2026-10-17 | Ordner-Zähler stimmen nach dem Löschen; Link zu MomentumLab in der Ordner-Leiste |
 | 1.1.5 | 2026-10-10 | Getestet mit WordPress 7.1.3; Kompatibilität wird in der Update-Liste angezeigt |
