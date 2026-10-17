@@ -547,3 +547,8 @@ body.mlab-media-folder-sweeping .attachments-browser li.attachment {
 		min-height: 40px;
 	}
 }
+
+/* A file dragged inside the library is a move, not an upload. */
+body.mlab-media-folder-file-dragging .uploader-window {
+	display: none !important;
+}

@@ -4,7 +4,7 @@ return array(
 	'domain' => 'mlab-media-folder',
 	'plural-forms' => 'nplurals=2; plural=n != 1;',
 	'language' => 'de_CH',
-	'project-id-version' => 'MomentumLab Media Folder 2.1.0',
+	'project-id-version' => 'MomentumLab Media Folder 2.1.1',
 	'messages' => array(
 		'Selected files' => 'Ausgewählte Dateien',
 		'%d selected' => '%d ausgewählt',
