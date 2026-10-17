@@ -55,13 +55,14 @@ final class Folders {
 			return array();
 		}
 
+		$counts  = self::counts();
 		$folders = array_map(
-			static function ( $term ) {
+			static function ( $term ) use ( $counts ) {
 				return array(
 					'id'     => (int) $term->term_id,
 					'name'   => self::name( $term ),
 					'parent' => (int) $term->parent,
-					'count'  => (int) $term->count,
+					'count'  => $counts[ (int) $term->term_id ] ?? 0,
 				);
 			},
 			$terms
@@ -75,6 +76,37 @@ final class Folders {
 		);
 
 		return $folders;
+	}
+
+	/**
+	 * Number of files per folder, counting only attachments that still exist
+	 * and are not in the trash. The stored term count is not used because it
+	 * also counts trashed files and leftovers of files deleted outside
+	 * WordPress, so a folder could show files it no longer has.
+	 *
+	 * @return array<int, int> Term ID => number of files.
+	 */
+	public static function counts() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Aggregate count, no API equivalent; one query per request.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT tt.term_id, COUNT(DISTINCT p.ID) AS files
+				FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
+				WHERE tt.taxonomy = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+				GROUP BY tt.term_id",
+				Taxonomy::NAME
+			)
+		);
+
+		$counts = array();
+		foreach ( (array) $rows as $row ) {
+			$counts[ (int) $row->term_id ] = (int) $row->files;
+		}
+		return $counts;
 	}
 
 	/**
@@ -265,7 +297,7 @@ final class Folders {
 			'id'     => (int) $term->term_id,
 			'name'   => self::name( $term ),
 			'parent' => (int) $term->parent,
-			'count'  => (int) $term->count,
+			'count'  => self::counts()[ (int) $term->term_id ] ?? 0,
 		);
 	}
 

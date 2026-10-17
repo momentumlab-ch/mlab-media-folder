@@ -467,7 +467,10 @@
 		$tree = $( '<div class="mlab-mf-tree"></div>' );
 		$status = $( '<p class="mlab-mf-status" role="status" aria-live="polite"></p>' );
 		var $hint = $( '<p class="mlab-mf-hint"></p>' ).text( i18n.dropHint );
-		var $credit = $( '<p class="mlab-mf-credit"></p>' ).text( i18n.credit + ' · v' + data.version );
+		var $credit = $( '<p class="mlab-mf-credit"></p>' ).append(
+			$( '<a target="_blank" rel="noopener noreferrer"></a>' ).attr( 'href', data.creditUrl ).text( i18n.credit ),
+			document.createTextNode( ' · v' + data.version )
+		);
 		$sidebar.append( $head, $tree, $status, $hint, $credit );
 		renderTree();
 
@@ -744,6 +747,19 @@
 
 		$( document ).on( 'mlab-mf:changed', function () {
 			reload();
+		} );
+
+		// Grid mode deletes files over admin-ajax without a page reload:
+		// refresh the counts once the last request of a batch has finished.
+		var deleteTimer = 0;
+		$( document ).ajaxComplete( function ( event, xhr, settings ) {
+			var body = settings && 'string' === typeof settings.data ? settings.data : '';
+			var removed = /(^|&)action=(delete|trash|untrash)-post(&|$)/.test( body ) ||
+				( /(^|&)action=save-attachment(&|$)/.test( body ) && /changes%5Bstatus%5D=/.test( body ) );
+			if ( removed ) {
+				window.clearTimeout( deleteTimer );
+				deleteTimer = window.setTimeout( reload, 300 );
+			}
 		} );
 
 		// Grid mode: apply a folder from the URL once the media frame exists.

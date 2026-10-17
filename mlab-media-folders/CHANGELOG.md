@@ -3,6 +3,15 @@
 All notable changes to MomentumLab Media Folders are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [1.1.6] - 2026-10-17
+
+### Fixed
+- Folder counts showed files that had been deleted or moved to the trash. Counts are now taken from the files that actually exist, not from the stored term count.
+- Deleting files in the grid view now updates the folder counts without a page reload.
+
+### Added
+- "Media Folders by MomentumLab" below the folder panel links to momentumlab.ch.
+
 ## [1.1.5] - 2026-10-10
 
 ### Changed
