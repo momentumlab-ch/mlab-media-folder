@@ -2,6 +2,12 @@
 # plugin version that has no release yet. Installed sites pick the release up
 # through the plugin's update check.
 #
+# Each release carries two archives:
+# - mlab-media-folder-<version>.zip, the plugin itself (repository root).
+# - mlab-media-folders-<version>.zip, for sites still running the plugin under
+#   its old name (up to 1.1.6). Their updater only accepts that name; the
+#   bridge in .github/bridge installs the new plugin and removes the old one.
+#
 # It also runs for a pushed v* tag or a release published on GitHub, and can
 # be started by hand under Actions > Release > Run workflow.
 name: Release
@@ -31,10 +37,10 @@ jobs:
       - name: Read version
         id: version
         run: |
-          header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folders/mlab-media-folders.php)
-          constant=$(sed -n "s/^define( 'MLAB_MF_VERSION', '\(.*\)' );/\1/p" mlab-media-folders/mlab-media-folders.php)
+          header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folder.php)
+          constant=$(sed -n "s/^define( 'MLAB_MEDIA_FOLDER_VERSION', '\(.*\)' );/\1/p" mlab-media-folder.php)
           if [ "$header" != "$constant" ]; then
-            echo "::error::Plugin header version $header and MLAB_MF_VERSION $constant differ."
+            echo "::error::Plugin header version $header and MLAB_MEDIA_FOLDER_VERSION $constant differ."
             exit 1
           fi
           tag="v$header"
@@ -53,24 +59,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "${{ steps.version.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null \
-            | grep -qx "mlab-media-folders-${{ steps.version.outputs.version }}.zip"; then
-            echo "Release ${{ steps.version.outputs.tag }} already has its archive."
+          v="${{ steps.version.outputs.version }}"
+          assets=$(gh release view "${{ steps.version.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null || true)
+          if echo "$assets" | grep -qx "mlab-media-folder-$v.zip" && echo "$assets" | grep -qx "mlab-media-folders-$v.zip"; then
+            echo "Release ${{ steps.version.outputs.tag }} already has its archives."
             echo "done=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build archive
+      - name: Build archives
         if: steps.existing.outputs.done != 'true'
         run: |
-          git archive --format=zip --prefix=mlab-media-folders/ \
-            -o "mlab-media-folders-${{ steps.version.outputs.version }}.zip" HEAD:mlab-media-folders
+          v="${{ steps.version.outputs.version }}"
+          git archive --format=zip --prefix=mlab-media-folder/ -o "mlab-media-folder-$v.zip" HEAD
+
+          mkdir -p bridge/mlab-media-folders/payload
+          cp .github/bridge/mlab-media-folders.php bridge/mlab-media-folders/
+          sed -i "s/^ \* Version:.*/ * Version:           $v/" bridge/mlab-media-folders/mlab-media-folders.php
+          unzip -q "mlab-media-folder-$v.zip" -d bridge/mlab-media-folders/payload
+          (cd bridge && zip -qr "../mlab-media-folders-$v.zip" mlab-media-folders)
 
       - name: Release notes from CHANGELOG.md
         if: steps.existing.outputs.done != 'true'
         run: |
           awk -v v="${{ steps.version.outputs.version }}" '
             /^## \[/ { if (found) exit; if (index($0, "[" v "]")) { found=1; next } }
-            found' mlab-media-folders/CHANGELOG.md > notes.md
+            found' CHANGELOG.md > notes.md
 
       - name: Create or update release
         if: steps.existing.outputs.done != 'true'
@@ -78,9 +91,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${{ steps.version.outputs.tag }}"
-          zip="mlab-media-folders-${{ steps.version.outputs.version }}.zip"
+          v="${{ steps.version.outputs.version }}"
+          zips=("mlab-media-folder-$v.zip" "mlab-media-folders-$v.zip")
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$zip" --clobber
+            gh release upload "$tag" "${zips[@]}" --clobber
           else
-            gh release create "$tag" "$zip" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
+            gh release create "$tag" "${zips[@]}" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
           fi

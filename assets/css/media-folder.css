@@ -1,0 +1,466 @@
+/* MomentumLab Media Folder */
+
+.mlab-media-folder-layout {
+	display: flex;
+	align-items: flex-start;
+	gap: 20px;
+}
+
+.mlab-media-folder-layout > .wrap {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mlab-media-folder-panel {
+	--mlab-media-folder-width: 220px;
+	position: sticky;
+	top: 42px;
+	flex: 0 0 var(--mlab-media-folder-width);
+	width: var(--mlab-media-folder-width);
+	margin-top: 10px;
+}
+
+.mlab-media-folder-sidebar {
+	--mlab-media-folder-accent: var(--wp-admin-theme-color, #2271b1);
+	max-height: calc(100vh - 62px);
+	overflow-y: auto;
+	padding: 12px 10px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	box-sizing: border-box;
+}
+
+.mlab-media-folder-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.mlab-media-folder-head h2 {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin: 0;
+	font-size: 14px;
+}
+
+.mlab-media-folder-collapse {
+	flex: 0 0 28px;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: #50575e;
+	cursor: pointer;
+}
+
+.mlab-media-folder-collapse:hover {
+	background: #f0f0f1;
+	color: var(--mlab-media-folder-accent);
+}
+
+.mlab-media-folder-collapse:focus-visible,
+.mlab-media-folder-resizer:focus-visible {
+	outline: 2px solid var(--mlab-media-folder-accent);
+	outline-offset: -2px;
+}
+
+.mlab-media-folder-collapse .dashicons {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+}
+
+/* Drag handle on the right edge of the panel. */
+.mlab-media-folder-resizer {
+	position: absolute;
+	top: 0;
+	right: -8px;
+	bottom: 0;
+	width: 8px;
+	cursor: col-resize;
+	touch-action: none;
+}
+
+.mlab-media-folder-resizer::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 2px;
+	width: 3px;
+	height: 36px;
+	margin-top: -18px;
+	border-radius: 2px;
+	background: #c3c4c7;
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.mlab-media-folder-panel:hover .mlab-media-folder-resizer::after,
+.mlab-media-folder-resizer:focus-visible::after,
+.mlab-media-folder-panel.is-resizing .mlab-media-folder-resizer::after {
+	opacity: 1;
+}
+
+.mlab-media-folder-panel.is-resizing,
+.mlab-media-folder-panel.is-resizing * {
+	cursor: col-resize;
+	user-select: none;
+}
+
+/* Collapsed: a narrow strip with just the folder button. */
+.mlab-media-folder-panel.is-collapsed {
+	flex-basis: 46px;
+	width: 46px;
+}
+
+.mlab-media-folder-panel.is-collapsed .mlab-media-folder-sidebar {
+	padding: 8px;
+}
+
+.mlab-media-folder-panel.is-collapsed .mlab-media-folder-head {
+	margin: 0;
+}
+
+.mlab-media-folder-panel.is-collapsed .mlab-media-folder-sidebar > :not(.mlab-media-folder-head),
+.mlab-media-folder-panel.is-collapsed .mlab-media-folder-head > :not(.mlab-media-folder-collapse),
+.mlab-media-folder-panel.is-collapsed .mlab-media-folder-resizer {
+	display: none !important;
+}
+
+.mlab-media-folder-new {
+	display: inline-flex !important;
+	align-items: center;
+	gap: 2px;
+	white-space: nowrap;
+}
+
+.mlab-media-folder-head h2 {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Narrow panel: "New folder" shows only its plus icon (label stays for screen readers). */
+.mlab-media-folder-sidebar {
+	container-type: inline-size;
+}
+
+@container (max-width: 250px) {
+	.mlab-media-folder-new .mlab-media-folder-new-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
+
+.mlab-media-folder-new .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.mlab-media-folder-tree ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.mlab-media-folder-tree li {
+	margin: 0;
+}
+
+.mlab-media-folder-fixed {
+	padding-bottom: 8px !important;
+	margin-bottom: 8px !important;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.mlab-media-folder-children {
+	margin-left: 14px !important;
+}
+
+.mlab-media-folder-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	border-radius: 3px;
+}
+
+.mlab-media-folder-row:hover {
+	background: #f6f7f7;
+}
+
+.mlab-media-folder-row.is-current {
+	background: #f0f6fc;
+	box-shadow: inset 3px 0 0 var(--mlab-media-folder-accent);
+}
+
+.mlab-media-folder-row.is-drop-target {
+	background: #e5f1fa;
+	outline: 2px dashed var(--mlab-media-folder-accent);
+	outline-offset: -2px;
+}
+
+.mlab-media-folder-sidebar.is-dragging .mlab-media-folder-row {
+	transition: background-color 0.1s;
+}
+
+.mlab-media-folder-toggle,
+.mlab-media-folder-name,
+.mlab-media-folder-more,
+.mlab-media-folder-menu button {
+	background: none;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+}
+
+.mlab-media-folder-toggle {
+	flex: 0 0 20px;
+	width: 20px;
+	height: 28px;
+	padding: 0;
+	position: relative;
+}
+
+.mlab-media-folder-toggle::before {
+	content: "";
+	position: absolute;
+	top: 11px;
+	left: 7px;
+	border: 4px solid transparent;
+	border-left: 5px solid #8c8f94;
+}
+
+.mlab-media-folder-toggle[aria-expanded="true"]::before {
+	top: 13px;
+	left: 5px;
+	border: 4px solid transparent;
+	border-top: 5px solid #8c8f94;
+}
+
+.mlab-media-folder-toggle.is-empty {
+	visibility: hidden;
+}
+
+.mlab-media-folder-name {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 1 1 auto;
+	min-width: 0;
+	padding: 5px 4px;
+	text-align: left;
+}
+
+.mlab-media-folder-name .dashicons {
+	flex: 0 0 18px;
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	color: #8c8f94;
+}
+
+.mlab-media-folder-row.is-current .mlab-media-folder-name .dashicons {
+	color: var(--mlab-media-folder-accent);
+}
+
+.mlab-media-folder-label {
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mlab-media-folder-row.is-current .mlab-media-folder-label {
+	font-weight: 600;
+}
+
+.mlab-media-folder-count {
+	flex: 0 0 auto;
+	min-width: 18px;
+	padding: 0 6px;
+	border-radius: 9px;
+	background: #f0f0f1;
+	color: #50575e;
+	font-size: 11px;
+	line-height: 18px;
+	text-align: center;
+}
+
+.mlab-media-folder-more {
+	flex: 0 0 28px;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: #8c8f94;
+	opacity: 0;
+}
+
+.mlab-media-folder-row:hover .mlab-media-folder-more,
+.mlab-media-folder-more:focus,
+.mlab-media-folder-more[aria-expanded="true"] {
+	opacity: 1;
+}
+
+.mlab-media-folder-menu {
+	position: absolute;
+	top: 28px;
+	right: 0;
+	z-index: 20;
+	min-width: 170px;
+	padding: 4px 0;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.mlab-media-folder-menu[hidden] {
+	display: none;
+}
+
+.mlab-media-folder-menu button {
+	display: block;
+	width: 100%;
+	padding: 7px 12px;
+	text-align: left;
+}
+
+.mlab-media-folder-menu button:hover,
+.mlab-media-folder-menu button:focus {
+	background: #f0f6fc;
+	color: var(--mlab-media-folder-accent);
+}
+
+.mlab-media-folder-menu button[data-action="delete"] {
+	color: #b32d2e;
+}
+
+.mlab-media-folder-toggle:focus-visible,
+.mlab-media-folder-name:focus-visible,
+.mlab-media-folder-more:focus-visible,
+.mlab-media-folder-menu button:focus-visible {
+	outline: 2px solid var(--mlab-media-folder-accent);
+	outline-offset: -2px;
+	border-radius: 3px;
+}
+
+.mlab-media-folder-inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 4px 0 6px 20px;
+}
+
+.mlab-media-folder-inline input {
+	flex: 1 1 100%;
+	min-height: 30px;
+}
+
+.mlab-media-folder-status {
+	min-height: 18px;
+	margin: 10px 0 0;
+	color: #00a32a;
+	font-size: 12px;
+}
+
+.mlab-media-folder-status.is-error {
+	color: #b32d2e;
+}
+
+.mlab-media-folder-hint,
+.mlab-media-folder-credit {
+	margin: 4px 0 0;
+	color: #8c8f94;
+	font-size: 11px;
+}
+
+.mlab-media-folder-credit {
+	margin-top: 10px;
+	padding-top: 8px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.mlab-media-folder-credit a {
+	color: inherit;
+}
+
+.mlab-media-folder-credit a:hover,
+.mlab-media-folder-credit a:focus {
+	color: var(--wp-admin-theme-color, #2271b1);
+}
+
+.mlab-media-folder-drag-badge {
+	position: absolute;
+	top: -1000px;
+	left: -1000px;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 8px;
+	border-radius: 14px;
+	background: var(--wp-admin-theme-color, #2271b1);
+	color: #fff;
+	font: 600 13px/28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	text-align: center;
+	box-sizing: border-box;
+}
+
+/* The sidebar replaces the dropdown filter on the media library screen. */
+.mlab-media-folder-has-sidebar .mlab-media-folder-filter,
+.mlab-media-folder-has-sidebar .mlab-media-folder-filter-label {
+	display: none !important;
+}
+
+.attachments-browser li.attachment[draggable="true"] {
+	cursor: grab;
+}
+
+#the-list tr[draggable="true"] {
+	cursor: grab;
+}
+
+@media screen and (max-width: 782px) {
+	.mlab-media-folder-layout {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0;
+	}
+
+	.mlab-media-folder-layout > .wrap {
+		width: auto;
+	}
+
+	.mlab-media-folder-panel,
+	.mlab-media-folder-panel.is-collapsed {
+		position: static;
+		flex-basis: auto;
+		width: auto;
+		margin-right: 10px;
+	}
+
+	.mlab-media-folder-sidebar {
+		max-height: 240px;
+	}
+
+	.mlab-media-folder-resizer {
+		display: none;
+	}
+
+	.mlab-media-folder-layout .mlab-media-folder-panel.is-collapsed .mlab-media-folder-head > h2 {
+		display: block !important;
+	}
+
+	.mlab-media-folder-more {
+		opacity: 1;
+	}
+}
