@@ -690,10 +690,16 @@
 			transfer.setDragImage( dragBadge( ids.length ), 16, 16 );
 		}
 		$sidebar.addClass( 'is-dragging' );
+		// Core would show "Drop files to upload" for a dragged image.
+		$( document.body ).addClass( 'mlab-media-folder-file-dragging' );
 	}
 
 	function bindFileDrag() {
 		var $doc = $( document );
+
+		$doc.on( 'dragend drop', function () {
+			$( document.body ).removeClass( 'mlab-media-folder-file-dragging' );
+		} );
 
 		$doc.on( 'dragend', function () {
 			state.dragging = null;
@@ -764,8 +770,16 @@
 	 * Switches the grid into core's "Bulk select" mode, as its own button does.
 	 */
 	function enterSelectMode() {
-		if ( ! inSelectMode() ) {
-			$( '.attachments-browser .select-mode-toggle-button' ).first().trigger( 'click' );
+		if ( inSelectMode() ) {
+			return;
+		}
+		var $toggle = $( '.select-mode-toggle-button' ).first();
+		if ( $toggle.length ) {
+			$toggle.trigger( 'click' );
+		}
+		var frame = gridFrame();
+		if ( frame && ! inSelectMode() ) {
+			frame.deactivateMode( 'edit' ).activateMode( 'select' );
 		}
 	}
 
@@ -811,6 +825,15 @@
 		);
 
 		// No native image drag or text selection while sweeping.
+		document.addEventListener(
+			'mousedown',
+			function ( event ) {
+				if ( sweep && ! sweep.started && 0 === event.button ) {
+					event.preventDefault();
+				}
+			},
+			true
+		);
 		document.addEventListener(
 			'dragstart',
 			function ( event ) {
@@ -975,14 +998,14 @@
 			}
 		}
 
-		$( document ).on( 'pointerdown', '.attachments-browser .attachments-wrapper', function ( event ) {
+		$( document ).on( 'pointerdown', '.attachments-browser', function ( event ) {
 			var e = event.originalEvent;
 			if ( sweep || 0 !== e.button || 'touch' === e.pointerType || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey ) {
 				return;
 			}
 			var $target = $( e.target );
 			var list = $( this ).find( 'ul.attachments' )[ 0 ];
-			if ( ! list || $target.closest( 'button, a, input, select, textarea, .load-more-wrapper' ).length || ! gridSelection() ) {
+			if ( ! list || ! $target.closest( list.parentNode ).length || $target.closest( '.media-toolbar, .media-sidebar, .attachment-details, button, a, input, select, textarea, .load-more-wrapper' ).length || ! gridSelection() ) {
 				return;
 			}
 			// The thumbnail itself; the rest of the tile is the gap around it.
@@ -1099,6 +1122,7 @@
 			if ( ! library || ! selection ) {
 				return;
 			}
+			enterSelectMode();
 			if ( allSelected() ) {
 				selection.reset();
 				selectionChanged();
@@ -1128,10 +1152,18 @@
 				}
 				return;
 			}
-			frame.on( 'select:activate select:deactivate', function () {
-				// Core updates its toolbar on the same event; read it afterwards.
+			var later = function () {
+				// Core updates its toolbar on the same change; read it afterwards.
 				window.setTimeout( update, 0 );
-			} );
+			};
+			frame.on( 'select:activate select:deactivate', later );
+			// The list of active modes changes on every switch, whatever the event is called.
+			if ( frame.activeModes && frame.activeModes.on ) {
+				frame.activeModes.on( 'add remove reset', later );
+			}
+			if ( window.MutationObserver && frame.el ) {
+				new window.MutationObserver( later ).observe( frame.el, { attributes: true, attributeFilter: [ 'class' ] } );
+			}
 			var debounce = window._ && window._.debounce;
 			selection.on( 'add remove reset', debounce ? debounce( update, 30 ) : update );
 			gridLibrary().on( 'add remove reset', debounce ? debounce( update, 60 ) : update );

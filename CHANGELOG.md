@@ -3,6 +3,17 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.1.1] - 2026-10-17
+
+### Fixed
+- The bar at the bottom of the grid could stay on screen after "Bulk select" was switched off. It now follows the select mode itself and no longer relies on one event of the media library.
+- "Select all" switches on bulk select if it is off, so the selection is visible.
+- Selecting by dragging no longer depends on the exact markup around the grid, and the browser's own image drag is switched off while a selection is dragged.
+- Dragging files onto a folder no longer shows the "Drop files to upload" notice of the media library.
+
+### Changed
+- Documented which drags select and which move: with "Bulk select" on, a drag that starts on a file selects files; with it off, dragging a file moves it to a folder, and a drag that starts between files switches bulk select on.
+
 ## [2.1.0] - 2026-10-17
 
 ### Added

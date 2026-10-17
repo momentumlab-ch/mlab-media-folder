@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,13 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 2.1.1 =
+* Fix: the bar at the bottom of the grid could stay on screen after "Bulk select" was switched off. It now follows the select mode itself.
+* Fix: "Select all" switches on bulk select if it is off.
+* Fix: selecting by dragging no longer depends on the exact markup of the grid, and the browser's own image drag is switched off while you drag a selection.
+* Fix: dragging files onto a folder no longer shows "Drop files to upload".
+* Note: a drag that starts on a file selects files while "Bulk select" is on. With it off, dragging a file moves it to a folder, and a drag that starts between files switches bulk select on.
 
 = 2.1.0 =
 * New: select several files in the grid by dragging across them with the mouse button held down. Starting on a file or between files switches on bulk select; the page scrolls along at the edges and Esc cancels.
