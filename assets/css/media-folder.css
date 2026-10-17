@@ -464,3 +464,86 @@
 		opacity: 1;
 	}
 }
+
+/* Selecting several files by dragging across the grid. */
+.mlab-media-folder-sweep {
+	position: fixed;
+	z-index: 100000;
+	border: 1px solid var(--wp-admin-theme-color, #2271b1);
+	background: rgba(34, 113, 177, 0.12);
+	pointer-events: none;
+}
+
+body.mlab-media-folder-sweeping,
+body.mlab-media-folder-sweeping * {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+body.mlab-media-folder-sweeping .attachments-browser li.attachment {
+	cursor: crosshair;
+}
+
+/* Bar with the selection and its actions, at the bottom of the screen. */
+.mlab-media-folder-bulkbar {
+	position: sticky;
+	bottom: 0;
+	z-index: 50;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	margin: 16px 0 0;
+	padding: 10px 16px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px 4px 0 0;
+	box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.mlab-media-folder-bulkbar[hidden] {
+	display: none;
+}
+
+.mlab-media-folder-bulkbar-count {
+	font-size: 14px;
+	white-space: nowrap;
+}
+
+.mlab-media-folder-bulkbar-hint {
+	color: #646970;
+	flex: 1 1 200px;
+}
+
+.mlab-media-folder-bulkbar-hint[hidden] {
+	display: none;
+}
+
+.mlab-media-folder-bulkbar-actions {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.mlab-media-folder-bulkbar .button.mlab-media-folder-bulkbar-delete {
+	color: #b32d2e;
+	border-color: #b32d2e;
+}
+
+.mlab-media-folder-bulkbar .button.mlab-media-folder-bulkbar-delete:hover,
+.mlab-media-folder-bulkbar .button.mlab-media-folder-bulkbar-delete:focus {
+	color: #fff;
+	background: #b32d2e;
+	border-color: #b32d2e;
+}
+
+@media screen and (max-width: 782px) {
+	.mlab-media-folder-bulkbar {
+		padding: 10px;
+	}
+
+	.mlab-media-folder-bulkbar .button {
+		min-height: 40px;
+	}
+}

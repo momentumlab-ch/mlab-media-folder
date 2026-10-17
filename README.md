@@ -6,7 +6,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 2.0.0 |
+| Aktuelle Version | 2.1.0 |
 | WordPress | ab 6.5, getestet bis 7.1.3 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
@@ -19,6 +19,8 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 **Ordner verwalten.** Ordner lassen sich anlegen, umbenennen, verschieben (einen Ordner auf einen anderen ziehen) und löschen. Beim Löschen wird nie eine Datei gelöscht: Dateien und Unterordner wandern eine Ebene nach oben.
 
 **Drag & Drop.** Dateien auf einen Ordner ziehen, um sie zu verschieben. Im Mehrfachauswahl-Modus wandern alle ausgewählten Dateien gemeinsam. Als tastaturfreundliche Alternative gibt es in den Anhang-Details ein Feld «Ordner».
+
+**Mehrere Dateien auswählen.** In der Rasteransicht die Maustaste gedrückt halten und über die Dateien ziehen: alle Dateien im Rahmen werden ausgewählt. Das Ziehen darf auf einer Datei oder zwischen den Dateien beginnen und schaltet die Mehrfachauswahl ein. Am oberen und unteren Rand scrollt die Seite mit, mit Esc bricht man ab. Unten erscheint eine Leiste mit der Anzahl, «Alle auswählen» (alle Dateien des Ordners), «Endgültig löschen» bzw. «In den Papierkorb» für die ganze Auswahl und «Abbrechen». Die Auswahl lässt sich auch gemeinsam in einen Ordner ziehen.
 
 **Upload in den geöffneten Ordner.** Neue Uploads landen im Ordner, der gerade offen ist, und erscheinen sofort (mit Fortschritt) im Raster.
 
@@ -123,6 +125,7 @@ phpcs --standard=phpcs.xml.dist .
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 2.1.0 | 2026-10-17 | Mehrfachauswahl durch Ziehen mit der Maus; Leiste mit «Alle auswählen» und Löschen der ganzen Auswahl |
 | 2.0.0 | 2026-10-17 | Neuer Name «MomentumLab Media Folder» (`mlab-media-folder`), Plugin liegt im Hauptordner des Repos, automatischer Umstieg vom alten Plugin |
 | 1.1.6 | 2026-10-17 | Ordner-Zähler stimmen nach dem Löschen; Link zu MomentumLab in der Ordner-Leiste |
 | 1.1.5 | 2026-10-10 | Getestet mit WordPress 7.1.3; Kompatibilität wird in der Update-Liste angezeigt |

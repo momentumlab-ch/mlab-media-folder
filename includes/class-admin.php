@@ -75,6 +75,13 @@ final class Admin {
 				'collapse'        => __( 'Collapse folders', 'mlab-media-folder' ),
 				'expand'          => __( 'Show folders', 'mlab-media-folder' ),
 				'resize'          => __( 'Resize folder panel (double-click to reset)', 'mlab-media-folder' ),
+				'selectionBar'    => __( 'Selected files', 'mlab-media-folder' ),
+				/* translators: %d: number of selected files. */
+				'selected'        => __( '%d selected', 'mlab-media-folder' ),
+				'selectAll'       => __( 'Select all', 'mlab-media-folder' ),
+				'selectNone'      => __( 'Clear selection', 'mlab-media-folder' ),
+				'loadingAll'      => __( 'Loading all files…', 'mlab-media-folder' ),
+				'sweepHint'       => __( 'Hold the mouse button and drag across the files to select several at once.', 'mlab-media-folder' ),
 			),
 		);
 	}

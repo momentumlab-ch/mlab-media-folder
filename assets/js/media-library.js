@@ -730,6 +730,415 @@
 		} );
 	}
 
+	/* ---------- selecting several files (grid mode) ---------- */
+
+	var SWEEP_THRESHOLD = 6;
+	var SCROLL_EDGE = 48;
+
+	function gridFrame() {
+		return wp.media && wp.media.frame && wp.media.frame.isModeActive ? wp.media.frame : null;
+	}
+
+	function gridSelection() {
+		var frame = gridFrame();
+		var s = frame && frame.state && frame.state();
+		return s && s.get ? s.get( 'selection' ) : null;
+	}
+
+	function inSelectMode() {
+		var frame = gridFrame();
+		return !! ( frame && frame.isModeActive( 'select' ) );
+	}
+
+	/**
+	 * Core enables its toolbar buttons on this event, which only its own clicks send.
+	 */
+	function selectionChanged() {
+		var frame = gridFrame();
+		if ( frame ) {
+			frame.trigger( 'selection:toggle' );
+		}
+	}
+
+	/**
+	 * Switches the grid into core's "Bulk select" mode, as its own button does.
+	 */
+	function enterSelectMode() {
+		if ( ! inSelectMode() ) {
+			$( '.attachments-browser .select-mode-toggle-button' ).first().trigger( 'click' );
+		}
+	}
+
+	/**
+	 * Nearest scrolling ancestor of the grid, or null for the window.
+	 *
+	 * @param {HTMLElement} el Start element.
+	 * @return {HTMLElement|null} Scroll container.
+	 */
+	function scrollParent( el ) {
+		for ( el = el && el.parentElement; el && el !== document.body; el = el.parentElement ) {
+			var overflow = window.getComputedStyle( el ).overflowY;
+			if ( ( 'auto' === overflow || 'scroll' === overflow ) && el.scrollHeight > el.clientHeight ) {
+				return el;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Hold the mouse button and drag across the grid to select files.
+	 *
+	 * In "Bulk select" mode the drag can start on a file that is not selected
+	 * yet; dragging a selected file still moves the selection to a folder.
+	 * Starting in the gaps between files works in every mode and switches to
+	 * "Bulk select". Files touched by the frame are added to the selection.
+	 */
+	function bindSweep() {
+		var sweep = null;
+		var suppressClick = false;
+
+		// A sweep ends with a click on the last file; it must not toggle that file.
+		document.addEventListener(
+			'click',
+			function ( event ) {
+				if ( suppressClick ) {
+					suppressClick = false;
+					event.preventDefault();
+					event.stopPropagation();
+				}
+			},
+			true
+		);
+
+		// No native image drag or text selection while sweeping.
+		document.addEventListener(
+			'dragstart',
+			function ( event ) {
+				if ( sweep ) {
+					event.preventDefault();
+					event.stopPropagation();
+				}
+			},
+			true
+		);
+
+		function toList( clientX, clientY ) {
+			var rect = sweep.list.getBoundingClientRect();
+			return { x: clientX - rect.left, y: clientY - rect.top };
+		}
+
+		function update() {
+			var list = sweep.list.getBoundingClientRect();
+			var current = toList( sweep.clientX, sweep.clientY );
+			var left = Math.min( sweep.start.x, current.x );
+			var top = Math.min( sweep.start.y, current.y );
+			var right = Math.max( sweep.start.x, current.x );
+			var bottom = Math.max( sweep.start.y, current.y );
+
+			sweep.$box.css( {
+				left: list.left + left,
+				top: list.top + top,
+				width: right - left,
+				height: bottom - top,
+			} );
+
+			var selection = gridSelection();
+			if ( ! selection ) {
+				return;
+			}
+			$( sweep.list )
+				.children( 'li.attachment' )
+				.each( function () {
+					var r = this.getBoundingClientRect();
+					var id = parseInt( this.getAttribute( 'data-id' ), 10 );
+					var model = id ? wp.media.attachment( id ) : null;
+					if ( ! model ) {
+						return;
+					}
+					var hit = r.right - list.left > left && r.left - list.left < right && r.bottom - list.top > top && r.top - list.top < bottom;
+					if ( hit && ! selection.get( id ) ) {
+						selection.add( model );
+						sweep.added[ id ] = true;
+					} else if ( ! hit && sweep.added[ id ] ) {
+						selection.remove( model );
+						delete sweep.added[ id ];
+					}
+				} );
+		}
+
+		function autoScroll() {
+			if ( ! sweep || ! sweep.started ) {
+				return;
+			}
+			var box = sweep.scroller ? sweep.scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+			var step = 0;
+			if ( sweep.clientY < box.top + SCROLL_EDGE ) {
+				step = -Math.ceil( ( box.top + SCROLL_EDGE - sweep.clientY ) / 3 );
+			} else if ( sweep.clientY > box.bottom - SCROLL_EDGE ) {
+				step = Math.ceil( ( sweep.clientY - box.bottom + SCROLL_EDGE ) / 3 );
+			}
+			if ( step ) {
+				var pos = sweep.scroller ? sweep.scroller.scrollTop : window.pageYOffset;
+				// Re-rendering the grid can throw the page back to the top; carry on from where we were.
+				if ( null !== sweep.expected && Math.abs( pos - sweep.expected ) > 1 ) {
+					pos = sweep.expected;
+				}
+				pos = Math.max( 0, pos + step );
+				if ( sweep.scroller ) {
+					sweep.scroller.scrollTop = pos;
+				} else {
+					window.scrollTo( window.pageXOffset, pos );
+				}
+				sweep.expected = pos;
+				update();
+			} else {
+				sweep.expected = null;
+			}
+			sweep.frame = window.requestAnimationFrame( autoScroll );
+		}
+
+		function finish( cancel ) {
+			if ( ! sweep ) {
+				return;
+			}
+			window.removeEventListener( 'pointermove', onMove );
+			window.removeEventListener( 'pointerup', onUp );
+			window.removeEventListener( 'pointercancel', onCancel );
+			window.removeEventListener( 'keydown', onKey );
+			window.removeEventListener( 'wheel', onWheel );
+			window.cancelAnimationFrame( sweep.frame );
+			if ( sweep.started ) {
+				sweep.$box.remove();
+				$( document.body ).removeClass( 'mlab-media-folder-sweeping' );
+				suppressClick = true;
+				// Only the click that ends this sweep is swallowed.
+				window.setTimeout( function () {
+					suppressClick = false;
+				}, 0 );
+				if ( cancel ) {
+					var selection = gridSelection();
+					Object.keys( sweep.added ).forEach( function ( id ) {
+						if ( selection ) {
+							selection.remove( selection.get( parseInt( id, 10 ) ) );
+						}
+					} );
+				}
+				selectionChanged();
+			}
+			sweep = null;
+		}
+
+		function onMove( event ) {
+			if ( ! sweep || event.pointerId !== sweep.pointerId ) {
+				return;
+			}
+			sweep.clientX = event.clientX;
+			sweep.clientY = event.clientY;
+			if ( ! sweep.started ) {
+				if ( Math.abs( event.clientX - sweep.downX ) < SWEEP_THRESHOLD && Math.abs( event.clientY - sweep.downY ) < SWEEP_THRESHOLD ) {
+					return;
+				}
+				sweep.started = true;
+				enterSelectMode();
+				sweep.$box = $( '<div class="mlab-media-folder-sweep" aria-hidden="true"></div>' ).appendTo( document.body );
+				$( document.body ).addClass( 'mlab-media-folder-sweeping' );
+				if ( window.getSelection ) {
+					window.getSelection().removeAllRanges();
+				}
+				sweep.frame = window.requestAnimationFrame( autoScroll );
+			}
+			event.preventDefault();
+			update();
+		}
+
+		function onUp( event ) {
+			if ( sweep && event.pointerId === sweep.pointerId ) {
+				finish( false );
+			}
+		}
+
+		function onCancel( event ) {
+			if ( sweep && event.pointerId === sweep.pointerId ) {
+				finish( true );
+			}
+		}
+
+		function onWheel() {
+			if ( sweep ) {
+				sweep.expected = null;
+			}
+		}
+
+		function onKey( event ) {
+			if ( 'Escape' === event.key ) {
+				finish( true );
+			}
+		}
+
+		$( document ).on( 'pointerdown', '.attachments-browser .attachments-wrapper', function ( event ) {
+			var e = event.originalEvent;
+			if ( sweep || 0 !== e.button || 'touch' === e.pointerType || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey ) {
+				return;
+			}
+			var $target = $( e.target );
+			var list = $( this ).find( 'ul.attachments' )[ 0 ];
+			if ( ! list || $target.closest( 'button, a, input, select, textarea, .load-more-wrapper' ).length || ! gridSelection() ) {
+				return;
+			}
+			// The thumbnail itself; the rest of the tile is the gap around it.
+			var $tile = $target.closest( '.attachment-preview' ).closest( 'li.attachment' );
+			if ( $tile.length ) {
+				// Outside "Bulk select" a file drag moves it to a folder.
+				if ( ! inSelectMode() || gridSelection().get( parseInt( $tile.attr( 'data-id' ), 10 ) ) ) {
+					return;
+				}
+				$tile.removeAttr( 'draggable' );
+			}
+
+			sweep = {
+				pointerId: e.pointerId,
+				list: list,
+				scroller: scrollParent( list ),
+				downX: e.clientX,
+				downY: e.clientY,
+				clientX: e.clientX,
+				clientY: e.clientY,
+				started: false,
+				expected: null,
+				added: {},
+			};
+			sweep.start = toList( e.clientX, e.clientY );
+			window.addEventListener( 'pointermove', onMove );
+			window.addEventListener( 'pointerup', onUp );
+			window.addEventListener( 'pointercancel', onCancel );
+			window.addEventListener( 'keydown', onKey );
+			window.addEventListener( 'wheel', onWheel, { passive: true } );
+		} );
+
+		// While a sweep may start, the file under the pointer must not become draggable.
+		$( document ).on( 'mousedown', '.attachments-browser li.attachment', function () {
+			if ( sweep ) {
+				this.removeAttribute( 'draggable' );
+			}
+		} );
+	}
+
+	/**
+	 * Bar at the bottom of the screen while "Bulk select" is on: number of
+	 * selected files, select all, delete and cancel. The delete buttons run
+	 * core's own bulk actions (with core's confirmation), so trash settings
+	 * and permissions behave exactly as in the toolbar at the top.
+	 *
+	 * @param {jQuery} $wrap Content area of the media library.
+	 */
+	function bindSelectionBar( $wrap ) {
+		var $bar = $( '<div class="mlab-media-folder-bulkbar" role="region" hidden></div>' ).attr( 'aria-label', i18n.selectionBar );
+		var $count = $( '<strong class="mlab-media-folder-bulkbar-count" aria-live="polite"></strong>' );
+		var $hint = $( '<span class="mlab-media-folder-bulkbar-hint"></span>' ).text( i18n.sweepHint );
+		var $all = $( '<button type="button" class="button"></button>' );
+		var $actions = $( '<span class="mlab-media-folder-bulkbar-actions"></span>' );
+		var $cancel = $( '<button type="button" class="button"></button>' ).text( i18n.cancel );
+		var loadingAll = false;
+
+		$bar.append( $count, $hint, $all, $actions, $cancel ).appendTo( $wrap );
+
+		function coreButtons() {
+			return $( '.attachments-browser .media-toolbar' )
+				.find( '.delete-selected-button, .delete-selected-permanently-button' )
+				.filter( function () {
+					return ! $( this ).hasClass( 'hidden' );
+				} );
+		}
+
+		function allSelected() {
+			var library = gridLibrary();
+			var selection = gridSelection();
+			if ( ! library || ! selection || ! library.length || ( library.hasMore && library.hasMore() ) ) {
+				return false;
+			}
+			return library.every( function ( model ) {
+				return !! selection.get( model.id );
+			} );
+		}
+
+		function update() {
+			var selection = gridSelection();
+			var count = selection ? selection.length : 0;
+			$bar.prop( 'hidden', ! inSelectMode() );
+			$( document.body ).toggleClass( 'mlab-media-folder-has-bulkbar', inSelectMode() );
+			$count.text( sprintf( i18n.selected, count ) );
+			$hint.prop( 'hidden', count > 0 );
+			$all.text( loadingAll ? i18n.loadingAll : allSelected() ? i18n.selectNone : i18n.selectAll ).prop( 'disabled', loadingAll );
+
+			$actions.empty();
+			coreButtons().each( function () {
+				var core = this;
+				$( '<button type="button" class="button"></button>' )
+					.addClass( $( core ).hasClass( 'button-primary' ) ? 'button-primary' : 'mlab-media-folder-bulkbar-delete' )
+					.text( $.trim( $( core ).text() ) )
+					.prop( 'disabled', ! count )
+					.on( 'click', function () {
+						$( core ).trigger( 'click' );
+					} )
+					.appendTo( $actions );
+			} );
+		}
+
+		function loadAll( library, guard ) {
+			if ( library.hasMore && library.hasMore() && guard < 500 ) {
+				return $.when( library.more() ).then( function () {
+					return loadAll( library, guard + 1 );
+				} );
+			}
+			return $.Deferred().resolve().promise();
+		}
+
+		$all.on( 'click', function () {
+			var library = gridLibrary();
+			var selection = gridSelection();
+			if ( ! library || ! selection ) {
+				return;
+			}
+			if ( allSelected() ) {
+				selection.reset();
+				selectionChanged();
+				return;
+			}
+			loadingAll = true;
+			update();
+			loadAll( library, 0 ).always( function () {
+				loadingAll = false;
+				selection.add( library.models );
+				selectionChanged();
+				update();
+			} );
+		} );
+
+		$cancel.on( 'click', function () {
+			$( '.attachments-browser .select-mode-toggle-button' ).first().trigger( 'click' );
+		} );
+
+		var tries = 0;
+		( function waitForFrame() {
+			var frame = gridFrame();
+			var selection = gridSelection();
+			if ( ! frame || ! selection ) {
+				if ( tries++ < 100 ) {
+					window.setTimeout( waitForFrame, 50 );
+				}
+				return;
+			}
+			frame.on( 'select:activate select:deactivate', function () {
+				// Core updates its toolbar on the same event; read it afterwards.
+				window.setTimeout( update, 0 );
+			} );
+			var debounce = window._ && window._.debounce;
+			selection.on( 'add remove reset', debounce ? debounce( update, 30 ) : update );
+			gridLibrary().on( 'add remove reset', debounce ? debounce( update, 60 ) : update );
+			update();
+		} )();
+	}
+
 	/* ---------- boot ---------- */
 
 	function mount() {
@@ -744,6 +1153,10 @@
 		bindSidebar();
 		bindPanel();
 		bindFileDrag();
+		if ( 'grid' === data.mode ) {
+			bindSweep();
+			bindSelectionBar( $wrap );
+		}
 
 		$( document ).on( 'mlab-media-folder:changed', function () {
 			reload();
