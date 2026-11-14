@@ -68,6 +68,16 @@
 				props: { mlab_folder: 'unattached' },
 				priority: 4,
 			};
+			filters.duplicate = {
+				text: _.escape( i18n.duplicate ),
+				props: { mlab_folder: 'duplicate' },
+				priority: 5,
+			};
+			filters.missing = {
+				text: _.escape( i18n.missing ),
+				props: { mlab_folder: 'missing' },
+				priority: 6,
+			};
 			_.each( data.folders, function ( folder, index ) {
 				filters[ 'folder-' + folder.id ] = {
 					// AttachmentFilters renders option text as HTML, so escape it.

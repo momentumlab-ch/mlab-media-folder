@@ -85,6 +85,16 @@ final class Admin {
 				'todo'            => __( 'To do', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
+				'duplicate'       => __( 'Duplicates', 'mlab-media-folder' ),
+				'missing'         => __( 'File missing', 'mlab-media-folder' ),
+				/* translators: %d: number of entries. */
+				'nextDuplicate'   => __( 'Check %d entries that share a file with another entry.', 'mlab-media-folder' ),
+				/* translators: %d: number of entries. */
+				'nextMissing'     => __( 'Fix %d entries whose file is missing.', 'mlab-media-folder' ),
+				'foundDuplicate'  => __( 'Entries that point to the same file in the uploads folder. The library lists entries, not files, so the same image shows up more than once.', 'mlab-media-folder' ),
+				'doDuplicate'     => __( 'Open each entry and check "Origin" to see where it is used. Keep one, then delete the others. A file that another entry still uses is never removed from the server.', 'mlab-media-folder' ),
+				'foundMissing'    => __( 'Entries in the library whose file is no longer in the uploads folder. They show a broken preview. Files stored outside this server are not checked.', 'mlab-media-folder' ),
+				'doMissing'       => __( 'Upload the file again and replace the entry, or delete the entry if you do not need it.', 'mlab-media-folder' ),
 				'nextStep'        => __( 'Next step', 'mlab-media-folder' ),
 				'open'            => __( 'Open', 'mlab-media-folder' ),
 				'allDone'         => __( 'Everything is in order. New uploads show up here when they need attention.', 'mlab-media-folder' ),
@@ -245,6 +255,7 @@ final class Admin {
 			: esc_html__( 'Unfiled', 'mlab-media-folder' );
 
 		$todo = array();
+		$todo = array_merge( $todo, $this->health_rows( $post, $rows ) );
 		if ( ! $path ) {
 			$todo[] = esc_html__( 'Choose a folder', 'mlab-media-folder' );
 		}
@@ -264,6 +275,46 @@ final class Admin {
 			'html'  => $html,
 		);
 		return $fields;
+	}
+
+	/**
+	 * Duplicate and missing-file notes for one entry. Adds the other entries
+	 * that share the file to the origin rows and returns the open tasks.
+	 *
+	 * @param \WP_Post $post Attachment.
+	 * @param array    $rows  Origin rows (HTML), extended by reference.
+	 * @return string[] Open tasks (HTML, escaped).
+	 */
+	private function health_rows( $post, array &$rows ) {
+		$todo   = array();
+		$health = Health::scan();
+
+		if ( in_array( (int) $post->ID, $health['duplicate'], true ) ) {
+			$others = array_filter( array_map( 'get_post', Health::others_sharing_file( $post->ID ) ) );
+			if ( $others ) {
+				$rows[] = esc_html__( 'Same file as', 'mlab-media-folder' ) . ': ' . implode( ', ', array_map( array( $this, 'attachment_link' ), $others ) );
+			}
+			$todo[] = esc_html__( 'Duplicate: keep one entry', 'mlab-media-folder' );
+		}
+		if ( in_array( (int) $post->ID, $health['missing'], true ) ) {
+			$todo[] = esc_html__( 'File is missing on the server', 'mlab-media-folder' );
+		}
+		return $todo;
+	}
+
+	/**
+	 * Escaped link to the edit screen of an attachment.
+	 *
+	 * @param \WP_Post $post Attachment.
+	 * @return string
+	 */
+	private function attachment_link( $post ) {
+		$title = get_the_title( $post );
+		$title = '' === $title ? '#' . $post->ID : $title . ' (#' . $post->ID . ')';
+		$url   = current_user_can( 'edit_post', $post->ID ) ? get_edit_post_link( $post->ID, 'raw' ) : '';
+		return $url
+			? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $title ) . '</a>'
+			: esc_html( $title );
 	}
 
 	/**

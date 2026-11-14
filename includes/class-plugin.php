@@ -47,6 +47,7 @@ final class Plugin {
 		add_action( 'init', array( $this, 'maybe_upgrade' ), 20 );
 		add_action( 'rest_api_init', array( new Rest_Controller(), 'register_routes' ) );
 
+		( new Health() )->hooks();
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
 

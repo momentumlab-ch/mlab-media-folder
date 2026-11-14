@@ -32,7 +32,9 @@
 	TASKS[ data.unfiled ] = { total: 'unfiled', label: 'unfiled', icon: 'dashicons-portfolio', next: 'nextUnfiled', found: 'foundUnfiled', todo: 'doUnfiled' };
 	TASKS.noalt = { total: 'noalt', label: 'noAlt', icon: 'dashicons-universal-access-alt', next: 'nextNoAlt', found: 'foundNoAlt', todo: 'doNoAlt' };
 	TASKS.unattached = { total: 'unattached', label: 'unattached', icon: 'dashicons-admin-page', next: 'nextUnattached', found: 'foundUnattached', todo: 'doUnattached' };
-	var TASK_ORDER = [ data.unfiled, 'noalt', 'unattached' ];
+	TASKS.duplicate = { total: 'duplicate', label: 'duplicate', icon: 'dashicons-images-alt2', next: 'nextDuplicate', found: 'foundDuplicate', todo: 'doDuplicate' };
+	TASKS.missing = { total: 'missing', label: 'missing', icon: 'dashicons-warning', next: 'nextMissing', found: 'foundMissing', todo: 'doMissing' };
+	var TASK_ORDER = [ data.unfiled, 'noalt', 'unattached', 'duplicate', 'missing' ];
 
 	var state = {
 		folders: data.folders || [],

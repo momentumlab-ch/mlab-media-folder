@@ -37,9 +37,19 @@ final class Query {
 	const UNATTACHED = 'unattached';
 
 	/**
+	 * Value for entries that share their file with another entry.
+	 */
+	const DUPLICATE = 'duplicate';
+
+	/**
+	 * Value for entries whose file is gone from the uploads folder.
+	 */
+	const MISSING = 'missing';
+
+	/**
 	 * Views that list files needing attention instead of a folder.
 	 */
-	const TASKS = array( self::UNFILED, self::NO_ALT, self::UNATTACHED );
+	const TASKS = array( self::UNFILED, self::NO_ALT, self::UNATTACHED, self::DUPLICATE, self::MISSING );
 
 	/**
 	 * Registers hooks.
@@ -102,6 +112,12 @@ final class Query {
 	public static function apply( array $args, $folder ) {
 		if ( self::UNATTACHED === $folder ) {
 			$args['post_parent'] = 0;
+			return $args;
+		}
+
+		if ( self::DUPLICATE === $folder || self::MISSING === $folder ) {
+			$ids               = Health::scan()[ self::DUPLICATE === $folder ? 'duplicate' : 'missing' ];
+			$args['post__in'] = $ids ? $ids : array( 0 );
 			return $args;
 		}
 
@@ -188,10 +204,11 @@ final class Query {
 				'tax_query'      => $query->get( 'tax_query' ),
 				'meta_query'     => $query->get( 'meta_query' ),
 				'post_mime_type' => $query->get( 'post_mime_type' ),
+				'post__in'       => $query->get( 'post__in' ),
 			),
 			$folder
 		);
-		foreach ( array( 'tax_query', 'meta_query', 'post_mime_type', 'post_parent' ) as $key ) {
+		foreach ( array( 'tax_query', 'meta_query', 'post_mime_type', 'post_parent', 'post__in' ) as $key ) {
 			if ( isset( $args[ $key ] ) && $args[ $key ] !== $query->get( $key ) ) {
 				$query->set( $key, $args[ $key ] );
 			}
