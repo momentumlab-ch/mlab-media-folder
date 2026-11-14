@@ -43,6 +43,7 @@ Developer hooks
 * New: "Duplicates" under "To do": entries that point to the same file. The media library lists entries, not files, so such a file shows up more than once. "Origin" names the other entries that share the file.
 * New: "File missing" under "To do": entries whose file is no longer in the uploads folder.
 * New: deleting an entry no longer removes a file that another entry still uses.
+* Change: counters count files on the server, not database entries. Entries that share a file count once; entries without a file are left out.
 
 = 2.2.0 =
 * New: a workflow in the folder panel. "Next step" points to the first thing that needs doing; the "To do" list shows unfiled files, images without alternative text and files not uploaded to a page, each with a count.

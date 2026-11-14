@@ -92,5 +92,6 @@ return array(
 		'Same file as' => 'Gleiche Datei wie',
 		'Duplicate: keep one entry' => 'Doppelt: einen Eintrag behalten',
 		'File is missing on the server' => 'Datei fehlt auf dem Server',
+		'%1$d files on the server, %2$d entries in the library. Counters count files: entries that share a file count once, entries without a file are left out.' => '%1$d Dateien auf dem Server, %2$d Einträge in der Mediathek. Die Zähler zählen Dateien: Einträge mit derselben Datei zählen einmal, Einträge ohne Datei fehlen.',
 	),
 );

@@ -85,6 +85,8 @@ final class Admin {
 				'todo'            => __( 'To do', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
+				/* translators: 1: number of files on the server, 2: number of entries in the library. */
+				'countNote'       => __( '%1$d files on the server, %2$d entries in the library. Counters count files: entries that share a file count once, entries without a file are left out.', 'mlab-media-folder' ),
 				'duplicate'       => __( 'Duplicates', 'mlab-media-folder' ),
 				'missing'         => __( 'File missing', 'mlab-media-folder' ),
 				/* translators: %d: number of entries. */

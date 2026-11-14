@@ -79,28 +79,55 @@ final class Folders {
 	}
 
 	/**
-	 * Number of files per folder, counting only attachments that still exist
-	 * and are not in the trash. The stored term count is not used because it
-	 * also counts trashed files and leftovers of files deleted outside
-	 * WordPress, so a folder could show files it no longer has.
+	 * SQL pieces shared by all counters. The library lists database entries,
+	 * but the counters count physical files: an entry whose file is gone from
+	 * the server is left out, and several entries that point to the same file
+	 * count once. Entries in the trash never count.
+	 *
+	 * @return array{posts:string, file_join:string, where:string, file:string}
+	 */
+	private static function file_sql() {
+		global $wpdb;
+
+		$where = "p.post_type = 'attachment' AND p.post_status <> 'trash'";
+		$gone  = array_map( 'intval', Health::scan()['missing'] );
+		if ( $gone ) {
+			$where .= ' AND p.ID NOT IN (' . implode( ',', $gone ) . ')';
+		}
+
+		return array(
+			'posts'     => "{$wpdb->posts} p",
+			'file_join' => "LEFT JOIN {$wpdb->postmeta} f ON f.post_id = p.ID AND f.meta_key = '_wp_attached_file'",
+			'where'     => $where,
+			// Entries without a file name (rare) count as one file each.
+			'file'      => "COALESCE( f.meta_value, CONCAT( '#', p.ID ) )",
+		);
+	}
+
+	/**
+	 * Number of physical files per folder (see file_sql()).
 	 *
 	 * @return array<int, int> Term ID => number of files.
 	 */
 	public static function counts() {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Aggregate count, no API equivalent; one query per request.
+		$q = self::file_sql();
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; pieces come from file_sql().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT tt.term_id, COUNT(DISTINCT p.ID) AS files
+				"SELECT tt.term_id, COUNT(DISTINCT {$q['file']}) AS files
 				FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
-				INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
-				WHERE tt.taxonomy = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+				INNER JOIN {$q['posts']} ON p.ID = tr.object_id
+				{$q['file_join']}
+				WHERE tt.taxonomy = %s AND {$q['where']}
 				GROUP BY tt.term_id",
 				Taxonomy::NAME
 			)
 		);
+		// phpcs:enable
 
 		$counts = array();
 		foreach ( (array) $rows as $row ) {
@@ -110,54 +137,52 @@ final class Folders {
 	}
 
 	/**
-	 * Counts for the virtual entries: all files and the three task views
-	 * (unfiled, images without alternative text, not attached to a page).
+	 * Number of physical files that match extra SQL conditions.
 	 *
-	 * @return array{all:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
+	 * @param string $join  Extra JOIN clauses (constant SQL).
+	 * @param string $where Extra conditions, starting with AND (constant SQL).
+	 * @return int
+	 */
+	private static function count_files( $join = '', $where = '' ) {
+		global $wpdb;
+
+		$q = self::file_sql();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; all pieces are constant SQL.
+		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT {$q['file']}) FROM {$q['posts']} {$q['file_join']} {$join} WHERE {$q['where']} {$where}" );
+	}
+
+	/**
+	 * Counts for the virtual entries: all files and the task views. The
+	 * "duplicate" and "missing" views are about entries, so they count entries.
+	 *
+	 * @return array{all:int, entries:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
 	 */
 	public static function totals() {
 		global $wpdb;
 
-		$all = 0;
+		$entries = 0;
 		foreach ( (array) wp_count_attachments() as $mime => $count ) {
 			if ( 'trash' !== $mime ) {
-				$all += (int) $count;
+				$entries += (int) $count;
 			}
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Aggregate count, no API equivalent; cached by the caller's request only.
-		$filed = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT tr.object_id)
-				FROM {$wpdb->term_relationships} tr
-				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
-				INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
-				WHERE tt.taxonomy = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'",
-				Taxonomy::NAME
-			)
-		);
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery -- Aggregate counts, no API equivalent; one query per request.
-		$no_alt = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT p.ID)
-			FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_wp_attachment_image_alt'
-			WHERE p.post_type = 'attachment' AND p.post_status <> 'trash' AND p.post_mime_type LIKE 'image/%'
-			AND ( m.meta_id IS NULL OR m.meta_value = '' )"
-		);
-		$unattached = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->posts}
-			WHERE post_type = 'attachment' AND post_status <> 'trash' AND post_parent = 0"
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+		$in_folder = "AND NOT EXISTS (
+			SELECT 1 FROM {$wpdb->term_relationships} tr
+			INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+			WHERE tr.object_id = p.ID AND tt.taxonomy = '" . Taxonomy::NAME . "' )";
+		$alt_join  = "LEFT JOIN {$wpdb->postmeta} a ON a.post_id = p.ID AND a.meta_key = '_wp_attachment_image_alt'";
+		$no_alt    = "AND p.post_mime_type LIKE 'image/%' AND ( a.meta_id IS NULL OR a.meta_value = '' )";
 
 		$health = Health::scan();
 
 		return array(
-			'all'        => $all,
-			'unfiled'    => max( 0, $all - $filed ),
-			'noalt'      => $no_alt,
-			'unattached' => $unattached,
+			'all'        => self::count_files(),
+			'entries'    => $entries,
+			'unfiled'    => self::count_files( '', $in_folder ),
+			'noalt'      => self::count_files( $alt_join, $no_alt ),
+			'unattached' => self::count_files( '', 'AND p.post_parent = 0' ),
 			'duplicate'  => count( $health['duplicate'] ),
 			'missing'    => count( $health['missing'] ),
 		);

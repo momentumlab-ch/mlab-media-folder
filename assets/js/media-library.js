@@ -526,6 +526,7 @@
 	function makeRow( options ) {
 		var $row = $( '<div class="mlab-media-folder-row"></div>' )
 			.attr( 'data-target', options.target )
+			.attr( 'title', options.title || null )
 			.toggleClass( 'is-current', options.current );
 
 		var $toggle = $( '<button type="button" class="mlab-media-folder-toggle"></button>' ).attr( 'aria-label', i18n.toggle );
@@ -656,7 +657,7 @@
 
 		var $library = $( '<ul class="mlab-media-folder-fixed"></ul>' );
 		$( '<li class="mlab-media-folder-item"></li>' )
-			.append( makeRow( { target: '', label: i18n.all, count: state.totals.all, icon: 'dashicons-admin-media', current: '' === state.current } ) )
+			.append( makeRow( { target: '', label: i18n.all, count: state.totals.all, icon: 'dashicons-admin-media', current: '' === state.current, title: sprintf( i18n.countNote, state.totals.all, state.totals.entries ) } ) )
 			.appendTo( $library );
 		$tree.append( section( i18n.library ), $library );
 
