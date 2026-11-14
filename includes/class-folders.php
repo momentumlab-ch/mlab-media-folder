@@ -79,50 +79,40 @@ final class Folders {
 	}
 
 	/**
-	 * SQL pieces shared by all counters. The library lists database entries,
-	 * but the counters count physical files: an entry whose file is gone from
-	 * the server is left out, and several entries that point to the same file
-	 * count once. Entries in the trash never count.
+	 * SQL condition for the entries the media library lists: not in the
+	 * trash, file present on the server, and one entry per file (see
+	 * Health::hidden_ids()). The counters use the same rule, so a counter
+	 * always equals the number of images shown.
 	 *
-	 * @return array{posts:string, file_join:string, where:string, file:string}
+	 * @return string
 	 */
-	private static function file_sql() {
-		global $wpdb;
-
-		$where = "p.post_type = 'attachment' AND p.post_status <> 'trash'";
-		$gone  = array_map( 'intval', Health::scan()['missing'] );
-		if ( $gone ) {
-			$where .= ' AND p.ID NOT IN (' . implode( ',', $gone ) . ')';
+	private static function visible_sql() {
+		$where  = "p.post_type = 'attachment' AND p.post_status <> 'trash'";
+		$hidden = array_map( 'intval', Health::hidden_ids() );
+		if ( $hidden ) {
+			$where .= ' AND p.ID NOT IN (' . implode( ',', $hidden ) . ')';
 		}
-
-		return array(
-			'posts'     => "{$wpdb->posts} p",
-			'file_join' => "LEFT JOIN {$wpdb->postmeta} f ON f.post_id = p.ID AND f.meta_key = '_wp_attached_file'",
-			'where'     => $where,
-			// Entries without a file name (rare) count as one file each.
-			'file'      => "COALESCE( f.meta_value, CONCAT( '#', p.ID ) )",
-		);
+		return $where;
 	}
 
 	/**
-	 * Number of physical files per folder (see file_sql()).
+	 * Number of images shown per folder.
 	 *
-	 * @return array<int, int> Term ID => number of files.
+	 * @return array<int, int> Term ID => number of images.
 	 */
 	public static function counts() {
 		global $wpdb;
 
-		$q = self::file_sql();
+		$where = self::visible_sql();
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; pieces come from file_sql().
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; the condition comes from visible_sql().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT tt.term_id, COUNT(DISTINCT {$q['file']}) AS files
+				"SELECT tt.term_id, COUNT(DISTINCT p.ID) AS files
 				FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
-				INNER JOIN {$q['posts']} ON p.ID = tr.object_id
-				{$q['file_join']}
-				WHERE tt.taxonomy = %s AND {$q['where']}
+				INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
+				WHERE tt.taxonomy = %s AND {$where}
 				GROUP BY tt.term_id",
 				Taxonomy::NAME
 			)
@@ -137,24 +127,25 @@ final class Folders {
 	}
 
 	/**
-	 * Number of physical files that match extra SQL conditions.
+	 * Number of shown images that match extra SQL conditions.
 	 *
 	 * @param string $join  Extra JOIN clauses (constant SQL).
 	 * @param string $where Extra conditions, starting with AND (constant SQL).
 	 * @return int
 	 */
-	private static function count_files( $join = '', $where = '' ) {
+	private static function count_visible( $join = '', $where = '' ) {
 		global $wpdb;
 
-		$q = self::file_sql();
+		$visible = self::visible_sql();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; all pieces are constant SQL.
-		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT {$q['file']}) FROM {$q['posts']} {$q['file_join']} {$join} WHERE {$q['where']} {$where}" );
+		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p {$join} WHERE {$visible} {$where}" );
 	}
 
 	/**
-	 * Counts for the virtual entries: all files and the task views. The
-	 * "duplicate" and "missing" views are about entries, so they count entries.
+	 * Counts for the virtual entries: all images and the task views. The
+	 * "duplicate" and "missing" views list the entries the library hides, so
+	 * they count those entries.
 	 *
 	 * @return array{all:int, entries:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
 	 */
@@ -178,11 +169,11 @@ final class Folders {
 		$health = Health::scan();
 
 		return array(
-			'all'        => self::count_files(),
+			'all'        => self::count_visible(),
 			'entries'    => $entries,
-			'unfiled'    => self::count_files( '', $in_folder ),
-			'noalt'      => self::count_files( $alt_join, $no_alt ),
-			'unattached' => self::count_files( '', 'AND p.post_parent = 0' ),
+			'unfiled'    => self::count_visible( '', $in_folder ),
+			'noalt'      => self::count_visible( $alt_join, $no_alt ),
+			'unattached' => self::count_visible( '', 'AND p.post_parent = 0' ),
 			'duplicate'  => count( $health['duplicate'] ),
 			'missing'    => count( $health['missing'] ),
 		);

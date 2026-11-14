@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,11 +39,13 @@ Developer hooks
 
 == Changelog ==
 
+= 2.3.1 =
+* Change: the media library shows each file once. Entries without a file are hidden, and of several entries for one file only the first is listed. The counters equal the images shown. "Duplicates" and "File missing" list the hidden entries. The editor's media dialogs still list every entry.
+
 = 2.3.0 =
 * New: "Duplicates" under "To do": entries that point to the same file. The media library lists entries, not files, so such a file shows up more than once. "Origin" names the other entries that share the file.
 * New: "File missing" under "To do": entries whose file is no longer in the uploads folder.
 * New: deleting an entry no longer removes a file that another entry still uses.
-* Change: counters count files on the server, not database entries. Entries that share a file count once; entries without a file are left out.
 
 = 2.2.0 =
 * New: a workflow in the folder panel. "Next step" points to the first thing that needs doing; the "To do" list shows unfiled files, images without alternative text and files not uploaded to a page, each with a count.

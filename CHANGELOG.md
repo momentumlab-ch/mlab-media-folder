@@ -3,15 +3,22 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.3.1] - 2026-11-14
+
+### Changed
+- The media library screen (grid and list) shows each file once. Entries whose file is missing on the server are hidden, and when several entries point to the same file only the entry with the lowest ID is listed. The folder counters, "All files" and the "To do" views "Unfiled", "No alt text" and "Not in a page" count exactly these images, so a counter always equals the images shown. The views "Duplicates" and "File missing" still list the hidden entries so they can be cleaned up. The tooltip of "All files" shows both numbers.
+- The media dialogs of the editor are not affected: they keep listing every entry, so a post can still open any entry it uses. Only requests with the new query key `mlab_clean` (sent by the library screen) hide entries.
+- `Folders::totals()` also returns `entries` (the number of library entries).
+
+### Fixed
+- Moving the kept entry of a duplicate group to the trash (or restoring it) updated the hidden entries only after up to an hour. The scan is now cleared on trash and restore.
+
 ## [2.3.0] - 2026-11-14
 
 ### Added
 - "Duplicates" view under "To do": entries (attachments) that point to the same file in the uploads folder. The media library lists database entries, not files, so the same image appears once per entry. The "Origin" field names the other entries that share the file.
 - "File missing" view under "To do": entries whose file is no longer in the uploads folder. Only the newest 5000 entries are checked (filter `mlab_media_folder_missing_scan_limit`); files stored outside the server are skipped (filter `mlab_media_folder_check_missing_files` turns the check off). The scan is cached for one hour and cleared when a file is added or deleted.
 - Query values `duplicate` and `missing`; the media dialogs offer both in the folder filter.
-
-### Changed
-- The counters (folders, "All files" and the "To do" views "Unfiled", "No alt text", "Not in a page") now count physical files, not database entries. Several entries that point to the same file count once, and entries whose file is missing on the server are left out. "Duplicates" and "File missing" are about entries and count entries. The tooltip of "All files" shows both numbers. `Folders::totals()` also returns `entries` (the number of library entries).
 
 ### Fixed
 - Deleting an entry also deleted the file on disk, even when another entry still used it, which left the other entry with a broken image. The file is now kept while another entry points to it.

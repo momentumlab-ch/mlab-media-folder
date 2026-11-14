@@ -1556,13 +1556,17 @@
 			}
 		} );
 
-		// Grid mode: apply a folder from the URL once the media frame exists.
-		if ( 'grid' === data.mode && state.current ) {
+		// Grid mode: once the media frame exists, list one entry per file (the
+		// editor dialogs do not send this flag) and apply a folder from the URL.
+		if ( 'grid' === data.mode ) {
 			var tries = 0;
 			( function waitForFrame() {
 				var library = gridLibrary();
 				if ( library ) {
-					setLibraryFolder( library, state.current );
+					library.props.set( data.cleanParam, 1 );
+					if ( state.current ) {
+						setLibraryFolder( library, state.current );
+					}
 				} else if ( tries++ < 100 ) {
 					window.setTimeout( waitForFrame, 50 );
 				}

@@ -22,6 +22,11 @@ final class Query {
 	const PARAM = 'mlab_folder';
 
 	/**
+	 * Request key of the media library screen: list one entry per file.
+	 */
+	const CLEAN = 'mlab_clean';
+
+	/**
 	 * Value for files that are in no folder.
 	 */
 	const UNFILED = 'none';
@@ -107,9 +112,18 @@ final class Query {
 	 *
 	 * @param array      $args   WP_Query arguments.
 	 * @param string|int $folder Parsed folder value.
+	 * @param bool       $clean  Hide entries without a file and extra entries for a file
+	 *                           (media library screen only, not the editor dialogs).
 	 * @return array
 	 */
-	public static function apply( array $args, $folder ) {
+	public static function apply( array $args, $folder, $clean = false ) {
+		if ( $clean && self::DUPLICATE !== $folder && self::MISSING !== $folder && 'trash' !== ( $args['post_status'] ?? '' ) ) {
+			$hidden = Health::hidden_ids();
+			if ( $hidden ) {
+				$args['post__not_in'] = array_values( array_unique( array_merge( (array) ( $args['post__not_in'] ?? array() ), $hidden ) ) ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			}
+		}
+
 		if ( self::UNATTACHED === $folder ) {
 			$args['post_parent'] = 0;
 			return $args;
@@ -179,7 +193,10 @@ final class Query {
 		if ( ! current_user_can( Plugin::use_capability() ) ) {
 			return $query;
 		}
-		return self::apply( $query, self::parse( $raw ) );
+		// The media library screen sends this flag; the editor dialogs do not, so a post can still open any entry it uses.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only flag.
+		$clean = ! empty( $_REQUEST['query'][ self::CLEAN ] );
+		return self::apply( $query, self::parse( $raw ), $clean );
 	}
 
 	/**
@@ -193,22 +210,24 @@ final class Query {
 		if ( ! is_admin() || ! $query->is_main_query() || 'upload.php' !== $pagenow ) {
 			return;
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
-		if ( ! isset( $_GET[ self::PARAM ] ) || ! current_user_can( Plugin::use_capability() ) ) {
+		if ( ! current_user_can( Plugin::use_capability() ) ) {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitised in parse().
-		$folder = self::parse( wp_unslash( $_GET[ self::PARAM ] ) );
+		$folder = isset( $_GET[ self::PARAM ] ) ? self::parse( wp_unslash( $_GET[ self::PARAM ] ) ) : '';
 		$args   = self::apply(
 			array(
 				'tax_query'      => $query->get( 'tax_query' ),
 				'meta_query'     => $query->get( 'meta_query' ),
 				'post_mime_type' => $query->get( 'post_mime_type' ),
 				'post__in'       => $query->get( 'post__in' ),
+				'post__not_in'   => $query->get( 'post__not_in' ),
+				'post_status'    => $query->get( 'post_status' ),
 			),
-			$folder
+			$folder,
+			true
 		);
-		foreach ( array( 'tax_query', 'meta_query', 'post_mime_type', 'post_parent', 'post__in' ) as $key ) {
+		foreach ( array( 'tax_query', 'meta_query', 'post_mime_type', 'post_parent', 'post__in', 'post__not_in' ) as $key ) {
 			if ( isset( $args[ $key ] ) && $args[ $key ] !== $query->get( $key ) ) {
 				$query->set( $key, $args[ $key ] );
 			}

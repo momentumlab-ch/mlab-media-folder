@@ -134,11 +134,11 @@
 	var Query = media.model && media.model.Query;
 	if ( Query && Query.prototype && Query.prototype.initialize ) {
 		var queryInit = Query.prototype.initialize;
-		var observable = [ 's', 'order', 'orderby', 'posts_per_page', 'post_mime_type', 'post_parent', 'author', PARAM ];
+		var observable = [ 's', 'order', 'orderby', 'posts_per_page', 'post_mime_type', 'post_parent', 'author', PARAM, 'mlab_clean' ];
 		Query.prototype.initialize = function () {
 			queryInit.apply( this, arguments );
 			var keys = _.keys( this.args || {} );
-			if ( wp.Uploader && wp.Uploader.queue && _.has( this.args, PARAM ) && _.isEmpty( _.difference( keys, observable ) ) ) {
+			if ( wp.Uploader && wp.Uploader.queue && ( _.has( this.args, PARAM ) || _.has( this.args, 'mlab_clean' ) ) && _.isEmpty( _.difference( keys, observable ) ) ) {
 				this.observe( wp.Uploader.queue );
 			}
 		};
