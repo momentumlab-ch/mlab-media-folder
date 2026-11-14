@@ -110,9 +110,10 @@ final class Folders {
 	}
 
 	/**
-	 * Counts for the virtual "All files" and "Unfiled" entries.
+	 * Counts for the virtual entries: all files and the three task views
+	 * (unfiled, images without alternative text, not attached to a page).
 	 *
-	 * @return array{all:int, unfiled:int}
+	 * @return array{all:int, unfiled:int, noalt:int, unattached:int}
 	 */
 	public static function totals() {
 		global $wpdb;
@@ -136,9 +137,25 @@ final class Folders {
 			)
 		);
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery -- Aggregate counts, no API equivalent; one query per request.
+		$no_alt = (int) $wpdb->get_var(
+			"SELECT COUNT(DISTINCT p.ID)
+			FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_wp_attachment_image_alt'
+			WHERE p.post_type = 'attachment' AND p.post_status <> 'trash' AND p.post_mime_type LIKE 'image/%'
+			AND ( m.meta_id IS NULL OR m.meta_value = '' )"
+		);
+		$unattached = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts}
+			WHERE post_type = 'attachment' AND post_status <> 'trash' AND post_parent = 0"
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+
 		return array(
-			'all'     => $all,
-			'unfiled' => max( 0, $all - $filed ),
+			'all'        => $all,
+			'unfiled'    => max( 0, $all - $filed ),
+			'noalt'      => $no_alt,
+			'unattached' => $unattached,
 		);
 	}
 
@@ -350,7 +367,7 @@ final class Folders {
 	 *
 	 * @param int[] $attachment_ids Attachment IDs.
 	 * @param int   $folder_id      Target folder ID or 0.
-	 * @return array{moved:int[], skipped:int[]}|WP_Error
+	 * @return array{moved:int[], skipped:int[], previous:array<int,int>}|WP_Error
 	 */
 	public static function assign( array $attachment_ids, $folder_id ) {
 		$folder_id = (int) $folder_id;
@@ -361,23 +378,28 @@ final class Folders {
 		$attachment_ids = array_slice( array_unique( array_filter( array_map( 'absint', $attachment_ids ) ) ), 0, self::MAX_ASSIGN );
 		$moved          = array();
 		$skipped        = array();
+		$previous       = array();
 
 		foreach ( $attachment_ids as $attachment_id ) {
 			if ( 'attachment' !== get_post_type( $attachment_id ) || ! current_user_can( 'edit_post', $attachment_id ) ) {
 				$skipped[] = $attachment_id;
 				continue;
 			}
+			$before = self::of_attachment( $attachment_id );
 			$result = wp_set_object_terms( $attachment_id, $folder_id ? array( $folder_id ) : array(), Taxonomy::NAME, false );
 			if ( is_wp_error( $result ) ) {
 				$skipped[] = $attachment_id;
 			} else {
-				$moved[] = $attachment_id;
+				$moved[]                   = $attachment_id;
+				$previous[ $attachment_id ] = $before;
 			}
 		}
 
 		return array(
-			'moved'   => $moved,
-			'skipped' => $skipped,
+			'moved'    => $moved,
+			'skipped'  => $skipped,
+			// Folder each moved file was in before (0 = unfiled), so a move can be undone.
+			'previous' => (object) $previous,
 		);
 	}
 
@@ -420,5 +442,26 @@ final class Folders {
 		$walk( 0, 0 );
 
 		return $out;
+	}
+
+	/**
+	 * Folder names from the top level down to a folder.
+	 *
+	 * @param int $folder_id Folder ID.
+	 * @return string[]
+	 */
+	public static function path( $folder_id ) {
+		$names = array();
+		$guard = 0;
+		$id    = (int) $folder_id;
+		while ( $id && $guard++ < 20 ) {
+			$term = get_term( $id, Taxonomy::NAME );
+			if ( ! $term || is_wp_error( $term ) ) {
+				break;
+			}
+			array_unshift( $names, self::name( $term ) );
+			$id = (int) $term->parent;
+		}
+		return $names;
 	}
 }

@@ -21,6 +21,18 @@
 	var WIDTH_DEFAULT = 220;
 	var DRAG_FILES = 'mlab-media-folder-files:';
 	var DRAG_FOLDER = 'mlab-media-folder-folder:';
+	var MAX_ASSIGN = data.maxAssign || 500;
+
+	/**
+	 * Task views: lists of files that need attention. Each one says where the
+	 * files were found and what to do, so the sidebar doubles as a workflow:
+	 * sort, describe, review.
+	 */
+	var TASKS = {};
+	TASKS[ data.unfiled ] = { total: 'unfiled', label: 'unfiled', icon: 'dashicons-portfolio', next: 'nextUnfiled', found: 'foundUnfiled', todo: 'doUnfiled' };
+	TASKS.noalt = { total: 'noalt', label: 'noAlt', icon: 'dashicons-universal-access-alt', next: 'nextNoAlt', found: 'foundNoAlt', todo: 'doNoAlt' };
+	TASKS.unattached = { total: 'unattached', label: 'unattached', icon: 'dashicons-admin-page', next: 'nextUnattached', found: 'foundUnattached', todo: 'doUnattached' };
+	var TASK_ORDER = [ data.unfiled, 'noalt', 'unattached' ];
 
 	var state = {
 		folders: data.folders || [],
@@ -29,12 +41,15 @@
 		expanded: loadExpanded(),
 		layout: loadLayout(),
 		dragging: null,
+		query: '',
 	};
 
 	var $panel;
 	var $sidebar;
 	var $tree;
 	var $status;
+	var $search;
+	var $banner;
 
 	/* ---------- helpers ---------- */
 
@@ -101,20 +116,70 @@
 		return wp.apiFetch( $.extend( { path: data.restPath + path }, options || {} ) );
 	}
 
-	function announce( message, isError ) {
-		$status.text( message ).toggleClass( 'is-error', !! isError );
+	/**
+	 * Short message under the folder list, optionally with one action ("Undo").
+	 *
+	 * @param {string}  message Text.
+	 * @param {boolean} isError Show as error.
+	 * @param {Object}  action  Optional { label, run }.
+	 */
+	function announce( message, isError, action ) {
+		$status.empty().text( message ).toggleClass( 'is-error', !! isError );
+		if ( action ) {
+			$( '<button type="button" class="mlab-media-folder-status-action"></button>' )
+				.text( action.label )
+				.on( 'click', function () {
+					window.clearTimeout( announce.timer );
+					$status.empty();
+					action.run();
+				} )
+				.appendTo( $status );
+		}
 		window.clearTimeout( announce.timer );
 		announce.timer = window.setTimeout( function () {
-			$status.text( '' ).removeClass( 'is-error' );
-		}, 4000 );
+			$status.empty().removeClass( 'is-error' );
+		}, action || isError ? 9000 : 4000 );
 	}
 
 	function errorMessage( error ) {
 		return ( error && error.message ) || i18n.error;
 	}
 
-	function sprintf( template, value ) {
-		return String( template ).replace( /%[sd]/, value );
+	/**
+	 * Fills %s / %d (or %1$s / %2$d) in a translated string.
+	 *
+	 * @param {string} template Translated string.
+	 * @return {string} Text with the remaining arguments inserted.
+	 */
+	function sprintf( template ) {
+		var args = Array.prototype.slice.call( arguments, 1 );
+		var next = 0;
+		return String( template ).replace( /%(?:(\d+)\$)?[sd]/g, function ( match, position ) {
+			var index = position ? parseInt( position, 10 ) - 1 : next++;
+			return undefined === args[ index ] ? '' : String( args[ index ] );
+		} );
+	}
+
+	function isTask( value ) {
+		return Object.prototype.hasOwnProperty.call( TASKS, value );
+	}
+
+	/**
+	 * Folders in tree order with their depth, for select lists.
+	 *
+	 * @return {Array} Folders with a depth property.
+	 */
+	function flatFolders() {
+		var out = [];
+		( function walk( parent, depth ) {
+			childrenOf( parent ).forEach( function ( folder ) {
+				out.push( { id: folder.id, name: folder.name, depth: depth } );
+				if ( depth < 20 ) {
+					walk( folder.id, depth + 1 );
+				}
+			} );
+		} )( 0, 0 );
+		return out;
 	}
 
 	function childrenOf( parent ) {
@@ -228,7 +293,7 @@
 				};
 			} );
 			state.totals = response.totals || state.totals;
-			if ( state.current && state.current !== UNFILED && ! findFolder( state.current ) ) {
+			if ( state.current && ! isTask( state.current ) && ! findFolder( state.current ) ) {
 				applyFilter( '' );
 			}
 			renderTree();
@@ -237,16 +302,76 @@
 
 	/* ---------- folder actions ---------- */
 
+	/**
+	 * Moves files in blocks the server accepts. Collects the previous folders
+	 * so the whole move can be undone.
+	 *
+	 * @param {number[]} ids    Attachment IDs.
+	 * @param {number}   folder Target folder ID, 0 = unfiled.
+	 * @return {Promise} Resolves with { moved, skipped, previous }.
+	 */
+	function assignFiles( ids, folder ) {
+		var result = { moved: 0, skipped: 0, previous: {} };
+		var chain = Promise.resolve();
+		for ( var i = 0; i < ids.length; i += MAX_ASSIGN ) {
+			( function ( chunk ) {
+				chain = chain.then( function () {
+					return api( '/assign', { method: 'POST', data: { ids: chunk, folder: folder } } ).then( function ( response ) {
+						result.moved += ( response.moved || [] ).length;
+						result.skipped += ( response.skipped || [] ).length;
+						$.extend( result.previous, response.previous || {} );
+					} );
+				} );
+			} )( ids.slice( i, i + MAX_ASSIGN ) );
+		}
+		return chain.then( function () {
+			return result;
+		} );
+	}
+
+	function afterMove() {
+		if ( 'list' === data.mode ) {
+			window.location.reload();
+			return Promise.resolve();
+		}
+		refreshGrid();
+		return reload();
+	}
+
+	function undoMove( previous ) {
+		var groups = {};
+		Object.keys( previous ).forEach( function ( id ) {
+			( groups[ previous[ id ] ] = groups[ previous[ id ] ] || [] ).push( parseInt( id, 10 ) );
+		} );
+		var chain = Promise.resolve();
+		Object.keys( groups ).forEach( function ( folder ) {
+			chain = chain.then( function () {
+				return assignFiles( groups[ folder ], parseInt( folder, 10 ) );
+			} );
+		} );
+		return chain
+			.then( function () {
+				announce( i18n.undone );
+				return afterMove();
+			} )
+			.catch( function ( error ) {
+				announce( errorMessage( error ), true );
+			} );
+	}
+
 	function moveFiles( ids, folder ) {
-		return api( '/assign', { method: 'POST', data: { ids: ids, folder: folder } } )
+		return assignFiles( ids, folder )
 			.then( function ( result ) {
-				announce( sprintf( i18n.moved, ( result.moved || [] ).length ) );
-				if ( 'list' === data.mode ) {
-					window.location.reload();
-					return;
+				var target = folder ? findFolder( folder ) : null;
+				var message = sprintf( i18n.movedTo, result.moved, target ? target.name : i18n.unfiled );
+				if ( result.skipped ) {
+					message += ' ' + sprintf( i18n.skipped, result.skipped );
 				}
-				refreshGrid();
-				return reload();
+				// The list view reloads the page, which would drop the undo button.
+				announce( message, false, result.moved && 'list' !== data.mode ? { label: i18n.undo, run: function () {
+					undoMove( result.previous );
+				} } : null );
+				return afterMove();
 			} )
 			.catch( function ( error ) {
 				announce( errorMessage( error ), true );
@@ -268,10 +393,7 @@
 	}
 
 	function deleteFolder( folder ) {
-		if ( ! window.confirm( sprintf( i18n.confirmDelete, folder.name ) ) ) {
-			return;
-		}
-		api( '/folders/' + folder.id, { method: 'DELETE' } )
+		return api( '/folders/' + folder.id, { method: 'DELETE' } )
 			.then( function () {
 				if ( String( folder.id ) === state.current ) {
 					applyFilter( folder.parent ? String( folder.parent ) : '' );
@@ -282,6 +404,37 @@
 			.catch( function ( error ) {
 				announce( errorMessage( error ), true );
 			} );
+	}
+
+	/**
+	 * Confirmation right at the folder instead of a browser dialog.
+	 *
+	 * @param {Object} folder Folder to delete.
+	 * @param {jQuery} $row   Its row.
+	 */
+	function confirmDelete( folder, $row ) {
+		$tree.find( '.mlab-media-folder-confirm' ).remove();
+		var $cancel = $( '<button type="button" class="button button-small"></button>' ).text( i18n.cancel );
+		var $ok = $( '<button type="button" class="button button-small mlab-media-folder-danger"></button>' ).text( i18n.deleteFolder );
+		var $box = $( '<div class="mlab-media-folder-confirm" role="alertdialog"></div>' )
+			.append( $( '<p></p>' ).text( sprintf( i18n.confirmDelete, folder.name ) ), $ok, $cancel );
+		function close() {
+			$box.remove();
+			$row.find( '.mlab-media-folder-name' ).trigger( 'focus' );
+		}
+		$cancel.on( 'click', close );
+		$ok.on( 'click', function () {
+			$ok.prop( 'disabled', true );
+			deleteFolder( folder );
+		} );
+		$box.on( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key ) {
+				event.preventDefault();
+				close();
+			}
+		} );
+		$row.after( $box );
+		$cancel.trigger( 'focus' );
 	}
 
 	/**
@@ -384,16 +537,32 @@
 			.attr( 'aria-current', options.current ? 'true' : null )
 			.append( $( '<span class="dashicons" aria-hidden="true"></span>' ).addClass( options.icon ) )
 			.append( $( '<span class="mlab-media-folder-label"></span>' ).text( options.label ) )
-			.append( $( '<span class="mlab-media-folder-count"></span>' ).text( options.count ) );
+			.append( $( '<span class="mlab-media-folder-count"></span>' ).toggleClass( 'is-done', !! options.done ).text( options.done ? '\u2713' : options.count ) );
 
 		$row.append( $toggle, $name );
 		return $row;
 	}
 
+	/**
+	 * With a search text, a folder shows if it or one of its subfolders matches.
+	 *
+	 * @param {Object} folder Folder.
+	 * @return {boolean} Whether to show it.
+	 */
+	function matchesQuery( folder ) {
+		if ( ! state.query ) {
+			return true;
+		}
+		if ( folder.name.toLowerCase().indexOf( state.query.toLowerCase() ) !== -1 ) {
+			return true;
+		}
+		return childrenOf( folder.id ).some( matchesQuery );
+	}
+
 	function renderBranch( parent, $ul ) {
-		childrenOf( parent ).forEach( function ( folder ) {
-			var kids = childrenOf( folder.id );
-			var expanded = !! state.expanded[ folder.id ];
+		childrenOf( parent ).filter( matchesQuery ).forEach( function ( folder ) {
+			var kids = childrenOf( folder.id ).filter( matchesQuery );
+			var expanded = state.query ? kids.length > 0 : !! state.expanded[ folder.id ];
 			var $li = $( '<li class="mlab-media-folder-item"></li>' ).attr( 'data-folder', folder.id );
 			var $row = makeRow( {
 				target: String( folder.id ),
@@ -431,21 +600,118 @@
 		} );
 	}
 
+	/**
+	 * Click handler of the "Open" and "Show all files" buttons.
+	 */
+	function openTask() {
+		applyFilter( String( $( this ).attr( 'data-open-task' ) ) );
+	}
+
+	function taskCount( id ) {
+		return state.totals[ TASKS[ id ].total ] || 0;
+	}
+
+	function firstOpenTask() {
+		for ( var i = 0; i < TASK_ORDER.length; i++ ) {
+			if ( taskCount( TASK_ORDER[ i ] ) > 0 ) {
+				return TASK_ORDER[ i ];
+			}
+		}
+		return null;
+	}
+
+	function section( label ) {
+		return $( '<h3 class="mlab-media-folder-section"></h3>' ).text( label );
+	}
+
+	/**
+	 * "Next step": the first task that still has files, or a note that all is done.
+	 *
+	 * @return {jQuery} Card.
+	 */
+	function nextStepCard() {
+		var task = firstOpenTask();
+		var $card = $( '<div class="mlab-media-folder-next"></div>' );
+		if ( ! task ) {
+			return $card
+				.addClass( 'is-done' )
+				.append( '<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>' )
+				.append( $( '<p></p>' ).text( i18n.allDone ) );
+		}
+		return $card
+			.append( $( '<span class="mlab-media-folder-next-label"></span>' ).text( i18n.nextStep ) )
+			.append( $( '<p></p>' ).text( sprintf( i18n[ TASKS[ task ].next ], taskCount( task ) ) ) )
+			.append(
+				$( '<button type="button" class="button button-small"></button>' )
+					.text( i18n.open )
+					.attr( 'data-open-task', task )
+			);
+	}
+
 	function renderTree() {
 		$tree.empty();
+		$tree.append( nextStepCard() );
 
-		var $fixed = $( '<ul class="mlab-media-folder-fixed"></ul>' );
+		var $library = $( '<ul class="mlab-media-folder-fixed"></ul>' );
 		$( '<li class="mlab-media-folder-item"></li>' )
 			.append( makeRow( { target: '', label: i18n.all, count: state.totals.all, icon: 'dashicons-admin-media', current: '' === state.current } ) )
-			.appendTo( $fixed );
-		$( '<li class="mlab-media-folder-item"></li>' )
-			.append( makeRow( { target: UNFILED, label: i18n.unfiled, count: state.totals.unfiled, icon: 'dashicons-portfolio', current: UNFILED === state.current } ) )
-			.appendTo( $fixed );
+			.appendTo( $library );
+		$tree.append( section( i18n.library ), $library );
 
+		var $tasks = $( '<ul class="mlab-media-folder-fixed mlab-media-folder-tasks"></ul>' );
+		TASK_ORDER.forEach( function ( id ) {
+			var count = taskCount( id );
+			$( '<li class="mlab-media-folder-item"></li>' )
+				.append( makeRow( { target: id, label: i18n[ TASKS[ id ].label ], count: count, done: 0 === count, icon: TASKS[ id ].icon, current: id === state.current } ) )
+				.appendTo( $tasks );
+		} );
+		$tree.append( section( i18n.todo ), $tasks );
+
+		$tree.append( section( i18n.title ) );
 		var $root = $( '<ul class="mlab-media-folder-root"></ul>' );
 		renderBranch( 0, $root );
+		if ( ! state.folders.length ) {
+			$tree.append( $( '<p class="mlab-media-folder-empty"></p>' ).text( i18n.noFolders ) );
+		} else if ( ! $root.children().length ) {
+			$tree.append( $( '<p class="mlab-media-folder-empty"></p>' ).text( i18n.noMatch ) );
+		}
+		$tree.append( $root );
 
-		$tree.append( $fixed, $root );
+		if ( $search ) {
+			$search.prop( 'hidden', state.folders.length < 8 );
+		}
+		renderBanner();
+	}
+
+	/**
+	 * Above the grid: says which task is open, where the files were found,
+	 * what to do and offers the way back to all files.
+	 */
+	function renderBanner() {
+		if ( ! $banner ) {
+			return;
+		}
+		var task = isTask( state.current ) ? TASKS[ state.current ] : null;
+		$banner.prop( 'hidden', ! task ).empty();
+		if ( ! task ) {
+			return;
+		}
+		var count = taskCount( state.current );
+		var $text = $( '<div class="mlab-media-folder-banner-text"></div>' ).append(
+			$( '<h2></h2>' ).text( i18n[ task.label ] + ' · ' + count )
+		);
+		if ( count ) {
+			$text.append(
+				$( '<p></p>' ).append( $( '<strong></strong>' ).text( i18n.foundLabel + ': ' ), document.createTextNode( i18n[ task.found ] ) ),
+				$( '<p></p>' ).append( $( '<strong></strong>' ).text( i18n.doLabel + ': ' ), document.createTextNode( i18n[ task.todo ] ) )
+			);
+		} else {
+			$text.append( $( '<p></p>' ).text( i18n.taskEmpty ) );
+		}
+		$banner.append(
+			$text,
+			$( '<button type="button" class="button"></button>' ).text( i18n.showAll ).attr( 'data-open-task', '' )
+		);
 	}
 
 	function buildSidebar() {
@@ -464,6 +730,13 @@
 				.append( $( '<span class="mlab-media-folder-new-label"></span>' ).text( i18n.newFolder ) )
 				.appendTo( $head );
 		}
+		$search = $( '<input type="search" class="mlab-media-folder-search" autocomplete="off">' )
+			.attr( { placeholder: i18n.searchFolders, 'aria-label': i18n.searchFolders } )
+			.prop( 'hidden', true )
+			.on( 'input', function () {
+				state.query = $.trim( $( this ).val() );
+				renderTree();
+			} );
 		$tree = $( '<div class="mlab-media-folder-tree"></div>' );
 		$status = $( '<p class="mlab-media-folder-status" role="status" aria-live="polite"></p>' );
 		var $hint = $( '<p class="mlab-media-folder-hint"></p>' ).text( i18n.dropHint );
@@ -471,7 +744,7 @@
 			$( '<a target="_blank" rel="noopener noreferrer"></a>' ).attr( 'href', data.creditUrl ).text( i18n.credit ),
 			document.createTextNode( ' · v' + data.version )
 		);
-		$sidebar.append( $head, $tree, $status, $hint, $credit );
+		$sidebar.append( $head, $search, $tree, $status, $hint, $credit );
 		renderTree();
 
 		var $resizer = $( '<div class="mlab-media-folder-resizer" role="separator" tabindex="0" aria-orientation="vertical"></div>' )
@@ -561,6 +834,34 @@
 			applyFilter( String( $( this ).closest( '.mlab-media-folder-row' ).attr( 'data-target' ) ) );
 		} );
 
+		$sidebar.on( 'click', '[data-open-task]', openTask );
+
+		// Arrow keys move through the list like in a Finder sidebar.
+		$sidebar.on( 'keydown', '.mlab-media-folder-name', function ( event ) {
+			var key = event.key;
+			var $names = $sidebar.find( '.mlab-media-folder-name:visible' );
+			var index = $names.index( this );
+			var $item = $( this ).closest( '.mlab-media-folder-item' );
+			var id = $item.attr( 'data-folder' );
+			if ( 'ArrowDown' === key && index < $names.length - 1 ) {
+				$names.eq( index + 1 ).trigger( 'focus' );
+			} else if ( 'ArrowUp' === key && index > 0 ) {
+				$names.eq( index - 1 ).trigger( 'focus' );
+			} else if ( ( 'ArrowRight' === key || 'ArrowLeft' === key ) && id && ! state.query ) {
+				var open = 'ArrowRight' === key;
+				if ( !! state.expanded[ id ] === open || ! childrenOf( parseInt( id, 10 ) ).length ) {
+					return;
+				}
+				state.expanded[ id ] = open;
+				saveExpanded();
+				renderTree();
+				$tree.find( '[data-folder="' + id + '"] > .mlab-media-folder-row .mlab-media-folder-name' ).trigger( 'focus' );
+			} else {
+				return;
+			}
+			event.preventDefault();
+		} );
+
 		$sidebar.on( 'click', '.mlab-media-folder-toggle:not(.is-empty)', function () {
 			var id = $( this ).closest( '.mlab-media-folder-item' ).attr( 'data-folder' );
 			state.expanded[ id ] = ! state.expanded[ id ];
@@ -598,7 +899,7 @@
 			} else if ( 'rename' === action ) {
 				startRename( folder, $row );
 			} else if ( 'delete' === action ) {
-				deleteFolder( folder );
+				confirmDelete( folder, $row );
 			}
 		} );
 
@@ -619,10 +920,10 @@
 			}
 			var ok = false;
 			if ( 'files' === drag.type ) {
-				ok = '' !== target;
+				ok = target === UNFILED || ( '' !== target && ! isTask( target ) );
 			} else if ( 'folder' === drag.type ) {
 				var to = target === '' ? 0 : parseInt( target, 10 );
-				ok = target !== UNFILED && to !== drag.id && ! ( to && isDescendant( to, drag.id ) );
+				ok = ! isTask( target ) && to !== drag.id && ! ( to && isDescendant( to, drag.id ) );
 			}
 			if ( ok ) {
 				event.preventDefault();
@@ -1061,9 +1362,42 @@
 		var $all = $( '<button type="button" class="button"></button>' );
 		var $actions = $( '<span class="mlab-media-folder-bulkbar-actions"></span>' );
 		var $cancel = $( '<button type="button" class="button"></button>' ).text( i18n.cancel );
+		var $move = $( '<select class="mlab-media-folder-bulkbar-move"></select>' ).attr( 'aria-label', i18n.moveSelected );
+		var moveSignature = '';
 		var loadingAll = false;
 
-		$bar.append( $count, $hint, $all, $actions, $cancel ).appendTo( $wrap );
+		$bar.append( $count, $hint, $all, $move, $actions, $cancel ).appendTo( $wrap );
+
+		/**
+		 * "Move to…" works without dragging, so it also suits touch screens.
+		 * Rebuilt only when the folders changed, so an open list stays open.
+		 */
+		function fillMove() {
+			var folders = flatFolders();
+			var signature = JSON.stringify( folders );
+			if ( signature === moveSignature ) {
+				return;
+			}
+			moveSignature = signature;
+			$move.empty().append( $( '<option value=""></option>' ).text( i18n.moveTo ), $( '<option></option>' ).val( UNFILED ).text( i18n.unfiled ) );
+			folders.forEach( function ( folder ) {
+				$( '<option></option>' ).val( folder.id ).text( new Array( folder.depth + 1 ).join( '\u00a0\u00a0\u00a0' ) + folder.name ).appendTo( $move );
+			} );
+		}
+
+		$move.on( 'change', function () {
+			var value = $move.val();
+			var selection = gridSelection();
+			var ids = selection ? selection.pluck( 'id' ) : [];
+			$move.val( '' );
+			if ( '' === value || ! ids.length ) {
+				return;
+			}
+			moveFiles( ids, UNFILED === value ? 0 : parseInt( value, 10 ) ).then( function () {
+				selection.reset();
+				selectionChanged();
+			} );
+		} );
 
 		function coreButtons() {
 			return $( '.attachments-browser .media-toolbar' )
@@ -1091,6 +1425,8 @@
 			$( document.body ).toggleClass( 'mlab-media-folder-has-bulkbar', inSelectMode() );
 			$count.text( sprintf( i18n.selected, count ) );
 			$hint.prop( 'hidden', count > 0 );
+			fillMove();
+			$move.prop( 'disabled', ! count );
 			$all.text( loadingAll ? i18n.loadingAll : allSelected() ? i18n.selectNone : i18n.selectAll ).prop( 'disabled', loadingAll );
 
 			$actions.empty();
@@ -1182,6 +1518,16 @@
 		$wrap.before( $layout );
 		$layout.append( buildSidebar(), $wrap );
 		$( document.body ).addClass( 'mlab-media-folder-has-sidebar' );
+
+		$banner = $( '<div class="mlab-media-folder-banner" role="region" hidden></div>' ).attr( 'aria-label', i18n.todo );
+		var $end = $wrap.find( '.wp-header-end' ).first();
+		if ( $end.length ) {
+			$end.after( $banner );
+		} else {
+			$wrap.prepend( $banner );
+		}
+		$banner.on( 'click', '[data-open-task]', openTask );
+		renderBanner();
 		bindSidebar();
 		bindPanel();
 		bindFileDrag();
@@ -1194,13 +1540,13 @@
 			reload();
 		} );
 
-		// Grid mode deletes files over admin-ajax without a page reload:
-		// refresh the counts once the last request of a batch has finished.
+		// Grid mode changes files over admin-ajax without a page reload (delete,
+		// alt text, status): refresh the counts once the last request has finished.
 		var deleteTimer = 0;
 		$( document ).ajaxComplete( function ( event, xhr, settings ) {
 			var body = settings && 'string' === typeof settings.data ? settings.data : '';
 			var removed = /(^|&)action=(delete|trash|untrash)-post(&|$)/.test( body ) ||
-				( /(^|&)action=save-attachment(&|$)/.test( body ) && /changes%5Bstatus%5D=/.test( body ) );
+				/(^|&)action=save-attachment(&|$)/.test( body );
 			if ( removed ) {
 				window.clearTimeout( deleteTimer );
 				deleteTimer = window.setTimeout( reload, 300 );

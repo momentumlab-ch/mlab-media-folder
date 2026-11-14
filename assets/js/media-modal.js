@@ -58,6 +58,16 @@
 				props: { mlab_folder: data.unfiled },
 				priority: 2,
 			};
+			filters.noalt = {
+				text: _.escape( i18n.noAlt ),
+				props: { mlab_folder: 'noalt' },
+				priority: 3,
+			};
+			filters.unattached = {
+				text: _.escape( i18n.unattached ),
+				props: { mlab_folder: 'unattached' },
+				priority: 4,
+			};
 			_.each( data.folders, function ( folder, index ) {
 				filters[ 'folder-' + folder.id ] = {
 					// AttachmentFilters renders option text as HTML, so escape it.
@@ -141,7 +151,8 @@
 			uploader.bind( 'BeforeUpload', function ( up ) {
 				var params = up.settings.multipart_params || {};
 				var folder = currentFolder();
-				if ( folder && folder !== data.unfiled ) {
+				// Task views ("Unfiled", "No alternative text", ...) are not folders.
+				if ( folder && /^\d+$/.test( folder ) ) {
 					params[ PARAM ] = folder;
 				} else {
 					delete params[ PARAM ];
