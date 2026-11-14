@@ -3,6 +3,26 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.2.0] - 2026-11-14
+
+### Added
+- A workflow in the folder panel. "Next step" points to the first task that still has files. The "To do" list has three views with counts: "Unfiled", "No alt text" (images with an empty alt text) and "Not in a page" (files that were not uploaded to a page or post). A note above the files says where the files were found and what to do, with a way back to all files.
+- "Origin" field in the attachment details (grid, dialogs, edit screen): who uploaded the file and when, the page or post it was uploaded to, the posts it is the featured image of, its folder path and open tasks (no folder, no alternative text).
+- "Move to…" in the selection bar. It moves the selected files without dragging, so it works on touch screens.
+- "Undo" after moving files. The REST response of `POST /assign` now also contains `previous` (file ID => folder before the move).
+- Search field above the folders (shown from 8 folders), arrow-key navigation in the folder list, an empty state with a hint when there are no folders.
+- The folder filter of the media dialogs offers the views "No alt text" and "Not in a page". Query values `noalt` and `unattached` next to `none`.
+
+### Changed
+- New look following Apple's Human Interface Guidelines: sections like a Finder sidebar, filled selection in the accent colour, soft surfaces, tap targets of 44 points on touch screens, "reduce motion" respected.
+- Deleting a folder is confirmed next to the folder instead of in a browser dialog.
+- Error message now says what to do ("Check your connection and try again.").
+
+### Fixed
+- Moving more than 500 files at once moved only the first 500 without saying so. The move now runs in blocks and reports files that were skipped for lack of permission.
+- The counts did not refresh after alternative text or other details were saved in the grid.
+- "Not in a page" and "No alt text" cannot be used as drop targets; uploads made while such a view is open no longer send it as a folder.
+
 ## [2.1.1] - 2026-10-17
 
 ### Fixed

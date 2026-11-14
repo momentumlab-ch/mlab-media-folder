@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.1.1
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,16 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 2.2.0 =
+* New: a workflow in the folder panel. "Next step" points to the first thing that needs doing; the "To do" list shows unfiled files, images without alternative text and files not uploaded to a page, each with a count.
+* New: when a "To do" view is open, a note above the files says where the files were found and what to do.
+* New: "Origin" in the file details: who uploaded the file and when, which page or post it belongs to or is the featured image of, its folder, and what is still open.
+* New: "Move to…" in the selection bar moves selected files without dragging (touch screens).
+* New: "Undo" after moving files; search field for many folders; arrow keys move through the folder list.
+* Change: new look in the style of Apple's Human Interface Guidelines: quiet surfaces, filled selection, larger tap targets on touch screens, respects "reduce motion". Deleting a folder is confirmed next to the folder instead of in a browser dialog.
+* Fix: moving more than 500 files at once no longer drops the rest. Counts also refresh after alternative text is saved. Dragging files onto a "To do" view is no longer offered.
+* The media dialogs get the same two views in the folder filter.
 
 = 2.1.1 =
 * Fix: the bar at the bottom of the grid could stay on screen after "Bulk select" was switched off. It now follows the select mode itself.

@@ -22,6 +22,7 @@ final class Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_library_assets' ) );
 		add_action( 'add_attachment', array( $this, 'assign_uploaded_attachment' ) );
 		add_filter( 'attachment_fields_to_edit', array( $this, 'add_folder_field' ), 10, 2 );
+		add_filter( 'attachment_fields_to_edit', array( $this, 'add_origin_field' ), 11, 2 );
 		add_filter( 'attachment_fields_to_save', array( $this, 'save_folder_field' ), 10, 2 );
 	}
 
@@ -49,6 +50,7 @@ final class Admin {
 			'param'     => Query::PARAM,
 			'unfiled'   => Query::UNFILED,
 			'canManage' => current_user_can( Plugin::manage_capability() ),
+			'maxAssign' => Folders::MAX_ASSIGN,
 			'folders'   => Folders::flattened_tree(),
 			'totals'    => Folders::totals(),
 			'i18n'      => array(
@@ -64,10 +66,8 @@ final class Admin {
 				'namePlaceholder' => __( 'Folder name', 'mlab-media-folder' ),
 				/* translators: %s: folder name. */
 				'confirmDelete'   => __( 'Delete the folder "%s"? Its files and subfolders move up one level. No files are deleted.', 'mlab-media-folder' ),
-				/* translators: %d: number of files. */
-				'moved'           => __( '%d file(s) moved.', 'mlab-media-folder' ),
 				'dropHint'        => __( 'Drag files onto a folder to move them.', 'mlab-media-folder' ),
-				'error'           => __( 'That did not work. Please try again.', 'mlab-media-folder' ),
+				'error'           => __( 'That did not work. Check your connection and try again.', 'mlab-media-folder' ),
 				'toggle'          => __( 'Show or hide subfolders', 'mlab-media-folder' ),
 				'actions'         => __( 'Folder actions', 'mlab-media-folder' ),
 				'filterLabel'     => __( 'Filter by folder', 'mlab-media-folder' ),
@@ -81,6 +81,41 @@ final class Admin {
 				'selectAll'       => __( 'Select all', 'mlab-media-folder' ),
 				'selectNone'      => __( 'Clear selection', 'mlab-media-folder' ),
 				'loadingAll'      => __( 'Loading all files…', 'mlab-media-folder' ),
+				'library'         => __( 'Library', 'mlab-media-folder' ),
+				'todo'            => __( 'To do', 'mlab-media-folder' ),
+				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
+				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
+				'nextStep'        => __( 'Next step', 'mlab-media-folder' ),
+				'open'            => __( 'Open', 'mlab-media-folder' ),
+				'allDone'         => __( 'Everything is in order. New uploads show up here when they need attention.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
+				'nextUnfiled'     => __( 'Sort %d files into folders.', 'mlab-media-folder' ),
+				/* translators: %d: number of images. */
+				'nextNoAlt'       => __( 'Describe %d images.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
+				'nextUnattached'  => __( 'Review %d files that are not in a page.', 'mlab-media-folder' ),
+				'foundLabel'      => __( 'Found', 'mlab-media-folder' ),
+				'doLabel'         => __( 'What to do', 'mlab-media-folder' ),
+				'foundUnfiled'    => __( 'Files in the library that are in no folder, for example new uploads.', 'mlab-media-folder' ),
+				'doUnfiled'       => __( 'Drag them onto a folder, or select them (Bulk select) and use "Move to…".', 'mlab-media-folder' ),
+				'foundNoAlt'      => __( 'Images whose alternative text is empty. Screen readers and search engines depend on it.', 'mlab-media-folder' ),
+				'doNoAlt'         => __( 'Click an image and fill in "Alternative Text" in the details.', 'mlab-media-folder' ),
+				'foundUnattached' => __( 'Files that were not uploaded from a page or post. Some of them may be unused.', 'mlab-media-folder' ),
+				'doUnattached'    => __( 'Check each file: delete it if you do not need it, otherwise move it to a folder.', 'mlab-media-folder' ),
+				'taskEmpty'       => __( 'Nothing to do here. Well done.', 'mlab-media-folder' ),
+				'showAll'         => __( 'Show all files', 'mlab-media-folder' ),
+				'moveTo'          => __( 'Move to…', 'mlab-media-folder' ),
+				'moveSelected'    => __( 'Move selected files to a folder', 'mlab-media-folder' ),
+				/* translators: 1: number of files, 2: folder name. */
+				'movedTo'         => __( '%1$d file(s) moved to "%2$s".', 'mlab-media-folder' ),
+				'undo'            => __( 'Undo', 'mlab-media-folder' ),
+				'undone'          => __( 'Move undone.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
+				'skipped'         => __( '%d file(s) skipped: you are not allowed to edit them.', 'mlab-media-folder' ),
+				'searchFolders'   => __( 'Search folders', 'mlab-media-folder' ),
+				'noMatch'         => __( 'No folder found.', 'mlab-media-folder' ),
+				'noFolders'       => __( 'No folders yet. Create one to start sorting your files.', 'mlab-media-folder' ),
+				'deleteFolder'    => __( 'Delete folder', 'mlab-media-folder' ),
 				'sweepHint'       => __( 'Hold the mouse button and drag across the files to select several at once.', 'mlab-media-folder' ),
 			),
 		);
@@ -178,6 +213,105 @@ final class Admin {
 			'html'  => $html,
 		);
 		return $fields;
+	}
+
+	/**
+	 * Read-only "Origin" field: who uploaded the file, where it is used, in
+	 * which folder it is, and what still has to be done for it.
+	 *
+	 * @param array    $fields Fields.
+	 * @param \WP_Post $post   Attachment.
+	 * @return array
+	 */
+	public function add_origin_field( $fields, $post ) {
+		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $post->ID ) ) {
+			return $fields;
+		}
+
+		$rows   = array();
+		$author = get_the_author_meta( 'display_name', (int) $post->post_author );
+		$rows[] = sprintf(
+			/* translators: 1: user name, 2: date. */
+			esc_html__( 'Uploaded by %1$s on %2$s', 'mlab-media-folder' ),
+			esc_html( $author ? $author : '—' ),
+			esc_html( get_the_date( '', $post ) )
+		);
+
+		$rows = array_merge( $rows, $this->usage_rows( $post ) );
+
+		$path   = Folders::path( Folders::of_attachment( $post->ID ) );
+		$rows[] = $path
+			? esc_html__( 'Folder', 'mlab-media-folder' ) . ': ' . esc_html( implode( ' › ', $path ) )
+			: esc_html__( 'Unfiled', 'mlab-media-folder' );
+
+		$todo = array();
+		if ( ! $path ) {
+			$todo[] = esc_html__( 'Choose a folder', 'mlab-media-folder' );
+		}
+		if ( wp_attachment_is_image( $post ) && '' === trim( (string) get_post_meta( $post->ID, '_wp_attachment_image_alt', true ) ) ) {
+			$todo[] = esc_html__( 'Add alternative text', 'mlab-media-folder' );
+		}
+
+		$html = '<div class="mlab-media-folder-origin"><ul><li>' . implode( '</li><li>', $rows ) . '</li></ul>';
+		if ( $todo ) {
+			$html .= '<p class="mlab-media-folder-origin-todo"><strong>' . esc_html__( 'To do', 'mlab-media-folder' ) . ':</strong> ' . implode( ', ', $todo ) . '</p>';
+		}
+		$html .= '</div>';
+
+		$fields['mlab_origin'] = array(
+			'label' => __( 'Origin', 'mlab-media-folder' ),
+			'input' => 'html',
+			'html'  => $html,
+		);
+		return $fields;
+	}
+
+	/**
+	 * Where a file was uploaded to and where it is the featured image.
+	 *
+	 * @param \WP_Post $post Attachment.
+	 * @return string[] HTML rows (already escaped).
+	 */
+	private function usage_rows( $post ) {
+		$rows = array();
+
+		$parent = $post->post_parent ? get_post( $post->post_parent ) : null;
+		if ( $parent ) {
+			$rows[] = esc_html__( 'Uploaded to', 'mlab-media-folder' ) . ': ' . $this->post_link( $parent );
+		} else {
+			$rows[] = esc_html__( 'Not uploaded to a page or post', 'mlab-media-folder' );
+		}
+
+		$featured = get_posts(
+			array(
+				'post_type'        => 'any',
+				'post_status'      => 'any',
+				'numberposts'      => 3,
+				'meta_key'         => '_thumbnail_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => (int) $post->ID, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'suppress_filters' => true,
+			)
+		);
+		if ( $featured ) {
+			$links  = array_map( array( $this, 'post_link' ), $featured );
+			$rows[] = esc_html__( 'Featured image of', 'mlab-media-folder' ) . ': ' . implode( ', ', $links );
+		}
+		return $rows;
+	}
+
+	/**
+	 * Escaped link to the editor of a post, or its plain title.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @return string
+	 */
+	private function post_link( $post ) {
+		$title = get_the_title( $post );
+		$title = '' === $title ? __( '(no title)', 'mlab-media-folder' ) : $title;
+		$url   = current_user_can( 'edit_post', $post->ID ) ? get_edit_post_link( $post->ID, 'raw' ) : '';
+		return $url
+			? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $title ) . '</a>'
+			: esc_html( $title );
 	}
 
 	/**

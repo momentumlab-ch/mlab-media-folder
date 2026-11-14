@@ -6,7 +6,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 2.1.1 |
+| Aktuelle Version | 2.2.0 |
 | WordPress | ab 6.5, getestet bis 7.1.3 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
@@ -15,6 +15,12 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 ## Funktionen
 
 **Ordnerbaum.** Neben der Mediathek (Raster- und Listenansicht) erscheint eine Ordner-Leiste mit verschachtelten Ordnern und der Anzahl Dateien pro Ordner. Dazu kommen die Ansichten «Alle Dateien» und «Ohne Ordner».
+
+**Workflow «Zu erledigen».** Die Leiste führt durch drei Schritte: sortieren, beschreiben, prüfen. «Nächster Schritt» zeigt die erste offene Aufgabe. Unter «Zu erledigen» stehen drei Ansichten mit Anzahl: «Ohne Ordner», «Ohne Alternativtext» (Bilder mit leerem Alt-Text) und «Nicht in einer Seite» (Dateien, die nicht aus einer Seite oder einem Beitrag hochgeladen wurden). Ist eine Ansicht offen, steht über den Dateien, wo die Dateien gefunden wurden und was zu tun ist.
+
+**Herkunft.** In den Anhang-Details zeigt das Feld «Herkunft», wer die Datei wann hochgeladen hat, in welche Seite oder welchen Beitrag sie hochgeladen wurde oder wo sie Beitragsbild ist, in welchem Ordner sie liegt und was noch offen ist.
+
+**Verschieben ohne Ziehen.** Bei Mehrfachauswahl verschiebt «Verschieben nach …» in der Leiste unten die Auswahl in einen Ordner (auch auf dem Touch-Bildschirm). Nach jedem Verschieben bietet die Leiste «Rückgängig».
 
 **Ordner verwalten.** Ordner lassen sich anlegen, umbenennen, verschieben (einen Ordner auf einen anderen ziehen) und löschen. Beim Löschen wird nie eine Datei gelöscht: Dateien und Unterordner wandern eine Ebene nach oben.
 

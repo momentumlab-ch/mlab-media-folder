@@ -27,6 +27,21 @@ final class Query {
 	const UNFILED = 'none';
 
 	/**
+	 * Value for images that have no alternative text.
+	 */
+	const NO_ALT = 'noalt';
+
+	/**
+	 * Value for files that were not uploaded to a page or post.
+	 */
+	const UNATTACHED = 'unattached';
+
+	/**
+	 * Views that list files needing attention instead of a folder.
+	 */
+	const TASKS = array( self::UNFILED, self::NO_ALT, self::UNATTACHED );
+
+	/**
 	 * Registers hooks.
 	 */
 	public function hooks() {
@@ -35,7 +50,8 @@ final class Query {
 	}
 
 	/**
-	 * Normalises a raw folder value: '' (all), 'none' (unfiled) or a folder ID.
+	 * Normalises a raw folder value: '' (all), a task view ('none', 'noalt',
+	 * 'unattached') or a folder ID.
 	 *
 	 * @param mixed $raw Raw value from the request.
 	 * @return string|int
@@ -45,8 +61,8 @@ final class Query {
 			return '';
 		}
 		$raw = sanitize_key( (string) $raw );
-		if ( self::UNFILED === $raw ) {
-			return self::UNFILED;
+		if ( in_array( $raw, self::TASKS, true ) ) {
+			return $raw;
 		}
 		$id = absint( $raw );
 		return ( $id && Folders::exists( $id ) ) ? $id : '';
@@ -74,6 +90,47 @@ final class Query {
 			);
 		}
 		return null;
+	}
+
+	/**
+	 * Applies a parsed folder or task value to WP_Query arguments.
+	 *
+	 * @param array      $args   WP_Query arguments.
+	 * @param string|int $folder Parsed folder value.
+	 * @return array
+	 */
+	public static function apply( array $args, $folder ) {
+		if ( self::UNATTACHED === $folder ) {
+			$args['post_parent'] = 0;
+			return $args;
+		}
+
+		if ( self::NO_ALT === $folder ) {
+			if ( empty( $args['post_mime_type'] ) ) {
+				$args['post_mime_type'] = 'image';
+			}
+			$missing = array(
+				'relation' => 'OR',
+				array(
+					'key'     => '_wp_attachment_image_alt',
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => '_wp_attachment_image_alt',
+					'value'   => '',
+					'compare' => '=',
+				),
+			);
+			$existing           = $args['meta_query'] ?? array();
+			$args['meta_query'] = $existing ? array( 'relation' => 'AND', $existing, $missing ) : $missing; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			return $args;
+		}
+
+		$clause = self::tax_clause( $folder );
+		if ( $clause ) {
+			$args['tax_query'] = self::merge( $args['tax_query'] ?? array(), $clause ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
+		return $args;
 	}
 
 	/**
@@ -106,11 +163,7 @@ final class Query {
 		if ( ! current_user_can( Plugin::use_capability() ) ) {
 			return $query;
 		}
-		$clause = self::tax_clause( self::parse( $raw ) );
-		if ( $clause ) {
-			$query['tax_query'] = self::merge( $query['tax_query'] ?? array(), $clause ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-		}
-		return $query;
+		return self::apply( $query, self::parse( $raw ) );
 	}
 
 	/**
@@ -129,9 +182,19 @@ final class Query {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitised in parse().
-		$clause = self::tax_clause( self::parse( wp_unslash( $_GET[ self::PARAM ] ) ) );
-		if ( $clause ) {
-			$query->set( 'tax_query', self::merge( $query->get( 'tax_query' ), $clause ) );
+		$folder = self::parse( wp_unslash( $_GET[ self::PARAM ] ) );
+		$args   = self::apply(
+			array(
+				'tax_query'      => $query->get( 'tax_query' ),
+				'meta_query'     => $query->get( 'meta_query' ),
+				'post_mime_type' => $query->get( 'post_mime_type' ),
+			),
+			$folder
+		);
+		foreach ( array( 'tax_query', 'meta_query', 'post_mime_type', 'post_parent' ) as $key ) {
+			if ( isset( $args[ $key ] ) && $args[ $key ] !== $query->get( $key ) ) {
+				$query->set( $key, $args[ $key ] );
+			}
 		}
 	}
 }
