@@ -6,7 +6,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 2.2.0 |
+| Aktuelle Version | 2.3.0 |
 | WordPress | ab 6.5, getestet bis 7.1.3 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
@@ -16,7 +16,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 **Ordnerbaum.** Neben der Mediathek (Raster- und Listenansicht) erscheint eine Ordner-Leiste mit verschachtelten Ordnern und der Anzahl Dateien pro Ordner. Dazu kommen die Ansichten «Alle Dateien» und «Ohne Ordner».
 
-**Workflow «Zu erledigen».** Die Leiste führt durch drei Schritte: sortieren, beschreiben, prüfen. «Nächster Schritt» zeigt die erste offene Aufgabe. Unter «Zu erledigen» stehen drei Ansichten mit Anzahl: «Ohne Ordner», «Ohne Alternativtext» (Bilder mit leerem Alt-Text) und «Nicht in einer Seite» (Dateien, die nicht aus einer Seite oder einem Beitrag hochgeladen wurden). Ist eine Ansicht offen, steht über den Dateien, wo die Dateien gefunden wurden und was zu tun ist.
+**Workflow «Zu erledigen».** Die Leiste führt durch drei Schritte: sortieren, beschreiben, prüfen. «Nächster Schritt» zeigt die erste offene Aufgabe. Unter «Zu erledigen» stehen Ansichten mit Anzahl: «Ohne Ordner», «Ohne Alternativtext» (Bilder mit leerem Alt-Text) und «Nicht in einer Seite» (Dateien, die nicht aus einer Seite oder einem Beitrag hochgeladen wurden), «Doppelt» (Einträge, die auf dieselbe Datei zeigen) und «Datei fehlt» (Einträge, deren Datei nicht mehr auf dem Server liegt). Die Mediathek listet Datenbank-Einträge, nicht Dateien; darum erscheint ein Bild mehrfach, wenn mehrere Einträge darauf zeigen. Löscht man einen Eintrag, bleibt eine Datei, die noch ein anderer Eintrag nutzt, auf dem Server. Ist eine Ansicht offen, steht über den Dateien, wo die Dateien gefunden wurden und was zu tun ist.
 
 **Herkunft.** In den Anhang-Details zeigt das Feld «Herkunft», wer die Datei wann hochgeladen hat, in welche Seite oder welchen Beitrag sie hochgeladen wurde oder wo sie Beitragsbild ist, in welchem Ordner sie liegt und was noch offen ist.
 

@@ -113,7 +113,7 @@ final class Folders {
 	 * Counts for the virtual entries: all files and the three task views
 	 * (unfiled, images without alternative text, not attached to a page).
 	 *
-	 * @return array{all:int, unfiled:int, noalt:int, unattached:int}
+	 * @return array{all:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
 	 */
 	public static function totals() {
 		global $wpdb;
@@ -151,11 +151,15 @@ final class Folders {
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery
 
+		$health = Health::scan();
+
 		return array(
 			'all'        => $all,
 			'unfiled'    => max( 0, $all - $filed ),
 			'noalt'      => $no_alt,
 			'unattached' => $unattached,
+			'duplicate'  => count( $health['duplicate'] ),
+			'missing'    => count( $health['missing'] ),
 		);
 	}
 

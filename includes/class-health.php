@@ -1,0 +1,209 @@
+<?php
+/**
+ * Library health: entries that share one file and entries whose file is gone.
+ *
+ * The media library lists database entries (attachments), not files. Two
+ * entries can point to the same file in the uploads folder, and an entry can
+ * outlive its file. This class finds both and keeps a delete from removing a
+ * file that another entry still uses.
+ *
+ * @package MomentumLab\MediaFolder
+ */
+
+namespace MomentumLab\MediaFolder;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Finds duplicate and missing files and protects shared files.
+ */
+final class Health {
+
+	/**
+	 * Site transient that caches the result of the last scan.
+	 */
+	const CACHE_KEY = 'mlab_media_folder_health';
+
+	/**
+	 * Cache lifetime. The cache is also cleared whenever a file is added or deleted.
+	 */
+	const CACHE_TTL = HOUR_IN_SECONDS;
+
+	/**
+	 * True while a file that other entries share must not be removed from disk.
+	 *
+	 * @var bool
+	 */
+	private $protecting = false;
+
+	/**
+	 * Registers hooks.
+	 */
+	public function hooks() {
+		add_action( 'add_attachment', array( __CLASS__, 'clear_cache' ) );
+		add_action( 'delete_attachment', array( $this, 'protect_shared_file' ), 9 );
+		add_action( 'delete_attachment', array( __CLASS__, 'clear_cache' ), 10 );
+		add_action( 'deleted_post', array( $this, 'release' ) );
+		add_filter( 'wp_delete_file', array( $this, 'keep_file' ) );
+	}
+
+	/**
+	 * Drops the cached scan.
+	 */
+	public static function clear_cache() {
+		delete_site_transient( self::CACHE_KEY );
+	}
+
+	/**
+	 * Attachment IDs per problem, from the cache or a fresh scan.
+	 *
+	 * @return array{duplicate:int[], missing:int[]}
+	 */
+	public static function scan() {
+		$cached = get_site_transient( self::CACHE_KEY );
+		if ( is_array( $cached ) && isset( $cached['duplicate'], $cached['missing'] ) ) {
+			return $cached;
+		}
+
+		$result = array(
+			'duplicate' => self::find_duplicates(),
+			'missing'   => self::find_missing(),
+		);
+		set_site_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
+		return $result;
+	}
+
+	/**
+	 * Entries that point to the same file as at least one other entry.
+	 *
+	 * @return int[]
+	 */
+	private static function find_duplicates() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- Aggregate lookup, no API equivalent; no user input.
+		$ids = $wpdb->get_col(
+			"SELECT m.post_id
+			FROM {$wpdb->postmeta} m
+			INNER JOIN {$wpdb->posts} p ON p.ID = m.post_id
+			INNER JOIN (
+				SELECT m2.meta_value AS file
+				FROM {$wpdb->postmeta} m2
+				INNER JOIN {$wpdb->posts} p2 ON p2.ID = m2.post_id
+				WHERE m2.meta_key = '_wp_attached_file' AND p2.post_type = 'attachment' AND p2.post_status <> 'trash'
+				GROUP BY m2.meta_value
+				HAVING COUNT(*) > 1
+			) d ON d.file = m.meta_value
+			WHERE m.meta_key = '_wp_attached_file' AND p.post_type = 'attachment' AND p.post_status <> 'trash'"
+		);
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
+	 * Entries whose file is not in the uploads folder any more. Files stored
+	 * elsewhere (a full URL as file name) are not checked, and the scan covers
+	 * the newest entries only, so a very large library stays fast.
+	 *
+	 * @return int[]
+	 */
+	private static function find_missing() {
+		global $wpdb;
+
+		/**
+		 * Filters whether entries are checked for a missing file. Turn it off
+		 * when files live on a CDN or offload service and not on this server.
+		 *
+		 * @param bool $check Default true.
+		 */
+		if ( ! apply_filters( 'mlab_media_folder_check_missing_files', true ) ) {
+			return array();
+		}
+
+		/**
+		 * Filters how many of the newest entries are checked for a missing file.
+		 *
+		 * @param int $limit Default 5000.
+		 */
+		$limit = max( 1, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) );
+		$base  = wp_get_upload_dir()['basedir'];
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- One bounded lookup per scan, cached.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.ID, m.meta_value AS file
+				FROM {$wpdb->posts} p
+				INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_wp_attached_file'
+				WHERE p.post_type = 'attachment' AND p.post_status <> 'trash'
+				ORDER BY p.ID DESC
+				LIMIT %d",
+				$limit
+			)
+		);
+
+		$missing = array();
+		foreach ( (array) $rows as $row ) {
+			if ( '' === $row->file || preg_match( '#^[a-z][a-z0-9+.-]*://#i', $row->file ) ) {
+				continue;
+			}
+			if ( ! file_exists( $base . '/' . ltrim( $row->file, '/' ) ) ) {
+				$missing[] = (int) $row->ID;
+			}
+		}
+		return $missing;
+	}
+
+	/**
+	 * Other entries that point to the same file.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @param int $limit         Maximum number of IDs.
+	 * @return int[]
+	 */
+	public static function others_sharing_file( $attachment_id, $limit = 3 ) {
+		$file = (string) get_post_meta( (int) $attachment_id, '_wp_attached_file', true );
+		if ( '' === $file ) {
+			return array();
+		}
+		$ids = get_posts(
+			array(
+				'post_type'        => 'attachment',
+				'post_status'      => 'any',
+				'numberposts'      => (int) $limit,
+				'post__not_in'     => array( (int) $attachment_id ),
+				'fields'           => 'ids',
+				'meta_key'         => '_wp_attached_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => $file, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'suppress_filters' => true,
+			)
+		);
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * Before an entry is deleted: if another entry uses the same file, keep
+	 * the file on disk. WordPress would otherwise delete it and leave the
+	 * other entry without an image.
+	 *
+	 * @param int $attachment_id Attachment about to be deleted.
+	 */
+	public function protect_shared_file( $attachment_id ) {
+		$this->protecting = (bool) self::others_sharing_file( $attachment_id, 1 );
+	}
+
+	/**
+	 * Filter for every file WordPress is about to delete.
+	 *
+	 * @param string $path Absolute file path.
+	 * @return string Empty to skip the delete.
+	 */
+	public function keep_file( $path ) {
+		return $this->protecting ? '' : $path;
+	}
+
+	/**
+	 * After the delete: later deletes in the same request are checked on their own.
+	 */
+	public function release() {
+		$this->protecting = false;
+	}
+}
