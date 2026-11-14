@@ -79,28 +79,45 @@ final class Folders {
 	}
 
 	/**
-	 * Number of files per folder, counting only attachments that still exist
-	 * and are not in the trash. The stored term count is not used because it
-	 * also counts trashed files and leftovers of files deleted outside
-	 * WordPress, so a folder could show files it no longer has.
+	 * SQL condition for the entries the media library lists: not in the
+	 * trash, file present on the server, and one entry per file (see
+	 * Health::hidden_ids()). The counters use the same rule, so a counter
+	 * always equals the number of images shown.
 	 *
-	 * @return array<int, int> Term ID => number of files.
+	 * @return string
+	 */
+	private static function visible_sql() {
+		$where  = "p.post_type = 'attachment' AND p.post_status <> 'trash'";
+		$hidden = array_map( 'intval', Health::hidden_ids() );
+		if ( $hidden ) {
+			$where .= ' AND p.ID NOT IN (' . implode( ',', $hidden ) . ')';
+		}
+		return $where;
+	}
+
+	/**
+	 * Number of images shown per folder.
+	 *
+	 * @return array<int, int> Term ID => number of images.
 	 */
 	public static function counts() {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Aggregate count, no API equivalent; one query per request.
+		$where = self::visible_sql();
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; the condition comes from visible_sql().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT tt.term_id, COUNT(DISTINCT p.ID) AS files
 				FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
 				INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
-				WHERE tt.taxonomy = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+				WHERE tt.taxonomy = %s AND {$where}
 				GROUP BY tt.term_id",
 				Taxonomy::NAME
 			)
 		);
+		// phpcs:enable
 
 		$counts = array();
 		foreach ( (array) $rows as $row ) {
@@ -110,54 +127,53 @@ final class Folders {
 	}
 
 	/**
-	 * Counts for the virtual entries: all files and the three task views
-	 * (unfiled, images without alternative text, not attached to a page).
+	 * Number of shown images that match extra SQL conditions.
 	 *
-	 * @return array{all:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
+	 * @param string $join  Extra JOIN clauses (constant SQL).
+	 * @param string $where Extra conditions, starting with AND (constant SQL).
+	 * @return int
+	 */
+	private static function count_visible( $join = '', $where = '' ) {
+		global $wpdb;
+
+		$visible = self::visible_sql();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; all pieces are constant SQL.
+		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p {$join} WHERE {$visible} {$where}" );
+	}
+
+	/**
+	 * Counts for the virtual entries: all images and the task views. The
+	 * "duplicate" and "missing" views list the entries the library hides, so
+	 * they count those entries.
+	 *
+	 * @return array{all:int, entries:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
 	 */
 	public static function totals() {
 		global $wpdb;
 
-		$all = 0;
+		$entries = 0;
 		foreach ( (array) wp_count_attachments() as $mime => $count ) {
 			if ( 'trash' !== $mime ) {
-				$all += (int) $count;
+				$entries += (int) $count;
 			}
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Aggregate count, no API equivalent; cached by the caller's request only.
-		$filed = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT tr.object_id)
-				FROM {$wpdb->term_relationships} tr
-				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
-				INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
-				WHERE tt.taxonomy = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'",
-				Taxonomy::NAME
-			)
-		);
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery -- Aggregate counts, no API equivalent; one query per request.
-		$no_alt = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT p.ID)
-			FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_wp_attachment_image_alt'
-			WHERE p.post_type = 'attachment' AND p.post_status <> 'trash' AND p.post_mime_type LIKE 'image/%'
-			AND ( m.meta_id IS NULL OR m.meta_value = '' )"
-		);
-		$unattached = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->posts}
-			WHERE post_type = 'attachment' AND post_status <> 'trash' AND post_parent = 0"
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+		$in_folder = "AND NOT EXISTS (
+			SELECT 1 FROM {$wpdb->term_relationships} tr
+			INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+			WHERE tr.object_id = p.ID AND tt.taxonomy = '" . Taxonomy::NAME . "' )";
+		$alt_join  = "LEFT JOIN {$wpdb->postmeta} a ON a.post_id = p.ID AND a.meta_key = '_wp_attachment_image_alt'";
+		$no_alt    = "AND p.post_mime_type LIKE 'image/%' AND ( a.meta_id IS NULL OR a.meta_value = '' )";
 
 		$health = Health::scan();
 
 		return array(
-			'all'        => $all,
-			'unfiled'    => max( 0, $all - $filed ),
-			'noalt'      => $no_alt,
-			'unattached' => $unattached,
+			'all'        => self::count_visible(),
+			'entries'    => $entries,
+			'unfiled'    => self::count_visible( '', $in_folder ),
+			'noalt'      => self::count_visible( $alt_join, $no_alt ),
+			'unattached' => self::count_visible( '', 'AND p.post_parent = 0' ),
 			'duplicate'  => count( $health['duplicate'] ),
 			'missing'    => count( $health['missing'] ),
 		);

@@ -44,16 +44,17 @@ final class Admin {
 	 */
 	private function script_data() {
 		return array(
-			'version'   => MLAB_MEDIA_FOLDER_VERSION,
-			'creditUrl' => 'https://momentumlab.ch/',
-			'restPath'  => '/' . Rest_Controller::NAMESPACE,
-			'param'     => Query::PARAM,
-			'unfiled'   => Query::UNFILED,
-			'canManage' => current_user_can( Plugin::manage_capability() ),
-			'maxAssign' => Folders::MAX_ASSIGN,
-			'folders'   => Folders::flattened_tree(),
-			'totals'    => Folders::totals(),
-			'i18n'      => array(
+			'version'    => MLAB_MEDIA_FOLDER_VERSION,
+			'creditUrl'  => 'https://momentumlab.ch/',
+			'restPath'   => '/' . Rest_Controller::NAMESPACE,
+			'param'      => Query::PARAM,
+			'cleanParam' => Query::CLEAN,
+			'unfiled'    => Query::UNFILED,
+			'canManage'  => current_user_can( Plugin::manage_capability() ),
+			'maxAssign'  => Folders::MAX_ASSIGN,
+			'folders'    => Folders::flattened_tree(),
+			'totals'     => Folders::totals(),
+			'i18n'       => array(
 				'title'           => __( 'Folders', 'mlab-media-folder' ),
 				'all'             => __( 'All files', 'mlab-media-folder' ),
 				'unfiled'         => __( 'Unfiled', 'mlab-media-folder' ),
@@ -85,6 +86,8 @@ final class Admin {
 				'todo'            => __( 'To do', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
+				/* translators: 1: number of images shown, 2: number of entries in the library. */
+				'countNote'       => __( '%1$d images shown, %2$d entries in the library. The library shows each file once and hides entries without a file. See "Duplicates" and "File missing".', 'mlab-media-folder' ),
 				'duplicate'       => __( 'Duplicates', 'mlab-media-folder' ),
 				'missing'         => __( 'File missing', 'mlab-media-folder' ),
 				/* translators: %d: number of entries. */

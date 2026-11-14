@@ -3,6 +3,16 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.3.1] - 2026-11-14
+
+### Changed
+- The media library screen (grid and list) shows each file once. Entries whose file is missing on the server are hidden, and when several entries point to the same file only the entry with the lowest ID is listed. The folder counters, "All files" and the "To do" views "Unfiled", "No alt text" and "Not in a page" count exactly these images, so a counter always equals the images shown. The views "Duplicates" and "File missing" still list the hidden entries so they can be cleaned up. The tooltip of "All files" shows both numbers.
+- The media dialogs of the editor are not affected: they keep listing every entry, so a post can still open any entry it uses. Only requests with the new query key `mlab_clean` (sent by the library screen) hide entries.
+- `Folders::totals()` also returns `entries` (the number of library entries).
+
+### Fixed
+- Moving the kept entry of a duplicate group to the trash (or restoring it) updated the hidden entries only after up to an hour. The scan is now cleared on trash and restore.
+
 ## [2.3.0] - 2026-11-14
 
 ### Added

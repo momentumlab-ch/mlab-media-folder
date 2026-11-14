@@ -25,7 +25,7 @@ final class Health {
 	const CACHE_KEY = 'mlab_media_folder_health';
 
 	/**
-	 * Cache lifetime. The cache is also cleared whenever a file is added or deleted.
+	 * Cache lifetime. The cache is also cleared whenever an entry is added, deleted, trashed or restored.
 	 */
 	const CACHE_TTL = HOUR_IN_SECONDS;
 
@@ -41,6 +41,9 @@ final class Health {
 	 */
 	public function hooks() {
 		add_action( 'add_attachment', array( __CLASS__, 'clear_cache' ) );
+		// The kept entry of a file can move to the trash and back; the others must show up again.
+		add_action( 'trashed_post', array( __CLASS__, 'clear_cache' ) );
+		add_action( 'untrashed_post', array( __CLASS__, 'clear_cache' ) );
 		add_action( 'delete_attachment', array( $this, 'protect_shared_file' ), 9 );
 		add_action( 'delete_attachment', array( __CLASS__, 'clear_cache' ), 10 );
 		add_action( 'deleted_post', array( $this, 'release' ) );
@@ -57,16 +60,22 @@ final class Health {
 	/**
 	 * Attachment IDs per problem, from the cache or a fresh scan.
 	 *
-	 * @return array{duplicate:int[], missing:int[]}
+	 * "duplicate" lists every entry that shares its file, "extra" the entries
+	 * that are hidden in the library because another entry with the lowest ID
+	 * already shows the same file, "missing" the entries without a file.
+	 *
+	 * @return array{duplicate:int[], extra:int[], missing:int[]}
 	 */
 	public static function scan() {
 		$cached = get_site_transient( self::CACHE_KEY );
-		if ( is_array( $cached ) && isset( $cached['duplicate'], $cached['missing'] ) ) {
+		if ( is_array( $cached ) && isset( $cached['duplicate'], $cached['extra'], $cached['missing'] ) ) {
 			return $cached;
 		}
 
+		$groups = self::find_duplicates();
 		$result = array(
-			'duplicate' => self::find_duplicates(),
+			'duplicate' => $groups['all'],
+			'extra'     => $groups['extra'],
 			'missing'   => self::find_missing(),
 		);
 		set_site_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
@@ -74,16 +83,27 @@ final class Health {
 	}
 
 	/**
-	 * Entries that point to the same file as at least one other entry.
+	 * Entries in the library that must not be listed: their file is missing
+	 * or another entry already shows the same file.
 	 *
 	 * @return int[]
+	 */
+	public static function hidden_ids() {
+		$scan = self::scan();
+		return array_values( array_unique( array_merge( $scan['missing'], $scan['extra'] ) ) );
+	}
+
+	/**
+	 * Entries that point to the same file as at least one other entry.
+	 *
+	 * @return array{all:int[], extra:int[]} All entries of such groups, and all but the lowest ID of each group.
 	 */
 	private static function find_duplicates() {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- Aggregate lookup, no API equivalent; no user input.
-		$ids = $wpdb->get_col(
-			"SELECT m.post_id
+		$rows = $wpdb->get_results(
+			"SELECT m.post_id, m.meta_value AS file
 			FROM {$wpdb->postmeta} m
 			INNER JOIN {$wpdb->posts} p ON p.ID = m.post_id
 			INNER JOIN (
@@ -94,9 +114,25 @@ final class Health {
 				GROUP BY m2.meta_value
 				HAVING COUNT(*) > 1
 			) d ON d.file = m.meta_value
-			WHERE m.meta_key = '_wp_attached_file' AND p.post_type = 'attachment' AND p.post_status <> 'trash'"
+			WHERE m.meta_key = '_wp_attached_file' AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+			ORDER BY m.post_id ASC"
 		);
-		return array_map( 'intval', (array) $ids );
+
+		$all   = array();
+		$extra = array();
+		$seen  = array();
+		foreach ( (array) $rows as $row ) {
+			$id    = (int) $row->post_id;
+			$all[] = $id;
+			if ( isset( $seen[ $row->file ] ) ) {
+				$extra[] = $id;
+			}
+			$seen[ $row->file ] = true;
+		}
+		return array(
+			'all'   => $all,
+			'extra' => $extra,
+		);
 	}
 
 	/**

@@ -4,7 +4,7 @@ return array(
 	'domain' => 'mlab-media-folder',
 	'plural-forms' => 'nplurals=2; plural=n != 1;',
 	'language' => 'de_CH_informal',
-	'project-id-version' => 'MomentumLab Media Folder 2.3.0',
+	'project-id-version' => 'MomentumLab Media Folder 2.3.1',
 	'messages' => array(
 		'Selected files' => 'Ausgewählte Dateien',
 		'%d selected' => '%d ausgewählt',
@@ -92,5 +92,6 @@ return array(
 		'Same file as' => 'Gleiche Datei wie',
 		'Duplicate: keep one entry' => 'Doppelt: einen Eintrag behalten',
 		'File is missing on the server' => 'Datei fehlt auf dem Server',
+		'%1$d images shown, %2$d entries in the library. The library shows each file once and hides entries without a file. See "Duplicates" and "File missing".' => '%1$d Bilder angezeigt, %2$d Einträge in der Mediathek. Die Mediathek zeigt jede Datei einmal und blendet Einträge ohne Datei aus. Siehe «Doppelt» und «Datei fehlt».',
 	),
 );
