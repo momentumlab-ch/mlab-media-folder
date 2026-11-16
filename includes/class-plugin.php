@@ -77,6 +77,7 @@ final class Plugin {
 	 */
 	public static function activate() {
 		Taxonomy::register();
+		Tags::register();
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
 		if ( ! wp_next_scheduled( Background_Audit::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Background_Audit::HOOK );
@@ -84,6 +85,7 @@ final class Plugin {
 		if ( ! wp_next_scheduled( Content_Audit::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Content_Audit::HOOK );
 		}
+		Usage_Audit::restart();
 	}
 
 	/**
@@ -109,6 +111,7 @@ final class Plugin {
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
 		Background_Audit::restart_scan();
 		Content_Audit::restart_scan();
+		Usage_Audit::restart();
 	}
 
 	/**
