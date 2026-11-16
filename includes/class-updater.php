@@ -48,6 +48,11 @@ final class Updater {
 	 * Registers hooks.
 	 */
 	public function hooks() {
+		// MomentumLab Core / License Server may own updates for this product.
+		// Never register the GitHub fallback at the same time.
+		if ( apply_filters( 'mlab_core_manages_plugin', false, 'mlab-media-folder' ) ) {
+			return;
+		}
 		add_filter( 'update_plugins_github.com', array( $this, 'check_update' ), 10, 3 );
 		add_filter( 'plugins_api', array( $this, 'plugin_info' ), 10, 3 );
 		add_filter( 'upgrader_source_selection', array( $this, 'fix_source_dir' ), 10, 4 );
