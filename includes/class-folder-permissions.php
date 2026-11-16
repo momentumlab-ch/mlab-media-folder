@@ -135,6 +135,24 @@ final class Folder_Permissions {
 	}
 
 	/**
+	 * Copy stored Pro metadata internally when a folder is duplicated.
+	 *
+	 * @param int $source_id Source folder.
+	 * @param int $target_id Target folder.
+	 */
+	public static function copy( int $source_id, int $target_id ): void {
+		if ( ! Features::is_pro() || ! Folders::exists( $source_id ) || ! Folders::exists( $target_id ) ) {
+			return;
+		}
+		$rules = self::get( $source_id );
+		update_term_meta( $target_id, self::ROLES_META, $rules['roles'] );
+		update_term_meta( $target_id, self::USERS_META, $rules['users'] );
+		if ( Features::available( 'advanced_folder_style' ) ) {
+			update_term_meta( $target_id, self::COLOR_META, $rules['color'] );
+		}
+	}
+
+	/**
 	 * Save Pro-only folder metadata.
 	 *
 	 * @param int      $folder_id Folder.
