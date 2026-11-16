@@ -89,12 +89,12 @@ final class Health {
 			return $cached;
 		}
 
-		$groups = self::find_duplicates();
+		$groups             = self::find_duplicates();
 		$content_duplicates = self::find_content_duplicates();
-		$audit = Background_Audit::status();
+		$audit              = Background_Audit::status();
 		// The incremental audit covers the entire library only after completion.
 		// During a scan, keep the bounded synchronous results available.
-		$missing = ! empty( $audit['complete'] ) && isset( $audit['missing'] ) && is_array( $audit['missing'] )
+		$missing            = ! empty( $audit['complete'] ) && isset( $audit['missing'] ) && is_array( $audit['missing'] )
 			? array_map( 'absint', $audit['missing'] )
 			: self::find_missing();
 		$result = array(
@@ -218,7 +218,7 @@ final class Health {
 		 *
 		 * @param int $limit Default 5000.
 		 */
-		$limit = max( 1, min( 50000, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) ) );
+		$limit   = max( 1, min( 50000, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) ) );
 		$uploads = wp_get_upload_dir();
 		$base    = isset( $uploads['basedir'] ) ? realpath( $uploads['basedir'] ) : false;
 		if ( false === $base ) {
@@ -378,5 +378,4 @@ final class Health {
 		$normalized = wp_normalize_path( (string) $path );
 		return isset( $this->protected_paths[ $normalized ] ) ? '' : $path;
 	}
-
 }
