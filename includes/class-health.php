@@ -237,13 +237,11 @@ final class Health {
 			if ( '' === $row->file || preg_match( '#^[a-z][a-z0-9+.-]*://#i', $row->file ) ) {
 				continue;
 			}
-			// Ignore absolute and traversal paths: never resolve a stored attachment outside uploads.
-			$relative = str_replace( '\\', '/', (string) $row->file );
-			$segments = explode( '/', $relative );
-			if ( '' === $relative || '/' === $relative[0] || in_array( '..', $segments, true ) || in_array( '.', $segments, true ) || preg_match( '/^[a-z]:/i', $relative ) ) {
+			$relative = Content_Audit::safe_relative_path( (string) $row->file );
+			if ( null === $relative ) {
 				continue;
 			}
-			$path = $base . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $segments );
+			$path = $base . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $relative );
 			if ( ! file_exists( $path ) ) {
 				$missing[] = (int) $row->ID;
 			}
