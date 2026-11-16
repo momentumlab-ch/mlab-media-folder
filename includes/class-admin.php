@@ -59,7 +59,7 @@ final class Admin {
 	 */
 	public function rescan() {
 		if ( ! current_user_can( Plugin::manage_capability() ) ) {
-			wp_die( esc_html__( 'You are not allowed to run the media audit.', 'mlab-media-folder' ), 403 );
+			wp_die( esc_html__( 'You are not allowed to run the media audit.', 'mlab-media-folder' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( 'mlab_media_folder_rescan' );
 		Background_Audit::restart_scan();
