@@ -97,7 +97,7 @@ return array(
 		'Duplicate-content audit complete: %d checked' => 'Inhalts-Duplikatprüfung abgeschlossen: %d geprüft',
 		'Duplicate-content audit running: %d checked so far' => 'Inhalts-Duplikatprüfung läuft: bisher %d geprüft',
 		'Scan again' => 'Erneut prüfen',
-		'You are not allowed to run the media audit.' => 'Du bist nicht berechtigt, die Medienprüfung auszuführen.',
+		'You are not allowed to run the media audit.' => 'Keine Berechtigung für die Medienprüfung.',
 		'Entries that point to the same physical file or have identical file contents. The background audit fingerprints files with SHA-256 so copies with different names can also be found.' => 'Einträge, die auf dieselbe physische Datei zeigen oder identische Dateiinhalte haben. Die Hintergrundprüfung bildet SHA-256-Fingerabdrücke, damit auch Kopien mit unterschiedlichen Namen gefunden werden.',
 		'Same file or content as' => 'Gleiche Datei oder gleicher Inhalt wie',
 		'Duplicate: compare and keep the correct entry' => 'Doppelt: vergleichen und den richtigen Eintrag behalten',
