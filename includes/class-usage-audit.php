@@ -61,6 +61,7 @@ final class Usage_Audit {
 	 * Start a new generation without deleting old markers.
 	 */
 	public static function restart(): void {
+		Folders::clear_cache();
 		update_option(
 			self::OPTION,
 			array(
@@ -141,6 +142,9 @@ final class Usage_Audit {
 		$state['complete'] = count( (array) $posts ) < self::BATCH;
 		$state['updated']  = time();
 		update_option( self::OPTION, $state, false );
+		if ( $state['complete'] ) {
+			Folders::clear_cache();
+		}
 
 		if ( ! $state['complete'] && ! wp_next_scheduled( self::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::HOOK );
