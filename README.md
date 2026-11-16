@@ -6,7 +6,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 2.3.1 |
+| Aktuelle Version | 2.4.0 |
 | WordPress | ab 6.5, getestet bis 7.1.3 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
