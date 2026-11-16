@@ -23,6 +23,7 @@ final class Image_Optimization {
 		add_filter( 'big_image_size_threshold', array( $this, 'size_threshold' ), 20 );
 		add_filter( 'image_editor_output_format', array( $this, 'output_format' ), 20 );
 		add_filter( 'wp_editor_set_quality', array( $this, 'quality' ), 20, 2 );
+		add_filter( 'wp_generate_attachment_metadata', array( $this, 'privacy' ), 30, 3 );
 	}
 
 	/**
@@ -54,6 +55,9 @@ final class Image_Optimization {
 		}
 
 		$format = (string) $settings['format'];
+		if ( 'avif' === $format && ! Features::is_pro() ) {
+			$format = 'webp';
+		}
 		if ( 'original' === $format || ! self::supports( $format ) ) {
 			return $formats;
 		}
@@ -91,6 +95,71 @@ final class Image_Optimization {
 		}
 
 		return $quality;
+	}
+
+	/**
+	 * Remove metadata only from generated derivatives when Pro privacy rules request it.
+	 *
+	 * Uploaded originals are never modified.
+	 *
+	 * @param array  $metadata      Attachment metadata.
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $context       Metadata context.
+	 * @return array
+	 */
+	public function privacy( $metadata, $attachment_id, $context ) {
+		unset( $context );
+		if ( ! Features::is_pro() || ! is_array( $metadata ) || ! class_exists( 'Imagick' ) ) {
+			return $metadata;
+		}
+
+		$settings = Optimization_Settings::get();
+		$policy   = (string) $settings['exif_policy'];
+		if ( 'keep' === $policy ) {
+			return $metadata;
+		}
+
+		$original = get_attached_file( (int) $attachment_id );
+		if ( ! is_string( $original ) || '' === $original ) {
+			return $metadata;
+		}
+		$dir = dirname( $original );
+
+		foreach ( (array) ( $metadata['sizes'] ?? array() ) as $size ) {
+			if ( ! is_array( $size ) || empty( $size['file'] ) ) {
+				continue;
+			}
+			$path = path_join( $dir, wp_basename( (string) $size['file'] ) );
+			self::strip_file_metadata( $path, $policy );
+		}
+
+		return $metadata;
+	}
+
+	/**
+	 * Apply one privacy policy to a generated derivative.
+	 */
+	private static function strip_file_metadata( string $path, string $policy ): void {
+		if ( ! is_file( $path ) || ! is_writable( $path ) ) {
+			return;
+		}
+
+		try {
+			$image = new \Imagick( $path );
+			if ( 'strip_all' === $policy ) {
+				$image->stripImage();
+			} elseif ( 'strip_gps' === $policy ) {
+				foreach ( array_keys( $image->getImageProperties( 'exif:GPS*' ) ) as $property ) {
+					$image->deleteImageProperty( $property );
+				}
+			}
+			$image->writeImage( $path );
+			$image->clear();
+			$image->destroy();
+		} catch ( \Throwable $error ) {
+			// Privacy cleanup is best effort and must never break an upload.
+			unset( $error );
+		}
 	}
 
 	/**
