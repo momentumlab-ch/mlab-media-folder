@@ -62,6 +62,7 @@ final class Dynamic_Views {
 		$id = (string) $view['id'];
 
 		$views = self::all();
+
 		$found = false;
 		foreach ( $views as $index => $candidate ) {
 			if ( (string) ( $candidate['id'] ?? '' ) === $id ) {
@@ -112,7 +113,7 @@ final class Dynamic_Views {
 		if ( '' === $name ) {
 			return new \WP_Error( 'mlab_media_folder_view_name', __( 'Enter a name for the Dynamic View.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
-		$id           = sanitize_key( (string) ( $input['id'] ?? '' ) );
+		$id = sanitize_key( (string) ( $input['id'] ?? '' ) );
 		if ( '' === $id ) {
 			$id = 'v' . strtolower( wp_generate_password( 10, false, false ) );
 		}
