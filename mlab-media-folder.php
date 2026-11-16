@@ -36,6 +36,7 @@ require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-migration.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-ai.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-image-optimization.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-upload-naming.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-automation-queue.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-settings-page.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-taxonomy.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-folders.php';
