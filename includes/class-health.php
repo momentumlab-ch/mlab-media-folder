@@ -52,8 +52,16 @@ final class Health {
 		add_filter( 'wp_delete_file', array( $this, 'keep_file' ) );
 	}
 
-	/** Clear health results when the physical attachment path changes. */
+	/**
+	 * Clears health results when the physical attachment path changes.
+	 *
+	 * @param int    $meta_id    Meta row ID.
+	 * @param int    $post_id    Attachment ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 */
 	public static function maybe_clear_file_cache( $meta_id, $post_id, $meta_key, $meta_value ) {
+		unset( $meta_id, $meta_value );
 		if ( '_wp_attached_file' === $meta_key && 'attachment' === get_post_type( $post_id ) ) {
 			self::clear_cache();
 		}
@@ -212,7 +220,7 @@ final class Health {
 		 */
 		$limit = max( 1, min( 50000, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) ) );
 		$uploads = wp_get_upload_dir();
-		$base    = realpath( $uploads['basedir'] );
+		$base    = isset( $uploads['basedir'] ) ? realpath( $uploads['basedir'] ) : false;
 		if ( false === $base ) {
 			// Do not classify the entire library as missing when uploads is unavailable.
 			return array();
@@ -283,8 +291,9 @@ final class Health {
 	 * @return int[]
 	 */
 	public static function others_sharing_content( $attachment_id, $limit = 3 ) {
-		$hash = (string) get_post_meta( (int) $attachment_id, Content_Audit::HASH_META, true );
-		if ( '' === $hash || empty( Content_Audit::status()['complete'] ) ) {
+		$hash   = (string) get_post_meta( (int) $attachment_id, Content_Audit::HASH_META, true );
+		$status = Content_Audit::status();
+		if ( '' === $hash || empty( $status['complete'] ) || ! empty( $status['disabled'] ) ) {
 			return array();
 		}
 		$ids = get_posts(
