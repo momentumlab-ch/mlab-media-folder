@@ -42,9 +42,9 @@ final class Naming {
 	 * @param int                 $counter Collision counter.
 	 */
 	public static function render( string $pattern, array $context, int $counter = 1 ): string {
-		$date = isset( $context['date'] ) && $context['date'] instanceof DateTimeInterface
+		$date = isset( $context['date'] ) && $context['date'] instanceof \DateTimeInterface
 			? $context['date']
-			: new DateTimeImmutable( 'now', wp_timezone() );
+			: new \DateTimeImmutable( 'now', wp_timezone() );
 
 		$values = array(
 			'%companyname%'  => (string) ( $context['company_name'] ?? Automation_Settings::get()['company_name'] ),
