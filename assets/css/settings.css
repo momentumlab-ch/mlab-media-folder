@@ -103,3 +103,12 @@
 .mlab-mf-bulk-state strong{display:block;color:var(--mlab-ink)}
 .mlab-mf-bulk-state p{margin:3px 0 0;color:var(--mlab-muted)}
 @media(max-width:640px){.mlab-mf-bulk-state{align-items:stretch;flex-direction:column}}
+
+.mlab-mf-license-detail{
+	display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin:12px 0 16px;
+	padding:12px 14px;border:1px solid var(--mlab-line);border-radius:12px;background:var(--mlab-soft)
+}
+.mlab-mf-license-detail strong{font-size:11px;color:#344054}
+.mlab-mf-license-detail span{font-size:11px;color:var(--mlab-muted)}
+.mlab-mf-license-detail code{justify-self:end}
+@media(max-width:640px){.mlab-mf-license-detail{grid-template-columns:1fr}.mlab-mf-license-detail code{justify-self:start}}
