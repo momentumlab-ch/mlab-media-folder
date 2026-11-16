@@ -115,7 +115,7 @@ final class Settings_Page {
 		}
 		check_admin_referer( 'mlab_media_folder_migrate' );
 
-		$taxonomy = isset( $_POST['taxonomy'] ) ? sanitize_key( wp_unslash( $_POST['taxonomy'] ) ) : '';
+		$taxonomy = isset( $_REQUEST['taxonomy'] ) ? sanitize_key( wp_unslash( $_REQUEST['taxonomy'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- checked above.
 		$result   = Migration::import( $taxonomy );
 
 		$args = array( 'page' => self::SLUG );
@@ -334,7 +334,7 @@ final class Settings_Page {
 						<?php else : foreach ( $migrations as $source ) : ?>
 							<div class="mlab-mf-migration-row">
 								<div><strong><?php echo esc_html( $source['label'] ); ?></strong><p><?php echo esc_html( sprintf( __( '%1$d folders · %2$d media relationships detected', 'mlab-media-folder' ), $source['folders'], $source['attachments'] ) ); ?></p></div>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="mlab_media_folder_migrate"><input type="hidden" name="taxonomy" value="<?php echo esc_attr( $source['taxonomy'] ); ?>"><?php wp_nonce_field( 'mlab_media_folder_migrate' ); ?><button type="submit" class="button"><?php esc_html_e( 'Copy into Media Folder', 'mlab-media-folder' ); ?></button></form>
+								<a class="button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'mlab_media_folder_migrate', 'taxonomy' => $source['taxonomy'] ), admin_url( 'admin-post.php' ) ), 'mlab_media_folder_migrate' ) ); ?>"><?php esc_html_e( 'Copy into Media Folder', 'mlab-media-folder' ); ?></a>
 							</div>
 						<?php endforeach; endif; ?>
 					</section>
