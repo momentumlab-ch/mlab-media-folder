@@ -55,6 +55,13 @@ final class Settings_Page {
 			array(),
 			MLAB_MEDIA_FOLDER_VERSION
 		);
+		wp_enqueue_script(
+			'mlab-media-folder-settings',
+			MLAB_MEDIA_FOLDER_URL . 'assets/js/settings.js',
+			array( 'jquery' ),
+			MLAB_MEDIA_FOLDER_VERSION,
+			true
+		);
 	}
 
 	/**
@@ -364,6 +371,7 @@ final class Settings_Page {
 						<p><?php esc_html_e( 'Create reusable views by media type, uploader and age. They appear directly below the core Smart Views in the Media Library.', 'mlab-media-folder' ); ?></p>
 						<?php self::locked_note( 'dynamic_views' ); ?>
 						<div class="<?php echo Features::available( 'dynamic_views' ) ? '' : 'mlab-mf-disabled'; ?>">
+							<div class="mlab-mf-dynamic-views">
 							<?php
 							$view_rows   = $views;
 							$view_rows[] = array(
@@ -383,8 +391,11 @@ final class Settings_Page {
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Uploader', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][author]"><option value="0"><?php esc_html_e( 'Any uploader', 'mlab-media-folder' ); ?></option><?php foreach ( $authors as $author ) : ?><option value="<?php echo (int) $author->ID; ?>" <?php selected( (int) $view['author'], (int) $author->ID ); ?>><?php echo esc_html( $author->display_name ); ?></option><?php endforeach; ?></select></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Last days', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="3650" name="dynamic_views[<?php echo (int) $index; ?>][days]" value="<?php echo esc_attr( (string) $view['days'] ); ?>" placeholder="0"></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Minimum MB', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="102400" name="dynamic_views[<?php echo (int) $index; ?>][min_mb]" value="<?php echo esc_attr( (string) $view['min_mb'] ); ?>" placeholder="0"></label>
+									<button type="button" class="button-link-delete mlab-mf-remove-view"><?php esc_html_e( 'Remove', 'mlab-media-folder' ); ?></button>
 								</div>
 							<?php endforeach; ?>
+							</div>
+							<p><button type="button" class="button mlab-mf-add-view"><?php esc_html_e( 'Add view', 'mlab-media-folder' ); ?></button></p>
 						</div>
 					</section>
 
