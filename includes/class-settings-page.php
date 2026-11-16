@@ -124,14 +124,13 @@ final class Settings_Page {
 		check_admin_referer( 'mlab_media_folder_migrate' );
 
 		$taxonomy = isset( $_REQUEST['taxonomy'] ) ? sanitize_key( wp_unslash( $_REQUEST['taxonomy'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- checked above.
-		$result   = Migration::import( $taxonomy );
+		$result   = Migration_Job::start( $taxonomy );
 
 		$args = array( 'page' => self::SLUG );
 		if ( is_wp_error( $result ) ) {
 			$args['migration_error'] = rawurlencode( $result->get_error_message() );
 		} else {
-			$args['migration_folders'] = (int) $result['folders'];
-			$args['migration_files']   = (int) $result['assignments'];
+			$args['migration_start'] = '1';
 		}
 
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'upload.php' ) ) );
@@ -184,6 +183,7 @@ final class Settings_Page {
 			)
 		);
 		$migrations       = Migration::detect();
+		$migration_status = Migration_Job::status();
 		$bulk_status      = Bulk_Optimize::status();
 		$bulk_status_text = sprintf(
 			/* translators: 1: checked images, 2: rebuilt images, 3: failed images. */
@@ -212,19 +212,8 @@ final class Settings_Page {
 				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p><?php esc_html_e( 'Bulk image optimization was queued and will run in small background batches.', 'mlab-media-folder' ); ?></p></div>
 			<?php endif; ?>
 
-			<?php if ( isset( $_GET['migration_folders'], $_GET['migration_files'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
-				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p>
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: 1: folders, 2: assignments. */
-							__( 'Migration complete: %1$d folders created, %2$d media assignments copied.', 'mlab-media-folder' ),
-							absint( $_GET['migration_folders'] ),
-							absint( $_GET['migration_files'] )
-						)
-					);
-					?>
-				</p></div>
+			<?php if ( isset( $_GET['migration_start'] ) ) : ?>
+				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p><?php esc_html_e( 'Migration queued. Media assignments are copied in small background batches.', 'mlab-media-folder' ); ?></p></div>
 			<?php elseif ( isset( $_GET['migration_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
 				<div class="notice notice-error is-dismissible mlab-mf-own-notice"><p><?php echo esc_html( rawurldecode( sanitize_text_field( wp_unslash( $_GET['migration_error'] ) ) ) ); ?></p></div>
 			<?php endif; ?>
@@ -435,6 +424,18 @@ final class Settings_Page {
 					<section class="mlab-mf-card mlab-mf-card-wide">
 						<div class="mlab-mf-card-heading"><div><span class="mlab-mf-kicker"><?php esc_html_e( 'Tools', 'mlab-media-folder' ); ?></span><h2><?php esc_html_e( 'Import / Migration', 'mlab-media-folder' ); ?></h2></div></div>
 						<p><?php esc_html_e( 'Copy folder structures into Media Folder without deleting or modifying the source plugin data.', 'mlab-media-folder' ); ?></p>
+						<?php if ( $migration_status ) : ?>
+							<div class="mlab-mf-migration-status <?php echo ! empty( $migration_status['error'] ) ? 'has-error' : ''; ?>">
+								<strong><?php esc_html_e( 'Migration status', 'mlab-media-folder' ); ?></strong>
+								<?php if ( ! empty( $migration_status['error'] ) ) : ?>
+									<p><?php echo esc_html( (string) $migration_status['error'] ); ?></p>
+								<?php elseif ( ! empty( $migration_status['complete'] ) ) : ?>
+									<p><?php echo esc_html( sprintf( __( '%1$d folders created · %2$d media assignments copied', 'mlab-media-folder' ), (int) ( $migration_status['created'] ?? 0 ), (int) ( $migration_status['assignments'] ?? 0 ) ) ); ?></p>
+								<?php else : ?>
+									<p><?php echo esc_html( sprintf( __( '%1$d media items checked · %2$d assignments copied so far', 'mlab-media-folder' ), (int) ( $migration_status['checked'] ?? 0 ), (int) ( $migration_status['assignments'] ?? 0 ) ) ); ?></p>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
 						<?php if ( ! $migrations ) : ?>
 							<div class="mlab-mf-safe"><span class="dashicons dashicons-yes-alt"></span><div><strong><?php esc_html_e( 'No supported source detected', 'mlab-media-folder' ); ?></strong><p><?php esc_html_e( 'When a supported folder taxonomy is present it will appear here automatically.', 'mlab-media-folder' ); ?></p></div></div>
 						<?php else : ?>
