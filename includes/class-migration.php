@@ -182,7 +182,8 @@ final class Migration {
 						}
 					}
 				}
-				$progress         = true;
+
+				$progress = true;
 			}
 
 			if ( ! $progress ) {
@@ -262,6 +263,7 @@ final class Migration {
 					'target' => $target,
 					'depth'  => $depth,
 				);
+
 				$progress = true;
 			}
 
@@ -490,7 +492,8 @@ final class Migration {
 					'target' => $target,
 					'depth'  => $depth,
 				);
-				$progress         = true;
+
+				$progress = true;
 			}
 			if ( ! $progress ) {
 				break;
@@ -605,7 +608,8 @@ final class Migration {
 					++$created;
 				}
 				$map[ $source_id ] = $target;
-				$progress          = true;
+
+				$progress = true;
 			}
 
 			if ( ! $progress ) {
