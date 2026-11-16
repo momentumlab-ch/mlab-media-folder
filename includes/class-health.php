@@ -187,7 +187,7 @@ final class Health {
 				continue;
 			}
 			// Ignore absolute and traversal paths: never resolve a stored attachment outside uploads.
-			$relative = str_replace( '\\\\', '/', (string) $row->file );
+			$relative = str_replace( '\\', '/', (string) $row->file );
 			$segments = explode( '/', $relative );
 			if ( '' === $relative || '/' === $relative[0] || in_array( '..', $segments, true ) || in_array( '.', $segments, true ) || preg_match( '/^[a-z]:/i', $relative ) ) {
 				continue;
