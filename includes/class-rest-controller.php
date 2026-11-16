@@ -282,7 +282,7 @@ final class Rest_Controller {
 				'number'     => 12,
 			)
 		);
-		$folder_rows     = array();
+		$folder_rows = array();
 		if ( ! is_wp_error( $folders ) ) {
 			foreach ( $folders as $term ) {
 				if ( ! Folder_Permissions::can_access( (int) $term->term_id ) ) {
