@@ -348,18 +348,7 @@ final class Migration {
 				continue;
 			}
 			$source_ids = $relations[ $attachment_id ] ?? array();
-			$best       = 0;
-			$best_depth = -1;
-			foreach ( $source_ids as $source_id ) {
-				if ( ! isset( $map[ $source_id ] ) ) {
-					continue;
-				}
-				$depth = (int) $map[ $source_id ]['depth'];
-				if ( $depth > $best_depth || ( $depth === $best_depth && $source_id < $best ) ) {
-					$best       = $source_id;
-					$best_depth = $depth;
-				}
-			}
+			$best       = self::select_source_folder( $source_ids, $map );
 			if ( ! $best ) {
 				continue;
 			}
