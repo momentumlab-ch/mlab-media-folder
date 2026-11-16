@@ -108,6 +108,7 @@ final class Admin {
 			'maxAssign'    => Folders::MAX_ASSIGN,
 			'folders'      => Folders::flattened_tree(),
 			'dynamicViews' => Dynamic_Views::all(),
+			'usageAudit'   => Usage_Audit::status(),
 			'totals'       => Folders::totals(),
 			'i18n'         => array(
 				'title'           => __( 'Folders', 'mlab-media-folder' ),
@@ -145,6 +146,7 @@ final class Admin {
 				'savedViews'      => __( 'Saved Views', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
 				'unused'          => __( 'Potentially unused', 'mlab-media-folder' ),
+				'usageScanning'   => __( 'Usage audit running…', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
 				/* translators: 1: number of images shown, 2: number of entries in the library. */
 				'countNote'       => __( '%1$d images shown, %2$d entries in the library. The library shows each file once and hides entries without a file. See "Duplicates" and "File missing".', 'mlab-media-folder' ),
