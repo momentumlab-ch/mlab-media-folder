@@ -60,6 +60,30 @@ final class AI {
 		$image_data = base64_encode( $bytes );
 		$body       = array(
 			'model' => (string) $settings['model'],
+			'text'  => array(
+				'format' => array(
+					'type'   => 'json_schema',
+					'name'   => 'media_metadata',
+					'strict' => true,
+					'schema' => array(
+						'type'                 => 'object',
+						'additionalProperties' => false,
+						'required'             => array( 'alt_text', 'title', 'description', 'tags', 'image_name' ),
+						'properties'           => array(
+							'alt_text'    => array( 'type' => 'string' ),
+							'title'       => array( 'type' => 'string' ),
+							'description' => array( 'type' => 'string' ),
+							'tags'        => array(
+								'type'     => 'array',
+								'minItems' => 3,
+								'maxItems' => 8,
+								'items'    => array( 'type' => 'string' ),
+							),
+							'image_name'  => array( 'type' => 'string' ),
+						),
+					),
+				),
+			),
 			'input' => array(
 				array(
 					'role'    => 'user',
