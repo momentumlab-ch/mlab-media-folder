@@ -19,11 +19,29 @@ final class Admin {
 	 */
 	public function hooks() {
 		add_action( 'wp_enqueue_media', array( $this, 'enqueue_media_assets' ) );
+		add_action( 'admin_notices', array( $this, 'audit_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_library_assets' ) );
 		add_action( 'add_attachment', array( $this, 'assign_uploaded_attachment' ) );
 		add_filter( 'attachment_fields_to_edit', array( $this, 'add_folder_field' ), 10, 2 );
 		add_filter( 'attachment_fields_to_edit', array( $this, 'add_origin_field' ), 11, 2 );
 		add_filter( 'attachment_fields_to_save', array( $this, 'save_folder_field' ), 10, 2 );
+	}
+
+	/**
+	 * Read-only audit progress in the media library; no unrelated admin notices.
+	 */
+	public function audit_notice() {
+		global $pagenow;
+		if ( 'upload.php' !== $pagenow || ! current_user_can( Plugin::use_capability() ) ) {
+			return;
+		}
+		$state = Background_Audit::status();
+		$checked = absint( $state['checked'] );
+		$missing = count( (array) $state['missing'] );
+		$label = ! empty( $state['complete'] )
+			? sprintf( /* translators: 1: number checked, 2: missing files. */ __( 'Media audit complete: %1$d checked, %2$d missing.', 'mlab-media-folder' ), $checked, $missing )
+			: sprintf( /* translators: number checked so far. */ __( 'Media audit running in the background: %d checked so far.', 'mlab-media-folder' ), $checked );
+		echo '<div class="notice notice-info mlab-media-folder-audit-notice"><p>' . esc_html( $label ) . '</p></div>';
 	}
 
 	/**
