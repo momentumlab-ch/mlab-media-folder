@@ -938,3 +938,18 @@ body.mlab-mf-inspector-open #wpbody-content{padding-right:360px}
 	body.mlab-mf-inspector-open #wpbody-content{padding-right:0;padding-bottom:50vh}
 }
 @media(max-width:782px){.mlab-mf-inspector{top:auto}.mlab-mf-workspace-actions .button:first-child{display:none}}
+
+.mlab-media-folder-row.has-folder-color .mlab-media-folder-name .dashicons{
+	color:var(--mlab-folder-color)!important;
+}
+.mlab-media-folder-row.is-current.has-folder-color .mlab-media-folder-name .dashicons{
+	color:#fff!important;
+}
+.mlab-media-folder-color-picker{
+	position:fixed!important;
+	left:-9999px!important;
+	top:-9999px!important;
+	width:1px!important;
+	height:1px!important;
+	opacity:0!important;
+}
