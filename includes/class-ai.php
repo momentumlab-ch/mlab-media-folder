@@ -62,7 +62,7 @@ final class AI {
 			'model' => (string) $settings['model'],
 			'input' => array(
 				array(
-					'role' => 'user',
+					'role'    => 'user',
 					'content' => array(
 						array(
 							'type' => 'input_text',
@@ -83,7 +83,7 @@ final class AI {
 				'timeout' => 45,
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $key,
-					'Content-Type' => 'application/json',
+					'Content-Type'  => 'application/json',
 				),
 				'body' => wp_json_encode( $body ),
 			)
@@ -93,7 +93,7 @@ final class AI {
 		}
 
 		$status = (int) wp_remote_retrieve_response_code( $response );
-		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		$data   = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		if ( 200 !== $status || ! is_array( $data ) ) {
 			$message = is_array( $data ) ? sanitize_text_field( (string) ( $data['error']['message'] ?? '' ) ) : '';
 			return new \WP_Error( 'mlab_media_folder_ai_error', '' !== $message ? $message : __( 'The AI provider returned an invalid response.', 'mlab-media-folder' ), array( 'status' => 502 ) );
@@ -142,7 +142,7 @@ final class AI {
 		}
 
 		if ( $tags && isset( $suggestion['tags'] ) && is_array( $suggestion['tags'] ) ) {
-			$terms = array_slice( array_values( array_filter( array_map( 'sanitize_text_field', $suggestion['tags'] ) ) ), 0, 20 );
+			$terms  = array_slice( array_values( array_filter( array_map( 'sanitize_text_field', $suggestion['tags'] ) ) ), 0, 20 );
 			$result = wp_set_object_terms( $attachment_id, $terms, Tags::NAME, false );
 			if ( is_wp_error( $result ) ) {
 				return $result;
@@ -160,8 +160,8 @@ final class AI {
 	 */
 	private static function prompt( int $attachment_id, array $settings ): string {
 		$filename = wp_basename( (string) get_attached_file( $attachment_id ) );
-		$folder = Folders::path( Folders::of_attachment( $attachment_id ) );
-		$lines = array(
+		$folder   = Folders::path( Folders::of_attachment( $attachment_id ) );
+		$lines    = array(
 			'Create concise WordPress media metadata.',
 			'Language/locale: ' . (string) $settings['language'],
 			'Filename: ' . $filename,
@@ -225,11 +225,11 @@ final class AI {
 		$tags = is_array( $data['tags'] ?? null ) ? $data['tags'] : array();
 		$tags = array_slice( array_values( array_filter( array_map( 'sanitize_text_field', $tags ) ) ), 0, 12 );
 		return array(
-			'alt_text' => sanitize_text_field( (string) ( $data['alt_text'] ?? '' ) ),
-			'title' => sanitize_text_field( (string) ( $data['title'] ?? '' ) ),
+			'alt_text'    => sanitize_text_field( (string) ( $data['alt_text'] ?? '' ) ),
+			'title'       => sanitize_text_field( (string) ( $data['title'] ?? '' ) ),
 			'description' => sanitize_textarea_field( (string) ( $data['description'] ?? '' ) ),
-			'tags' => $tags,
-			'image_name' => sanitize_title( (string) ( $data['image_name'] ?? '' ) ),
+			'tags'        => $tags,
+			'image_name'  => sanitize_title( (string) ( $data['image_name'] ?? '' ) ),
 		);
 	}
 }
