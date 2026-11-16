@@ -410,7 +410,7 @@ final class Folders {
 			if ( is_wp_error( $result ) ) {
 				$skipped[] = $attachment_id;
 			} else {
-				$moved[]                   = $attachment_id;
+				$moved[]                    = $attachment_id;
 				$previous[ $attachment_id ] = $before;
 			}
 		}
