@@ -29,16 +29,78 @@ final class Folder_Permissions {
 			return true;
 		}
 
-		$roles = array_values( array_filter( array_map( 'sanitize_key', (array) get_term_meta( $folder_id, self::ROLES_META, true ) ) ) );
-		$users = array_values( array_filter( array_map( 'absint', (array) get_term_meta( $folder_id, self::USERS_META, true ) ) ) );
+		$rules = self::effective_rules( $folder_id );
+		if ( ! $rules['roles'] && ! $rules['users'] ) {
+			return true;
+		}
+		if ( in_array( $user_id, $rules['users'], true ) ) {
+			return true;
+		}
+		return (bool) array_intersect( $rules['roles'], (array) $user->roles );
+	}
 
-		if ( ! $roles && ! $users ) {
-			return true;
+	/**
+	 * Access rules inherit from the nearest ancestor that defines them.
+	 *
+	 * @return array{roles:string[],users:int[]}
+	 */
+	private static function effective_rules( int $folder_id ): array {
+		$id    = $folder_id;
+		$guard = 0;
+
+		while ( 0 < $id && 30 > $guard++ ) {
+			$roles = array_values( array_filter( array_map( 'sanitize_key', (array) get_term_meta( $id, self::ROLES_META, true ) ) ) );
+			$users = array_values( array_filter( array_map( 'absint', (array) get_term_meta( $id, self::USERS_META, true ) ) ) );
+
+			if ( $roles || $users ) {
+				return array( 'roles' => $roles, 'users' => $users );
+			}
+
+			$term = get_term( $id, Taxonomy::NAME );
+			if ( ! $term || is_wp_error( $term ) ) {
+				break;
+			}
+			$id = (int) $term->parent;
 		}
-		if ( in_array( $user_id, $users, true ) ) {
-			return true;
+
+		return array( 'roles' => array(), 'users' => array() );
+	}
+
+	/**
+	 * Folder IDs the current user must not see.
+	 *
+	 * @return int[]
+	 */
+	public static function inaccessible_ids(): array {
+		if ( ! Features::available( 'folder_permissions' ) || current_user_can( 'manage_options' ) ) {
+			return array();
 		}
-		return (bool) array_intersect( $roles, (array) $user->roles );
+
+		$ids = get_terms(
+			array(
+				'taxonomy'   => Taxonomy::NAME,
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			)
+		);
+		if ( is_wp_error( $ids ) ) {
+			return array();
+		}
+
+		return array_values(
+			array_filter(
+				array_map( 'intval', $ids ),
+				static fn( int $id ): bool => ! self::can_access( $id )
+			)
+		);
+	}
+
+	/**
+	 * Whether the current user can access an attachment through its folder.
+	 */
+	public static function can_access_attachment( int $attachment_id ): bool {
+		$folder_id = Folders::of_attachment( $attachment_id );
+		return 0 === $folder_id || self::can_access( $folder_id );
 	}
 
 	/**
