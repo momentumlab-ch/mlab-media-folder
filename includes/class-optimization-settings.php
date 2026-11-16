@@ -58,7 +58,8 @@ final class Optimization_Settings {
 		$next['max_dimension'] = max( 1280, min( 7680, absint( $input['max_dimension'] ?? $current['max_dimension'] ) ) );
 
 		$format = sanitize_key( (string) ( $input['format'] ?? $current['format'] ) );
-		$next['format'] = in_array( $format, array( 'original', 'webp', 'avif' ), true ) ? $format : 'original';
+		$allowed_formats = Features::is_pro() ? array( 'original', 'webp', 'avif' ) : array( 'original', 'webp' );
+		$next['format'] = in_array( $format, $allowed_formats, true ) ? $format : 'webp';
 
 		$next['convert_png']  = ! empty( $input['convert_png'] );
 		$next['jpeg_quality'] = max( 50, min( 100, absint( $input['jpeg_quality'] ?? $current['jpeg_quality'] ) ) );
