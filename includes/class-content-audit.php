@@ -190,7 +190,7 @@ final class Content_Audit {
 
 			$signature = $size . ':' . $mtime;
 			if (
-				$signature === (string) get_post_meta( (int) $row->ID, self::SIG_META, true )
+				(string) get_post_meta( (int) $row->ID, self::SIG_META, true ) === $signature
 				&& '' !== (string) get_post_meta( (int) $row->ID, self::HASH_META, true )
 			) {
 				continue;
