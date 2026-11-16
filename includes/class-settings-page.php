@@ -182,10 +182,10 @@ final class Settings_Page {
 				'order'      => 'ASC',
 			)
 		);
-		$migrations = Migration::detect();
-		$bulk_status = Bulk_Optimize::status();
-		/* translators: 1: checked images, 2: rebuilt images, 3: failed images. */
+		$migrations       = Migration::detect();
+		$bulk_status      = Bulk_Optimize::status();
 		$bulk_status_text = sprintf(
+			/* translators: 1: checked images, 2: rebuilt images, 3: failed images. */
 			__( '%1$d checked · %2$d rebuilt · %3$d failed', 'mlab-media-folder' ),
 			(int) $bulk_status['checked'],
 			(int) $bulk_status['rebuilt'],
@@ -388,7 +388,15 @@ final class Settings_Page {
 									<input type="hidden" name="dynamic_views[<?php echo (int) $index; ?>][id]" value="<?php echo esc_attr( (string) $view['id'] ); ?>">
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Name', 'mlab-media-folder' ); ?></span><input type="text" name="dynamic_views[<?php echo (int) $index; ?>][name]" value="<?php echo esc_attr( (string) $view['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. Recent event images', 'mlab-media-folder' ); ?>"></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Type', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][mime]"><option value="" <?php selected( $view['mime'], '' ); ?>><?php esc_html_e( 'All media', 'mlab-media-folder' ); ?></option><option value="image" <?php selected( $view['mime'], 'image' ); ?>><?php esc_html_e( 'Images', 'mlab-media-folder' ); ?></option><option value="video" <?php selected( $view['mime'], 'video' ); ?>><?php esc_html_e( 'Video', 'mlab-media-folder' ); ?></option><option value="audio" <?php selected( $view['mime'], 'audio' ); ?>><?php esc_html_e( 'Audio', 'mlab-media-folder' ); ?></option><option value="application/pdf" <?php selected( $view['mime'], 'application/pdf' ); ?>>PDF</option></select></label>
-									<label class="mlab-mf-field"><span><?php esc_html_e( 'Uploader', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][author]"><option value="0"><?php esc_html_e( 'Any uploader', 'mlab-media-folder' ); ?></option><?php foreach ( $authors as $author ) : ?><option value="<?php echo (int) $author->ID; ?>" <?php selected( (int) $view['author'], (int) $author->ID ); ?>><?php echo esc_html( $author->display_name ); ?></option><?php endforeach; ?></select></label>
+									<label class="mlab-mf-field">
+										<span><?php esc_html_e( 'Uploader', 'mlab-media-folder' ); ?></span>
+										<select name="dynamic_views[<?php echo (int) $index; ?>][author]">
+											<option value="0"><?php esc_html_e( 'Any uploader', 'mlab-media-folder' ); ?></option>
+											<?php foreach ( $authors as $author ) : ?>
+												<option value="<?php echo (int) $author->ID; ?>" <?php selected( (int) $view['author'], (int) $author->ID ); ?>><?php echo esc_html( $author->display_name ); ?></option>
+											<?php endforeach; ?>
+										</select>
+									</label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Last days', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="3650" name="dynamic_views[<?php echo (int) $index; ?>][days]" value="<?php echo esc_attr( (string) $view['days'] ); ?>" placeholder="0"></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Minimum MB', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="102400" name="dynamic_views[<?php echo (int) $index; ?>][min_mb]" value="<?php echo esc_attr( (string) $view['min_mb'] ); ?>" placeholder="0"></label>
 									<button type="button" class="button-link-delete mlab-mf-remove-view"><?php esc_html_e( 'Remove', 'mlab-media-folder' ); ?></button>
@@ -408,7 +416,14 @@ final class Settings_Page {
 								<?php $rules = Folder_Permissions::get( (int) $folder['id'] ); ?>
 								<div class="mlab-mf-permission-row">
 									<div class="mlab-mf-folder-path"><?php echo esc_html( str_repeat( '— ', (int) $folder['depth'] ) . $folder['name'] ); ?></div>
-									<label class="mlab-mf-field"><span><?php esc_html_e( 'Roles', 'mlab-media-folder' ); ?></span><select multiple size="3" name="permissions[<?php echo (int) $folder['id']; ?>][roles][]"><?php foreach ( $roles as $role_key => $role ) : ?><option value="<?php echo esc_attr( $role_key ); ?>" <?php selected( in_array( $role_key, $rules['roles'], true ) ); ?>><?php echo esc_html( translate_user_role( $role['name'] ) ); ?></option><?php endforeach; ?></select></label>
+									<label class="mlab-mf-field">
+										<span><?php esc_html_e( 'Roles', 'mlab-media-folder' ); ?></span>
+										<select multiple size="3" name="permissions[<?php echo (int) $folder['id']; ?>][roles][]">
+											<?php foreach ( $roles as $role_key => $role ) : ?>
+												<option value="<?php echo esc_attr( $role_key ); ?>" <?php selected( in_array( $role_key, $rules['roles'], true ) ); ?>><?php echo esc_html( translate_user_role( $role['name'] ) ); ?></option>
+											<?php endforeach; ?>
+										</select>
+									</label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Specific user IDs', 'mlab-media-folder' ); ?></span><input type="text" name="permissions[<?php echo (int) $folder['id']; ?>][users]" value="<?php echo esc_attr( implode( ', ', $rules['users'] ) ); ?>" placeholder="12, 44"></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Folder color', 'mlab-media-folder' ); ?></span><input type="color" name="permissions[<?php echo (int) $folder['id']; ?>][color]" value="<?php echo esc_attr( '' !== $rules['color'] ? $rules['color'] : '#f2aa00' ); ?>"></label>
 								</div>
@@ -428,9 +443,9 @@ final class Settings_Page {
 									<strong><?php echo esc_html( $source['label'] ); ?></strong>
 									<p>
 										<?php
-										/* translators: 1: detected folders, 2: detected attachment relationships. */
 										echo esc_html(
 											sprintf(
+												/* translators: 1: detected folders, 2: detected attachment relationships. */
 												__( '%1$d folders · %2$d media relationships detected', 'mlab-media-folder' ),
 												(int) $source['folders'],
 												(int) $source['attachments']
@@ -439,7 +454,17 @@ final class Settings_Page {
 										?>
 									</p>
 								</div>
-								<a class="button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'mlab_media_folder_migrate', 'taxonomy' => $source['taxonomy'] ), admin_url( 'admin-post.php' ) ), 'mlab_media_folder_migrate' ) ); ?>"><?php esc_html_e( 'Copy into Media Folder', 'mlab-media-folder' ); ?></a>
+								<?php
+								$migration_url = add_query_arg(
+									array(
+										'action'   => 'mlab_media_folder_migrate',
+										'taxonomy' => $source['taxonomy'],
+									),
+									admin_url( 'admin-post.php' )
+								);
+								$migration_url = wp_nonce_url( $migration_url, 'mlab_media_folder_migrate' );
+								?>
+								<a class="button" href="<?php echo esc_url( $migration_url ); ?>"><?php esc_html_e( 'Copy into Media Folder', 'mlab-media-folder' ); ?></a>
 							</div>
 						<?php endforeach; ?>
 						<?php endif; ?>
