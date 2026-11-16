@@ -152,6 +152,7 @@ final class Folder_Permissions {
 		if ( Features::available( 'advanced_folder_style' ) ) {
 			update_term_meta( $target_id, self::COLOR_META, $rules['color'] );
 		}
+		Folders::clear_cache();
 	}
 
 	/**
@@ -177,5 +178,6 @@ final class Folder_Permissions {
 		if ( Features::available( 'advanced_folder_style' ) ) {
 			update_term_meta( $folder_id, self::COLOR_META, $color );
 		}
+		Folders::clear_cache();
 	}
 }
