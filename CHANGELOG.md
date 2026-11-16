@@ -3,6 +3,22 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.4.0] - 2026-11-16
+
+### Added
+- Resumable, read-only full-library missing-file audit using bounded WP-Cron batches with persisted progress.
+- Media Library audit progress and completion summary.
+- CI syntax matrix for PHP 8.0 through 8.4, JavaScript syntax and release version consistency.
+
+### Changed
+- Completed background-audit results drive the File missing task across the whole library; the bounded synchronous scan remains the safe fallback while an audit is incomplete.
+- MomentumLab visual refinement uses the brand accent and Montserrat fallback while remaining scoped to this plugin.
+
+### Security
+- Missing-file checks fail safely when the uploads directory is unavailable.
+- Absolute, traversal and invalid attachment paths are never resolved outside the uploads directory.
+- Local audit results are discarded when filesystem checks are disabled for offloaded media.
+
 ## [2.3.1] - 2026-11-14
 
 ### Changed
