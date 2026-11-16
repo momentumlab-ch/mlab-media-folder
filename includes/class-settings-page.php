@@ -67,7 +67,7 @@ final class Settings_Page {
 		check_admin_referer( 'mlab_media_folder_save_settings' );
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Automation_Settings sanitizes every supported field.
-		$automation   = isset( $_POST['automation'] ) && is_array( $_POST['automation'] ) ? wp_unslash( $_POST['automation'] ) : array();
+		$automation = isset( $_POST['automation'] ) && is_array( $_POST['automation'] ) ? wp_unslash( $_POST['automation'] ) : array();
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Optimization_Settings sanitizes every supported field.
 		$optimization = isset( $_POST['optimization'] ) && is_array( $_POST['optimization'] ) ? wp_unslash( $_POST['optimization'] ) : array();
 
@@ -175,8 +175,15 @@ final class Settings_Page {
 				'order'      => 'ASC',
 			)
 		);
-		$migrations  = Migration::detect();
+		$migrations = Migration::detect();
 		$bulk_status = Bulk_Optimize::status();
+		/* translators: 1: checked images, 2: rebuilt images, 3: failed images. */
+		$bulk_status_text = sprintf(
+			__( '%1$d checked · %2$d rebuilt · %3$d failed', 'mlab-media-folder' ),
+			(int) $bulk_status['checked'],
+			(int) $bulk_status['rebuilt'],
+			(int) $bulk_status['failed']
+		);
 		?>
 		<div class="wrap mlab-mf-settings">
 			<div class="mlab-mf-brandbar">
@@ -192,7 +199,8 @@ final class Settings_Page {
 				</div>
 			</div>
 
-			<?php if ( isset( $_GET['bulk_start'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
+			<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only status flags after nonce-protected redirects. ?>
+			<?php if ( isset( $_GET['bulk_start'] ) ) : ?>
 				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p><?php esc_html_e( 'Bulk image optimization was queued and will run in small background batches.', 'mlab-media-folder' ); ?></p></div>
 			<?php endif; ?>
 
@@ -217,6 +225,7 @@ final class Settings_Page {
 				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p><?php esc_html_e( 'Media Folder settings saved.', 'mlab-media-folder' ); ?></p></div>
 			<?php endif; ?>
 
+			<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="mlab_media_folder_save_settings">
 				<?php wp_nonce_field( 'mlab_media_folder_save_settings' ); ?>
@@ -341,7 +350,7 @@ final class Settings_Page {
 							<div class="mlab-mf-bulk-state">
 								<div>
 									<strong><?php esc_html_e( 'Existing library', 'mlab-media-folder' ); ?></strong>
-									<p><?php echo esc_html( sprintf( __( '%1$d checked · %2$d rebuilt · %3$d failed', 'mlab-media-folder' ), $bulk_status['checked'], $bulk_status['rebuilt'], $bulk_status['failed'] ) ); ?></p>
+									<p><?php echo esc_html( $bulk_status_text ); ?></p>
 								</div>
 								<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=mlab_media_folder_bulk_optimize' ), 'mlab_media_folder_bulk_optimize' ) ); ?>"><?php esc_html_e( 'Rebuild optimized derivatives', 'mlab-media-folder' ); ?></a>
 							</div>
@@ -357,7 +366,14 @@ final class Settings_Page {
 						<div class="<?php echo Features::available( 'dynamic_views' ) ? '' : 'mlab-mf-disabled'; ?>">
 							<?php
 							$view_rows   = $views;
-							$view_rows[] = array( 'id' => '', 'name' => '', 'mime' => '', 'author' => 0, 'days' => 0, 'min_mb' => 0 );
+							$view_rows[] = array(
+								'id'     => '',
+								'name'   => '',
+								'mime'   => '',
+								'author' => 0,
+								'days'   => 0,
+								'min_mb' => 0,
+							);
 							foreach ( $view_rows as $index => $view ) :
 								?>
 								<div class="mlab-mf-rule-row">
@@ -377,12 +393,13 @@ final class Settings_Page {
 						<p><?php esc_html_e( 'Empty rules mean everyone who can use the Media Library can access the folder. Administrators always retain access.', 'mlab-media-folder' ); ?></p>
 						<?php self::locked_note( 'folder_permissions' ); ?>
 						<div class="<?php echo Features::available( 'folder_permissions' ) ? '' : 'mlab-mf-disabled'; ?>">
-							<?php foreach ( $folders as $folder ) : $rules = Folder_Permissions::get( (int) $folder['id'] ); ?>
+							<?php foreach ( $folders as $folder ) : ?>
+								<?php $rules = Folder_Permissions::get( (int) $folder['id'] ); ?>
 								<div class="mlab-mf-permission-row">
 									<div class="mlab-mf-folder-path"><?php echo esc_html( str_repeat( '— ', (int) $folder['depth'] ) . $folder['name'] ); ?></div>
-									<label class="mlab-mf-field"><span><?php esc_html_e( 'Roles', 'mlab-media-folder' ); ?></span><select multiple size="3" name="permissions[<?php echo (int) $folder['id']; ?>][roles][]"><?php foreach ( $roles as $role_key => $role ) : ?><option value="<?php echo esc_attr( $role_key ); ?>" <?php echo in_array( $role_key, $rules['roles'], true ) ? 'selected' : ''; ?>><?php echo esc_html( translate_user_role( $role['name'] ) ); ?></option><?php endforeach; ?></select></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Roles', 'mlab-media-folder' ); ?></span><select multiple size="3" name="permissions[<?php echo (int) $folder['id']; ?>][roles][]"><?php foreach ( $roles as $role_key => $role ) : ?><option value="<?php echo esc_attr( $role_key ); ?>" <?php selected( in_array( $role_key, $rules['roles'], true ) ); ?>><?php echo esc_html( translate_user_role( $role['name'] ) ); ?></option><?php endforeach; ?></select></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Specific user IDs', 'mlab-media-folder' ); ?></span><input type="text" name="permissions[<?php echo (int) $folder['id']; ?>][users]" value="<?php echo esc_attr( implode( ', ', $rules['users'] ) ); ?>" placeholder="12, 44"></label>
-									<label class="mlab-mf-field"><span><?php esc_html_e( 'Folder color', 'mlab-media-folder' ); ?></span><input type="color" name="permissions[<?php echo (int) $folder['id']; ?>][color]" value="<?php echo esc_attr( $rules['color'] ?: '#f2aa00' ); ?>"></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Folder color', 'mlab-media-folder' ); ?></span><input type="color" name="permissions[<?php echo (int) $folder['id']; ?>][color]" value="<?php echo esc_attr( '' !== $rules['color'] ? $rules['color'] : '#f2aa00' ); ?>"></label>
 								</div>
 							<?php endforeach; ?>
 						</div>
@@ -393,12 +410,28 @@ final class Settings_Page {
 						<p><?php esc_html_e( 'Copy folder structures into Media Folder without deleting or modifying the source plugin data.', 'mlab-media-folder' ); ?></p>
 						<?php if ( ! $migrations ) : ?>
 							<div class="mlab-mf-safe"><span class="dashicons dashicons-yes-alt"></span><div><strong><?php esc_html_e( 'No supported source detected', 'mlab-media-folder' ); ?></strong><p><?php esc_html_e( 'When a supported folder taxonomy is present it will appear here automatically.', 'mlab-media-folder' ); ?></p></div></div>
-						<?php else : foreach ( $migrations as $source ) : ?>
+						<?php else : ?>
+							<?php foreach ( $migrations as $source ) : ?>
 							<div class="mlab-mf-migration-row">
-								<div><strong><?php echo esc_html( $source['label'] ); ?></strong><p><?php echo esc_html( sprintf( __( '%1$d folders · %2$d media relationships detected', 'mlab-media-folder' ), $source['folders'], $source['attachments'] ) ); ?></p></div>
+								<div>
+									<strong><?php echo esc_html( $source['label'] ); ?></strong>
+									<p>
+										<?php
+										/* translators: 1: detected folders, 2: detected attachment relationships. */
+										echo esc_html(
+											sprintf(
+												__( '%1$d folders · %2$d media relationships detected', 'mlab-media-folder' ),
+												(int) $source['folders'],
+												(int) $source['attachments']
+											)
+										);
+										?>
+									</p>
+								</div>
 								<a class="button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'mlab_media_folder_migrate', 'taxonomy' => $source['taxonomy'] ), admin_url( 'admin-post.php' ) ), 'mlab_media_folder_migrate' ) ); ?>"><?php esc_html_e( 'Copy into Media Folder', 'mlab-media-folder' ); ?></a>
 							</div>
-						<?php endforeach; endif; ?>
+						<?php endforeach; ?>
+						<?php endif; ?>
 					</section>
 
 					<section class="mlab-mf-card mlab-mf-card-wide">
