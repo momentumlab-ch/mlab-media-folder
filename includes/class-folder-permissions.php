@@ -14,9 +14,9 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Folder_Permissions {
 
-	const ROLES_META = '_mlab_mf_allowed_roles';
-	const USERS_META = '_mlab_mf_allowed_users';
-	const COLOR_META = '_mlab_mf_color';
+	const ROLES_META        = '_mlab_mf_allowed_roles';
+	const USERS_META        = '_mlab_mf_allowed_users';
+	const COLOR_META        = '_mlab_mf_color';
 	const CONFIGURED_OPTION = 'mlab_media_folder_permissions_configured';
 
 	/**
