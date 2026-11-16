@@ -252,7 +252,9 @@ final class Admin {
 				'restPath'      => '/' . Rest_Controller::NAMESPACE,
 				'param'         => Query::PARAM,
 				'settingsUrl'   => admin_url( 'upload.php?page=' . Settings_Page::SLUG ),
-				'brandMark'     => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-mark.svg',
+				'brandMark'     => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-logo.png',
+				'version'       => MLAB_MEDIA_FOLDER_VERSION,
+				'uploadUrl'     => admin_url( 'media-new.php' ),
 				'features'      => Features::matrix(),
 				'canSettings'   => current_user_can( Plugin::settings_capability() ),
 				'workspaceI18n' => array(
