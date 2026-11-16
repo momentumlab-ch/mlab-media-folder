@@ -62,7 +62,7 @@ final class Image_Optimization {
 			return $formats;
 		}
 
-		$mime = 'avif' === $format ? 'image/avif' : 'image/webp';
+		$mime                = 'avif' === $format ? 'image/avif' : 'image/webp';
 		$formats['image/jpeg'] = $mime;
 
 		if ( ! empty( $settings['convert_png'] ) ) {
@@ -138,8 +138,12 @@ final class Image_Optimization {
 
 	/**
 	 * Apply one privacy policy to a generated derivative.
+	 *
+	 * @param string $path   Derivative path.
+	 * @param string $policy Privacy policy.
 	 */
 	private static function strip_file_metadata( string $path, string $policy ): void {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Local derivative written by WordPress/Imagick.
 		if ( ! is_file( $path ) || ! is_writable( $path ) ) {
 			return;
 		}
@@ -164,6 +168,8 @@ final class Image_Optimization {
 
 	/**
 	 * Whether the active WordPress image editor can write a format.
+	 *
+	 * @param string $format Format key.
 	 */
 	public static function supports( string $format ): bool {
 		$mime = 'avif' === $format ? 'image/avif' : ( 'webp' === $format ? 'image/webp' : '' );
