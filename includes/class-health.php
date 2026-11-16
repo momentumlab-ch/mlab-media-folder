@@ -73,10 +73,16 @@ final class Health {
 		}
 
 		$groups = self::find_duplicates();
+		$audit = Background_Audit::status();
+		// The incremental audit covers the entire library only after completion.
+		// During a scan, keep the bounded synchronous results available.
+		$missing = ! empty( $audit['complete'] ) && isset( $audit['missing'] ) && is_array( $audit['missing'] )
+			? array_map( 'absint', $audit['missing'] )
+			: self::find_missing();
 		$result = array(
 			'duplicate' => $groups['all'],
 			'extra'     => $groups['extra'],
-			'missing'   => self::find_missing(),
+			'missing'   => $missing,
 		);
 		set_site_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
 		return $result;
