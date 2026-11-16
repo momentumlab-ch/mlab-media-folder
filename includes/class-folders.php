@@ -75,7 +75,7 @@ final class Folders {
 			}
 		);
 
-		return $folders;
+		return Folder_Permissions::visible( $folders );
 	}
 
 	/**
@@ -254,6 +254,9 @@ final class Folders {
 		if ( $parent_id && ! self::exists( $parent_id ) ) {
 			return new WP_Error( 'mlab_media_folder_bad_parent', __( 'The parent folder does not exist.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
+		if ( $parent_id && ! Folder_Permissions::can_access( $parent_id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 		if ( self::sibling_exists( $name, $parent_id ) ) {
 			return new WP_Error( 'mlab_media_folder_duplicate', __( 'A folder with this name already exists here.', 'mlab-media-folder' ), array( 'status' => 409 ) );
 		}
@@ -290,6 +293,9 @@ final class Folders {
 		$id = (int) $id;
 		if ( ! self::exists( $id ) ) {
 			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
+		}
+		if ( ! Folder_Permissions::can_access( $id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
 		}
 		$term = get_term( $id, Taxonomy::NAME );
 		$args = array();
@@ -350,6 +356,9 @@ final class Folders {
 		if ( ! self::exists( $id ) ) {
 			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
 		}
+		if ( ! Folder_Permissions::can_access( $id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 		$term      = get_term( $id, Taxonomy::NAME );
 		$parent_id = (int) $term->parent;
 
@@ -393,6 +402,9 @@ final class Folders {
 		$folder_id = (int) $folder_id;
 		if ( $folder_id && ! self::exists( $folder_id ) ) {
 			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
+		}
+		if ( $folder_id && ! Folder_Permissions::can_access( $folder_id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
 		}
 
 		$attachment_ids = array_slice( array_unique( array_filter( array_map( 'absint', $attachment_ids ) ) ), 0, self::MAX_ASSIGN );
