@@ -32,10 +32,11 @@
 	TASKS.recent = { total: 'recent', label: 'recent', icon: 'dashicons-clock', next: 'nextRecent', found: 'foundRecent', todo: 'doRecent' };
 	TASKS[ data.unfiled ] = { total: 'unfiled', label: 'unfiled', icon: 'dashicons-portfolio', next: 'nextUnfiled', found: 'foundUnfiled', todo: 'doUnfiled' };
 	TASKS.noalt = { total: 'noalt', label: 'noAlt', icon: 'dashicons-universal-access-alt', next: 'nextNoAlt', found: 'foundNoAlt', todo: 'doNoAlt' };
+	TASKS.unused = { total: 'unused', label: 'unused', icon: 'dashicons-hidden', next: 'nextUnused', found: 'foundUnused', todo: 'doUnused' };
 	TASKS.unattached = { total: 'unattached', label: 'unattached', icon: 'dashicons-admin-page', next: 'nextUnattached', found: 'foundUnattached', todo: 'doUnattached' };
 	TASKS.duplicate = { total: 'duplicate', label: 'duplicate', icon: 'dashicons-images-alt2', next: 'nextDuplicate', found: 'foundDuplicate', todo: 'doDuplicate' };
 	TASKS.missing = { total: 'missing', label: 'missing', icon: 'dashicons-warning', next: 'nextMissing', found: 'foundMissing', todo: 'doMissing' };
-	var TASK_ORDER = [ 'recent', data.unfiled, 'noalt', 'unattached', 'duplicate', 'missing' ];
+	var TASK_ORDER = [ 'recent', data.unfiled, 'noalt', 'unused', 'unattached', 'duplicate', 'missing' ];
 
 	var state = {
 		folders: data.folders || [],
