@@ -296,6 +296,7 @@ final class Admin {
 		$folder = Query::parse( wp_unslash( $_POST[ Query::PARAM ] ) );
 		if ( is_int( $folder ) && $folder > 0 && Folder_Permissions::can_access( $folder ) ) {
 			wp_set_object_terms( (int) $attachment_id, array( $folder ), Taxonomy::NAME, false );
+			Folders::clear_cache();
 		}
 	}
 
