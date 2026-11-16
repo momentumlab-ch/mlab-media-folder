@@ -31,6 +31,7 @@ final class Background_Audit {
 
 	public function restart() {
 		delete_option( self::OPTION );
+		Health::clear_cache();
 		if ( ! wp_next_scheduled( self::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::HOOK );
 		}
@@ -96,6 +97,9 @@ final class Background_Audit {
 		$state['complete'] = count( (array) $rows ) < self::BATCH;
 		$state['updated'] = time();
 		update_option( self::OPTION, $state, false );
+		if ( $state['complete'] ) {
+			Health::clear_cache();
+		}
 		if ( ! $state['complete'] ) {
 			$this->schedule_retry();
 		}
