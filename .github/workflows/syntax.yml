@@ -36,3 +36,16 @@ jobs:
           stable=$(sed -n 's/^Stable tag:[[:space:]]*//p' readme.txt)
           test "$header" = "$constant"
           test "$header" = "$stable"
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - uses: actions/checkout@v4
+      - name: Install coding standards
+        run: composer install --no-interaction --no-progress
+      - name: WordPress Coding Standards and PHP compatibility
+        run: vendor/bin/phpcs --standard=phpcs.xml.dist .
