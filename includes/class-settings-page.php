@@ -357,7 +357,7 @@ final class Settings_Page {
 						<div class="<?php echo Features::available( 'dynamic_views' ) ? '' : 'mlab-mf-disabled'; ?>">
 							<?php
 							$view_rows   = $views;
-							$view_rows[] = array( 'id' => '', 'name' => '', 'mime' => '', 'author' => 0, 'days' => 0 );
+							$view_rows[] = array( 'id' => '', 'name' => '', 'mime' => '', 'author' => 0, 'days' => 0, 'min_mb' => 0 );
 							foreach ( $view_rows as $index => $view ) :
 								?>
 								<div class="mlab-mf-rule-row">
@@ -366,6 +366,7 @@ final class Settings_Page {
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Type', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][mime]"><option value="" <?php selected( $view['mime'], '' ); ?>><?php esc_html_e( 'All media', 'mlab-media-folder' ); ?></option><option value="image" <?php selected( $view['mime'], 'image' ); ?>><?php esc_html_e( 'Images', 'mlab-media-folder' ); ?></option><option value="video" <?php selected( $view['mime'], 'video' ); ?>><?php esc_html_e( 'Video', 'mlab-media-folder' ); ?></option><option value="audio" <?php selected( $view['mime'], 'audio' ); ?>><?php esc_html_e( 'Audio', 'mlab-media-folder' ); ?></option><option value="application/pdf" <?php selected( $view['mime'], 'application/pdf' ); ?>>PDF</option></select></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Uploader', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][author]"><option value="0"><?php esc_html_e( 'Any uploader', 'mlab-media-folder' ); ?></option><?php foreach ( $authors as $author ) : ?><option value="<?php echo (int) $author->ID; ?>" <?php selected( (int) $view['author'], (int) $author->ID ); ?>><?php echo esc_html( $author->display_name ); ?></option><?php endforeach; ?></select></label>
 									<label class="mlab-mf-field"><span><?php esc_html_e( 'Last days', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="3650" name="dynamic_views[<?php echo (int) $index; ?>][days]" value="<?php echo esc_attr( (string) $view['days'] ); ?>" placeholder="0"></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Minimum MB', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="102400" name="dynamic_views[<?php echo (int) $index; ?>][min_mb]" value="<?php echo esc_attr( (string) $view['min_mb'] ); ?>" placeholder="0"></label>
 								</div>
 							<?php endforeach; ?>
 						</div>
