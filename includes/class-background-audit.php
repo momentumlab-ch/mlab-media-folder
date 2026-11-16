@@ -43,7 +43,12 @@ final class Background_Audit {
 	}
 
 	public function schedule_if_needed() {
-		$state = get_option( self::OPTION );
+		$state   = get_option( self::OPTION );
+		$enabled = (bool) apply_filters( 'mlab_media_folder_check_missing_files', true );
+		if ( $enabled && is_array( $state ) && ! empty( $state['disabled'] ) ) {
+			self::restart_scan();
+			return;
+		}
 		if ( ! is_array( $state ) && ! wp_next_scheduled( self::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::HOOK );
 		}
@@ -57,7 +62,7 @@ final class Background_Audit {
 		global $wpdb;
 		if ( ! apply_filters( 'mlab_media_folder_check_missing_files', true ) ) {
 			// Offloaded storage cannot be verified using local file_exists().
-			delete_option( self::OPTION );
+			update_option( self::OPTION, array( 'cursor' => 0, 'checked' => 0, 'missing' => array(), 'complete' => true, 'disabled' => true, 'updated' => time() ), false );
 			Health::clear_cache();
 			return;
 		}
