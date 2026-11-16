@@ -72,7 +72,7 @@ final class Admin {
 		}
 		check_admin_referer( 'mlab_media_folder_rescan' );
 		Background_Audit::restart_scan();
-		Content_Audit::restart_scan();
+		Content_Audit::force_restart();
 		wp_safe_redirect( admin_url( 'upload.php' ) );
 		exit;
 	}
