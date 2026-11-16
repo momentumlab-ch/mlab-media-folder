@@ -71,6 +71,8 @@ final class Naming {
 
 	/**
 	 * Preview for the settings UI.
+	 *
+	 * @param string $pattern Naming pattern.
 	 */
 	public static function preview( string $pattern ): string {
 		return self::render(
