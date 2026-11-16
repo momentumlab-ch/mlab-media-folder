@@ -23,6 +23,7 @@ final class Settings_Page {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_post_mlab_media_folder_save_settings', array( $this, 'save' ) );
 		add_action( 'admin_post_mlab_media_folder_migrate', array( $this, 'migrate' ) );
+		add_action( 'admin_post_mlab_media_folder_bulk_optimize', array( $this, 'bulk_optimize' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 	}
 
@@ -131,6 +132,27 @@ final class Settings_Page {
 	}
 
 	/**
+	 * Start the explicit Pro rebuild of existing image derivatives.
+	 */
+	public function bulk_optimize(): void {
+		if ( ! current_user_can( Plugin::settings_capability() ) || ! Features::is_pro() ) {
+			wp_die( esc_html__( 'You are not allowed to run bulk image optimization.', 'mlab-media-folder' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'mlab_media_folder_bulk_optimize' );
+		Bulk_Optimize::start();
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'       => self::SLUG,
+					'bulk_start' => '1',
+				),
+				admin_url( 'upload.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Render the settings page. WordPress and third-party notices remain above this wrapper.
 	 */
 	public function render(): void {
@@ -154,6 +176,7 @@ final class Settings_Page {
 			)
 		);
 		$migrations   = Migration::detect();
+		$bulk_status  = Bulk_Optimize::status();
 		?>
 		<div class="wrap mlab-mf-settings">
 			<div class="mlab-mf-brandbar">
@@ -168,6 +191,10 @@ final class Settings_Page {
 					<?php echo esc_html( $is_pro ? __( 'Pro active', 'mlab-media-folder' ) : __( 'Free', 'mlab-media-folder' ) ); ?>
 				</div>
 			</div>
+
+			<?php if ( isset( $_GET['bulk_start'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
+				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p><?php esc_html_e( 'Bulk image optimization was queued and will run in small background batches.', 'mlab-media-folder' ); ?></p></div>
+			<?php endif; ?>
 
 			<?php if ( isset( $_GET['migration_folders'], $_GET['migration_files'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
 				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p>
@@ -287,7 +314,7 @@ final class Settings_Page {
 								<select name="optimization[format]">
 									<option value="original" <?php selected( $optimization['format'], 'original' ); ?>><?php esc_html_e( 'Keep original format', 'mlab-media-folder' ); ?></option>
 									<option value="webp" <?php selected( $optimization['format'], 'webp' ); ?> <?php disabled( ! $capabilities['webp'] ); ?>>WebP<?php echo $capabilities['webp'] ? '' : ' — ' . esc_html__( 'not supported', 'mlab-media-folder' ); ?></option>
-									<option value="avif" <?php selected( $optimization['format'], 'avif' ); ?> <?php disabled( ! $capabilities['avif'] ); ?>>AVIF<?php echo $capabilities['avif'] ? '' : ' — ' . esc_html__( 'not supported', 'mlab-media-folder' ); ?></option>
+									<option value="avif" <?php selected( $optimization['format'], 'avif' ); ?> <?php disabled( ! $capabilities['avif'] || ! $is_pro ); ?>>AVIF · PRO<?php echo $capabilities['avif'] ? '' : ' — ' . esc_html__( 'not supported', 'mlab-media-folder' ); ?></option>
 								</select>
 							</label>
 						</div>
@@ -297,7 +324,30 @@ final class Settings_Page {
 							<label class="mlab-mf-field"><span>AVIF</span><input type="number" min="40" max="95" name="optimization[avif_quality]" value="<?php echo esc_attr( (string) $optimization['avif_quality'] ); ?>"></label>
 						</div>
 						<label class="mlab-mf-check"><input type="checkbox" name="optimization[convert_png]" value="1" <?php checked( ! empty( $optimization['convert_png'] ) ); ?>> <?php esc_html_e( 'Also convert PNG derivatives when transparency is supported', 'mlab-media-folder' ); ?></label>
-						<div class="mlab-mf-safe"><span class="dashicons dashicons-shield"></span><div><strong><?php esc_html_e( 'Safe by default', 'mlab-media-folder' ); ?></strong><p><?php esc_html_e( 'Version 3.0 never replaces or deletes uploaded originals. Existing media and URLs are not changed.', 'mlab-media-folder' ); ?></p></div></div>
+
+						<div class="<?php echo $is_pro ? '' : 'mlab-mf-disabled'; ?>">
+							<label class="mlab-mf-field">
+								<span><?php esc_html_e( 'Metadata privacy', 'mlab-media-folder' ); ?> <?php self::pro_badge(); ?></span>
+								<select name="optimization[exif_policy]">
+									<option value="keep" <?php selected( $optimization['exif_policy'], 'keep' ); ?>><?php esc_html_e( 'Keep metadata', 'mlab-media-folder' ); ?></option>
+									<option value="strip_gps" <?php selected( $optimization['exif_policy'], 'strip_gps' ); ?>><?php esc_html_e( 'Remove GPS metadata from generated derivatives', 'mlab-media-folder' ); ?></option>
+									<option value="strip_all" <?php selected( $optimization['exif_policy'], 'strip_all' ); ?>><?php esc_html_e( 'Remove all metadata from generated derivatives', 'mlab-media-folder' ); ?></option>
+								</select>
+								<small><?php esc_html_e( 'Requires Imagick. Uploaded originals remain unchanged.', 'mlab-media-folder' ); ?></small>
+							</label>
+						</div>
+
+						<?php if ( $is_pro ) : ?>
+							<div class="mlab-mf-bulk-state">
+								<div>
+									<strong><?php esc_html_e( 'Existing library', 'mlab-media-folder' ); ?></strong>
+									<p><?php echo esc_html( sprintf( __( '%1$d checked · %2$d rebuilt · %3$d failed', 'mlab-media-folder' ), $bulk_status['checked'], $bulk_status['rebuilt'], $bulk_status['failed'] ) ); ?></p>
+								</div>
+								<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=mlab_media_folder_bulk_optimize' ), 'mlab_media_folder_bulk_optimize' ) ); ?>"><?php esc_html_e( 'Rebuild optimized derivatives', 'mlab-media-folder' ); ?></a>
+							</div>
+						<?php endif; ?>
+
+						<div class="mlab-mf-safe"><span class="dashicons dashicons-shield"></span><div><strong><?php esc_html_e( 'Safe by default', 'mlab-media-folder' ); ?></strong><p><?php esc_html_e( 'Version 3.0 never replaces or deletes uploaded originals. Existing URLs remain valid; bulk rebuild leaves older derivatives in place.', 'mlab-media-folder' ); ?></p></div></div>
 					</section>
 
 					<section class="mlab-mf-card mlab-mf-card-wide">
