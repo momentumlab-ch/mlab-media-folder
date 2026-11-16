@@ -81,6 +81,17 @@ final class Content_Audit {
 	}
 
 	/**
+	 * Clears all persisted fingerprints and starts a full rebuild.
+	 *
+	 * Intended for an explicit administrator rescan, not normal upload events.
+	 */
+	public static function force_restart() {
+		delete_post_meta_by_key( self::HASH_META );
+		delete_post_meta_by_key( self::SIG_META );
+		self::restart_scan();
+	}
+
+	/**
 	 * Ensures a scan exists without repeatedly scheduling work when disabled.
 	 */
 	public function schedule_if_needed() {
