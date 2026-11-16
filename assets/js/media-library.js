@@ -41,6 +41,7 @@
 	var state = {
 		folders: data.folders || [],
 		dynamicViews: data.dynamicViews || [],
+		usageAudit: data.usageAudit || { complete: false },
 		totals: data.totals || { all: 0, unfiled: 0 },
 		current: data.current === '' || data.current === undefined ? '' : String( data.current ),
 		expanded: loadExpanded(),
@@ -299,6 +300,7 @@
 				};
 			} );
 			state.totals = response.totals || state.totals;
+			state.usageAudit = response.usage_audit || state.usageAudit;
 			if ( state.current && ! isTask( state.current ) && state.current.indexOf( 'view-' ) !== 0 && ! findFolder( state.current ) ) {
 				applyFilter( '' );
 			}
@@ -678,8 +680,9 @@
 		var $tasks = $( '<ul class="mlab-media-folder-fixed mlab-media-folder-tasks"></ul>' );
 		TASK_ORDER.forEach( function ( id ) {
 			var count = taskCount( id );
+			var scanning = 'unused' === id && ! state.usageAudit.complete;
 			$( '<li class="mlab-media-folder-item"></li>' )
-				.append( makeRow( { target: id, label: i18n[ TASKS[ id ].label ], count: count, done: 0 === count, icon: TASKS[ id ].icon, current: id === state.current } ) )
+				.append( makeRow( { target: id, label: i18n[ TASKS[ id ].label ], count: scanning ? '…' : count, done: ! scanning && 0 === count, icon: TASKS[ id ].icon, current: id === state.current } ) )
 				.appendTo( $tasks );
 		} );
 		$tree.append( section( i18n.todo ), $tasks );
@@ -725,10 +728,13 @@
 			return;
 		}
 		var count = taskCount( state.current );
+		var scanning = 'unused' === state.current && ! state.usageAudit.complete;
 		var $text = $( '<div class="mlab-media-folder-banner-text"></div>' ).append(
 			$( '<h2></h2>' ).text( i18n[ task.label ] + ' · ' + count )
 		);
-		if ( count ) {
+		if ( scanning ) {
+			$text.append( $( '<p></p>' ).text( i18n.usageScanning ) );
+		} else if ( count ) {
 			$text.append(
 				$( '<p></p>' ).append( $( '<strong></strong>' ).text( i18n.foundLabel + ': ' ), document.createTextNode( i18n[ task.found ] ) ),
 				$( '<p></p>' ).append( $( '<strong></strong>' ).text( i18n.doLabel + ': ' ), document.createTextNode( i18n[ task.todo ] ) )
