@@ -548,9 +548,7 @@
 			event.preventDefault();
 			$save.prop( 'disabled', true );
 			moveFolder( folder.id, parseInt( $select.val(), 10 ) || 0 )
-				.catch( function () {
-					$save.prop( 'disabled', false );
-				} );
+				.then( close );
 		} );
 		$cancel.on( 'click', close );
 		$select.on( 'keydown', function ( event ) {
