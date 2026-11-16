@@ -163,35 +163,64 @@
 	}
 
 	function build() {
-		var $wrap = $( '.wrap' ).first();
-		if ( ! $wrap.length || $( '.mlab-mf-workspace' ).length ) {
+		var $layout = $( '.mlab-media-folder-layout' ).first();
+		var $wrap = $layout.children( '.wrap' ).first();
+		if ( ! $layout.length || ! $wrap.length || $( '.mlab-mf-shell' ).length ) {
 			return;
 		}
 
-		$workspace = $( '<div class="mlab-mf-workspace"></div>' );
+		var $shell = $( '<section class="mlab-mf-shell"></section>' );
+		$layout.before( $shell );
+
+		$workspace = $( '<header class="mlab-mf-workspace"></header>' );
 		var $brand = $( '<div class="mlab-mf-workspace-brand"></div>' )
-			.append( $( '<img alt="" width="36" height="36">' ).attr( 'src', data.brandMark ) )
-			.append( '<div><span>MomentumLab</span><strong>Media Folder</strong></div>' );
-		var $searchWrap = $( '<div class="mlab-mf-global-search"></div>' );
-		$search = $( '<input type="search" autocomplete="off">' ).attr( 'placeholder', data.workspaceI18n.search );
-		$results = $( '<div class="mlab-mf-search-results" hidden></div>' );
-		$searchWrap.append( '<span class="dashicons dashicons-search" aria-hidden="true"></span>', $search, $results );
+			.append( $( '<img class="mlab-mf-workspace-logo" alt="MomentumLab Media Folder">' ).attr( 'src', data.brandMark ) );
+
+		var $meta = $( '<div class="mlab-mf-workspace-meta"></div>' )
+			.append( $( '<span class="mlab-mf-version-badge"></span>' ).text( 'v' + data.version ) )
+			.append( $( '<span class="mlab-mf-health-badge"></span>' ).append( '<span aria-hidden="true"></span>' ).append( document.createTextNode( data.workspaceI18n.health ) ) );
 
 		var $actions = $( '<div class="mlab-mf-workspace-actions"></div>' );
 		$actions.append( $( '<button type="button" class="button mlab-mf-folder-drawer-toggle"></button>' ).text( data.workspaceI18n.folders ) );
 		if ( data.canSettings ) {
 			$actions.append( $( '<a class="button"></a>' ).attr( 'href', data.settingsUrl ).text( data.workspaceI18n.settings ) );
 		}
+		$actions.append( $( '<a class="button button-primary mlab-mf-upload"></a>' ).attr( 'href', data.uploadUrl ).text( '+ ' + data.workspaceI18n.upload ) );
 		$actions.append( $( '<button type="button" class="button mlab-mf-inspector-toggle"></button>' ).text( data.workspaceI18n.inspector ) );
-		$workspace.append( $brand, $searchWrap, $actions );
-		$wrap.before( $workspace );
 
-		// Some plugins inject notices directly into the Media Library wrapper. Keep them outside our workspace.
-		$wrap.children( '.notice, .updated, .error' ).not( '.mlab-mf-own-notice, .mlab-media-folder-audit-notice' ).insertBefore( $workspace );
+		$workspace.append( $brand, $meta, $actions );
+		$shell.append( $workspace, $layout );
 
-		$inspector = $( '<aside class="mlab-mf-inspector" hidden aria-live="polite"></aside>' ).appendTo( 'body' );
+		var $toolbar = $( '<div class="mlab-mf-library-toolbar"></div>' );
+		var $searchWrap = $( '<div class="mlab-mf-global-search"></div>' );
+		$search = $( '<input type="search" autocomplete="off">' ).attr( 'placeholder', data.workspaceI18n.search );
+		$results = $( '<div class="mlab-mf-search-results" hidden></div>' );
+		$searchWrap.append( '<span class="dashicons dashicons-search" aria-hidden="true"></span>', $search, $results );
+		$toolbar.append( $searchWrap );
+
+		var $end = $wrap.find( '.wp-header-end' ).first();
+		if ( $end.length ) {
+			$end.after( $toolbar );
+		} else {
+			$wrap.prepend( $toolbar );
+		}
+
+		// Third-party WordPress notices remain outside the MomentumLab workspace.
+		$wrap.children( '.notice, .updated, .error' ).not( '.mlab-mf-own-notice, .mlab-media-folder-audit-notice' ).insertBefore( $shell );
+
+		$inspector = $( '<aside class="mlab-mf-inspector" aria-live="polite"></aside>' )
+			.html(
+				'<div class="mlab-mf-inspector-head"><div><span class="mlab-mf-kicker">' +
+				escapeHtml( data.workspaceI18n.selection ) +
+				'</span><h2>' + escapeHtml( data.workspaceI18n.inspector ) +
+				'</h2></div></div><p class="mlab-mf-inspector-empty">' +
+				escapeHtml( data.workspaceI18n.inspectHint ) + '</p>'
+			)
+			.appendTo( $layout );
+
+		inspectorMode = true;
+		$( 'body' ).addClass( 'mlab-mf-inspector-open' );
 	}
-
 	function captureAttachmentClick( event ) {
 		if ( ! inspectorMode ) {
 			return;

@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.1] - 2026-11-16
+
+### Fixed
+- Reworked the Media Library into the approved integrated three-column workspace instead of placing a separate toolbar above the native page.
+- Desktop Inspector is now the right workspace column rather than a fixed browser-edge overlay; tablet/mobile keeps the bottom-sheet behaviour.
+- Third-party WordPress/plugin notices remain above and outside the MomentumLab workspace.
+
+### Changed
+- The workspace header now uses the approved full MomentumLab Media Folder logo asset.
+- Header, sidebar, central Media Library, selection Inspector and floating bulk bar now follow the approved MomentumLab mock more closely.
+
 
 ## [3.0.0] - 2026-11-16
 

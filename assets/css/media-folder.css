@@ -1015,3 +1015,407 @@ body.mlab-mf-inspector-open #wpbody-content{padding-right:360px}
 @media(prefers-reduced-motion:reduce){
 	.mlab-media-folder-panel{transition:none!important}
 }
+
+
+/* ---------- 3.0.1 mock-aligned integrated workspace ---------- */
+.mlab-mf-shell{
+	--mlab-gold:#f2aa00;
+	--mlab-gold-soft:#fff4d6;
+	--mlab-ink:#161616;
+	--mlab-muted:#71717a;
+	--mlab-line:#e4e7ec;
+	margin:18px 20px 24px 0;
+	background:#fff;
+	border:1px solid #dfe3e8;
+	border-radius:18px;
+	box-shadow:0 10px 36px rgba(16,24,40,.06);
+	overflow:clip;
+	font-family:Montserrat,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.mlab-mf-shell *{box-sizing:border-box}
+.mlab-mf-shell .mlab-mf-workspace{
+	display:flex;
+	align-items:center;
+	gap:18px;
+	min-height:76px;
+	margin:0;
+	padding:13px 20px;
+	background:#fff;
+	border:0;
+	border-bottom:1px solid var(--mlab-line);
+	border-radius:0;
+	box-shadow:none;
+}
+.mlab-mf-workspace-brand{
+	display:flex;
+	align-items:center;
+	flex:0 1 330px;
+	min-width:220px;
+}
+.mlab-mf-workspace-brand .mlab-mf-workspace-logo{
+	display:block;
+	width:min(300px,100%);
+	height:auto;
+	max-height:52px;
+	object-fit:contain;
+	object-position:left center;
+}
+.mlab-mf-workspace-meta{
+	display:flex;
+	align-items:center;
+	gap:8px;
+	margin-left:auto;
+	white-space:nowrap;
+}
+.mlab-mf-version-badge,
+.mlab-mf-health-badge{
+	display:inline-flex;
+	align-items:center;
+	gap:7px;
+	min-height:30px;
+	padding:0 11px;
+	border-radius:999px;
+	font-size:11px;
+	font-weight:700;
+}
+.mlab-mf-version-badge{background:#f3f4f6;color:#3f3f46}
+.mlab-mf-health-badge{background:#edf9f0;color:#237a3b}
+.mlab-mf-health-badge>span{
+	width:7px;
+	height:7px;
+	border-radius:50%;
+	background:#2e9b50;
+}
+.mlab-mf-workspace-actions{
+	display:flex;
+	align-items:center;
+	gap:8px;
+	margin-left:0;
+}
+.mlab-mf-workspace-actions .button{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	min-height:36px;
+	padding:0 13px;
+	border-radius:9px;
+	background:#fff;
+	border-color:#d0d5dd;
+	color:#344054;
+	box-shadow:none;
+	font-weight:600;
+}
+.mlab-mf-workspace-actions .button:hover,
+.mlab-mf-workspace-actions .button:focus{
+	background:#f9fafb;
+	border-color:#98a2b3;
+	color:#111;
+}
+.mlab-mf-workspace-actions .button-primary.mlab-mf-upload{
+	background:var(--mlab-gold);
+	border-color:var(--mlab-gold);
+	color:#111;
+	font-weight:800;
+}
+.mlab-mf-workspace-actions .button-primary.mlab-mf-upload:hover,
+.mlab-mf-workspace-actions .button-primary.mlab-mf-upload:focus{
+	background:#dda000;
+	border-color:#dda000;
+	color:#111;
+}
+
+.mlab-mf-shell .mlab-media-folder-layout{
+	display:flex;
+	align-items:stretch;
+	gap:0;
+	min-width:0;
+	background:#fff;
+}
+.mlab-mf-shell .mlab-media-folder-panel,
+.mlab-mf-shell .mlab-media-folder-panel.is-collapsed{
+	position:relative;
+	top:auto;
+	align-self:stretch;
+	flex:0 0 var(--mlab-media-folder-width);
+	width:var(--mlab-media-folder-width);
+	margin:0;
+	background:#f7f8fa;
+	border-right:1px solid var(--mlab-line);
+}
+.mlab-mf-shell .mlab-media-folder-sidebar{
+	position:sticky;
+	top:46px;
+	max-height:calc(100vh - 74px);
+	min-height:720px;
+	padding:18px 14px 16px;
+	background:#f7f8fa;
+	border:0;
+	border-radius:0;
+	box-shadow:none;
+	backdrop-filter:none;
+	-webkit-backdrop-filter:none;
+}
+.mlab-mf-shell .mlab-media-folder-resizer{right:-4px}
+.mlab-mf-shell .mlab-media-folder-section{
+	margin:16px 7px 6px;
+	color:#8a8f98;
+	font-size:9px;
+	font-weight:800;
+	letter-spacing:.10em;
+}
+.mlab-mf-shell .mlab-media-folder-row{
+	min-height:36px;
+	border-radius:9px;
+}
+.mlab-mf-shell .mlab-media-folder-row:hover{background:#eef0f3}
+.mlab-mf-shell .mlab-media-folder-row.is-current{
+	background:var(--mlab-gold-soft);
+	color:#111;
+	box-shadow:none;
+}
+.mlab-mf-shell .mlab-media-folder-row.is-current .mlab-media-folder-name .dashicons,
+.mlab-mf-shell .mlab-media-folder-row.is-current .mlab-media-folder-more{color:#111}
+.mlab-mf-shell .mlab-media-folder-count{
+	background:#eceff2;
+	color:#68707c;
+}
+.mlab-mf-shell .mlab-media-folder-row.is-current .mlab-media-folder-count{
+	background:#f7df9a;
+	color:#5f4700;
+}
+.mlab-mf-shell .mlab-media-folder-next{
+	margin:6px 0 10px;
+	padding:11px 12px;
+	background:#fff;
+	border:1px solid #eaecf0;
+}
+.mlab-mf-shell .mlab-media-folder-credit{
+	margin-top:14px;
+	padding-top:10px;
+	border-top:1px solid #e6e8eb;
+}
+.mlab-mf-shell .mlab-media-folder-layout>.wrap{
+	flex:1 1 auto;
+	min-width:0;
+	width:auto;
+	margin:0!important;
+	padding:22px 26px 30px;
+	background:#fff;
+}
+.mlab-mf-shell .wrap h1.wp-heading-inline{
+	margin-top:0;
+	font-family:Montserrat,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+	font-size:24px;
+	font-weight:650;
+	letter-spacing:-.025em;
+}
+.mlab-mf-shell .wrap>.page-title-action{display:none!important}
+.mlab-mf-library-toolbar{
+	display:flex;
+	align-items:center;
+	gap:10px;
+	margin:12px 0 16px;
+}
+.mlab-mf-library-toolbar .mlab-mf-global-search{
+	position:relative;
+	flex:1 1 420px;
+	max-width:640px;
+}
+.mlab-mf-global-search>.dashicons{
+	position:absolute;
+	left:12px;
+	top:10px;
+	color:#98a2b3;
+	pointer-events:none;
+}
+.mlab-mf-global-search input{
+	width:100%;
+	min-height:40px;
+	padding:7px 12px 7px 39px;
+	border:1px solid #d0d5dd;
+	border-radius:10px;
+	background:#fff;
+	box-shadow:none;
+}
+.mlab-mf-global-search input:focus{
+	border-color:var(--mlab-gold);
+	box-shadow:0 0 0 3px rgba(242,170,0,.14);
+	outline:0;
+}
+.mlab-mf-search-results{
+	position:absolute;
+	z-index:100010;
+	top:46px;
+	left:0;
+	right:0;
+	max-height:460px;
+	overflow:auto;
+	padding:7px;
+	background:#fff;
+	border:1px solid var(--mlab-line);
+	border-radius:12px;
+	box-shadow:0 18px 50px rgba(16,24,40,.18);
+}
+.mlab-mf-search-group{padding:8px 9px 5px;color:#98a2b3;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.mlab-mf-search-result{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:7px 9px;border:0;border-radius:9px;background:transparent;text-align:left;cursor:pointer}
+.mlab-mf-search-result:hover,.mlab-mf-search-result:focus{background:#fff8e6;outline:0}
+.mlab-mf-search-result img,.mlab-mf-search-placeholder{width:36px;height:36px;flex:0 0 36px;border-radius:7px;object-fit:cover;background:#f2f4f7}
+.mlab-mf-search-placeholder{display:grid;place-items:center;color:#667085}
+.mlab-mf-search-result-copy{display:block;min-width:0}
+.mlab-mf-search-result-copy strong,.mlab-mf-search-result-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlab-mf-search-result-copy strong{color:#101828;font-size:12px}
+.mlab-mf-search-result-copy small{margin-top:2px;color:#667085;font-size:10px}
+.mlab-mf-search-empty{margin:12px;color:#667085}
+
+.mlab-mf-shell .mlab-mf-inspector{
+	position:relative;
+	z-index:2;
+	top:auto;
+	right:auto;
+	bottom:auto;
+	flex:0 0 320px;
+	width:320px;
+	min-width:0;
+	min-height:720px;
+	padding:22px 20px;
+	background:#fbfbfc;
+	border:0;
+	border-left:1px solid var(--mlab-line);
+	border-radius:0;
+	box-shadow:none;
+	overflow:auto;
+	font-family:Montserrat,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.mlab-mf-shell .mlab-mf-inspector[hidden]{display:none}
+.mlab-mf-shell .mlab-mf-inspector-head{
+	display:flex;
+	align-items:flex-start;
+	justify-content:space-between;
+	gap:12px;
+	padding-bottom:14px;
+	border-bottom:1px solid #e7e9ec;
+}
+.mlab-mf-shell .mlab-mf-inspector-head h2{
+	margin:3px 0 0;
+	font-size:18px;
+	line-height:1.25;
+}
+.mlab-mf-shell .mlab-mf-inspector-meta{margin:14px 0}
+.mlab-mf-shell .mlab-mf-inspector-meta>div{
+	display:grid;
+	grid-template-columns:92px 1fr;
+	gap:10px;
+	padding:10px 0;
+	border-bottom:1px solid #eceef0;
+}
+.mlab-mf-shell .mlab-mf-inspector-meta dt{color:#8a8f98;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.mlab-mf-shell .mlab-mf-inspector-meta dd{margin:0;color:#202124;font-size:11px;overflow-wrap:anywhere}
+.mlab-mf-shell .mlab-mf-inspector-empty{color:#71717a;line-height:1.55}
+body.mlab-mf-inspector-open #wpbody-content{padding-right:0!important}
+
+.mlab-mf-shell .mlab-media-folder-banner{
+	margin:12px 0 16px;
+	padding:12px 14px;
+	background:#fff9e9;
+	border:1px solid #f1d386;
+	border-left:3px solid var(--mlab-gold);
+	border-radius:10px;
+	box-shadow:none;
+}
+.mlab-mf-shell .mlab-media-folder-bulkbar{
+	position:sticky;
+	bottom:14px;
+	z-index:60;
+	margin:18px auto 0;
+	max-width:760px;
+	padding:9px 10px 9px 16px;
+	background:#232427;
+	border:0;
+	border-radius:14px;
+	box-shadow:0 14px 38px rgba(0,0,0,.18);
+	color:#fff;
+}
+.mlab-mf-shell .mlab-media-folder-bulkbar-count{font-weight:700;color:#fff}
+.mlab-mf-shell .mlab-media-folder-bulkbar-hint{color:#c7c9ce}
+.mlab-mf-shell .mlab-media-folder-bulkbar .button{
+	background:#303238;
+	border-color:#555861;
+	color:#fff;
+	border-radius:9px;
+	box-shadow:none;
+}
+.mlab-mf-shell .mlab-media-folder-bulkbar .button:hover,
+.mlab-mf-shell .mlab-media-folder-bulkbar .button:focus{background:#3b3d43;border-color:#747780;color:#fff}
+.mlab-mf-shell .mlab-media-folder-bulkbar .button-primary{
+	background:var(--mlab-gold);
+	border-color:var(--mlab-gold);
+	color:#111;
+}
+.mlab-mf-shell .mlab-media-folder-bulkbar .button.mlab-media-folder-bulkbar-delete{
+	color:#ffb4b4;
+	border-color:#6d4545;
+}
+.mlab-mf-shell .attachments-browser .attachments li.attachment{
+	border-radius:10px;
+	overflow:hidden;
+}
+.mlab-mf-shell .attachment .thumbnail{
+	border-radius:9px 9px 0 0;
+}
+
+@media(max-width:1180px){
+	.mlab-mf-workspace-brand{flex-basis:260px}
+	.mlab-mf-workspace-brand .mlab-mf-workspace-logo{width:240px}
+	.mlab-mf-workspace-meta{display:none}
+	.mlab-mf-shell .mlab-mf-inspector{flex-basis:280px;width:280px}
+}
+@media(max-width:960px){
+	.mlab-mf-shell{margin:12px 10px 18px 0;border-radius:14px}
+	.mlab-mf-shell .mlab-mf-workspace{flex-wrap:wrap;gap:10px;padding:12px 14px}
+	.mlab-mf-workspace-brand{flex:1 1 230px}
+	.mlab-mf-workspace-actions{margin-left:auto}
+	.mlab-mf-shell .mlab-media-folder-layout{display:flex}
+	.mlab-mf-shell .mlab-mf-inspector{
+		position:fixed;
+		z-index:100004;
+		left:0;
+		right:0;
+		bottom:0;
+		top:auto;
+		width:auto;
+		max-height:72vh;
+		min-height:0;
+		padding:20px;
+		border-left:0;
+		border-top:1px solid var(--mlab-line);
+		border-radius:18px 18px 0 0;
+		box-shadow:0 -18px 50px rgba(16,24,40,.18);
+	}
+	body.mlab-mf-inspector-open #wpbody-content{padding-bottom:42vh!important}
+}
+@media(max-width:782px){
+	.mlab-mf-shell{margin:10px 0 16px;border-radius:0;border-left:0;border-right:0}
+	.mlab-mf-shell .mlab-mf-workspace{min-height:66px}
+	.mlab-mf-workspace-brand .mlab-mf-workspace-logo{width:210px}
+	.mlab-mf-workspace-actions .button:not(.mlab-mf-folder-drawer-toggle):not(.mlab-mf-inspector-toggle):not(.mlab-mf-upload){display:none}
+	.mlab-mf-shell .mlab-media-folder-layout>.wrap{padding:18px 14px 26px}
+	.mlab-mf-library-toolbar{margin-top:10px}
+	.mlab-mf-shell .mlab-media-folder-panel,
+	.mlab-mf-shell .mlab-media-folder-panel.is-collapsed{
+		position:fixed!important;
+		top:46px;
+		left:0;
+		bottom:0;
+		width:min(86vw,360px)!important;
+		max-width:360px;
+		margin:0!important;
+		padding:10px;
+		background:#f7f8fa;
+		border-right:0;
+		transform:translateX(-105%);
+	}
+	.mlab-mf-shell .mlab-media-folder-sidebar{position:relative;top:auto;min-height:calc(100vh - 80px)}
+}
+@media(prefers-reduced-motion:reduce){
+	.mlab-mf-shell *{transition:none!important}
+}

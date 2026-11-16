@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,12 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 3.0.1 =
+* UX: Media Folder now renders as one integrated workspace matching the approved mock: shared header, left Folder/Smart Views column, native Media Library centre and right Inspector column.
+* Branding: uses the approved MomentumLab Media Folder logo asset in the workspace header.
+* Layout: removes the floating/off-page toolbar and fixed desktop Inspector; third-party WordPress notices remain outside the plugin workspace.
+* Responsive: Inspector remains a bottom sheet on smaller screens and the folder tree remains a drawer on mobile.
 
 = 3.0.0 =
 * New workspace: unified MomentumLab header, global search across media and folders, right-side Inspector, mobile folder drawer and Inspector bottom sheet.
