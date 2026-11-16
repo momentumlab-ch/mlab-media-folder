@@ -250,8 +250,9 @@ final class Rest_Controller {
 	public function list_folders() {
 		return rest_ensure_response(
 			array(
-				'folders' => Folders::all(),
-				'totals'  => Folders::totals(),
+				'folders'     => Folders::all(),
+				'totals'      => Folders::totals(),
+				'usage_audit' => Usage_Audit::status(),
 			)
 		);
 	}
