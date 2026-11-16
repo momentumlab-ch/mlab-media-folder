@@ -16,6 +16,8 @@ Folders for the WordPress media library: folder tree, drag and drop, upload into
 * Create, rename, move (drag a folder onto another) and delete folders.
 * Move files by dragging them onto a folder. In bulk-select mode all selected files move together.
 * "All files" and "Unfiled" views with counts.
+* Media Health runs resumable full-library checks for missing files and SHA-256 content duplicates, with a protected manual rescan action.
+* "Duplicates" finds both repeated attachment paths and copied files with identical content while keeping independent physical files visible until you decide what to remove.
 * New uploads land in the folder that is open.
 * "Folder" filter in every media dialog (block editor, gallery, featured image).
 * "Folder" field in the attachment details, as a keyboard-friendly alternative to drag and drop.
@@ -27,7 +29,7 @@ Security
 * Every REST route checks capabilities (`upload_files` by default) and uses the core REST nonce.
 * Each moved file is checked against `edit_post` for the current user.
 * Input is validated (types, ranges, existing folders, no cycles) and folder names are sanitised and escaped on output.
-* No tracking and no custom database tables (uses a private taxonomy). The only external request is the update check against the public GitHub releases of the plugin (when WordPress checks for updates, no site data is sent).
+* No tracking and no custom database tables (uses a private taxonomy). Standalone installations only contact the public GitHub releases during WordPress update checks. If MomentumLab Core manages this plugin, the standalone GitHub updater does not register and Core/License Server becomes the single update path.
 
 Developer hooks
 
