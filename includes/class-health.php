@@ -160,8 +160,13 @@ final class Health {
 		 *
 		 * @param int $limit Default 5000.
 		 */
-		$limit = max( 1, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) );
-		$base  = wp_get_upload_dir()['basedir'];
+		$limit = max( 1, min( 50000, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) ) );
+		$uploads = wp_get_upload_dir();
+		$base    = realpath( $uploads['basedir'] );
+		if ( false === $base ) {
+			// Do not classify the entire library as missing when uploads is unavailable.
+			return array();
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- One bounded lookup per scan, cached.
 		$rows = $wpdb->get_results(
@@ -181,7 +186,14 @@ final class Health {
 			if ( '' === $row->file || preg_match( '#^[a-z][a-z0-9+.-]*://#i', $row->file ) ) {
 				continue;
 			}
-			if ( ! file_exists( $base . '/' . ltrim( $row->file, '/' ) ) ) {
+			// Ignore absolute and traversal paths: never resolve a stored attachment outside uploads.
+			$relative = str_replace( '\\\\', '/', (string) $row->file );
+			$segments = explode( '/', $relative );
+			if ( '' === $relative || '/' === $relative[0] || in_array( '..', $segments, true ) || in_array( '.', $segments, true ) || preg_match( '/^[a-z]:/i', $relative ) ) {
+				continue;
+			}
+			$path = $base . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $segments );
+			if ( ! file_exists( $path ) ) {
 				$missing[] = (int) $row->ID;
 			}
 		}
