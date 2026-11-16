@@ -4,3 +4,5 @@
 /.gitignore     export-ignore
 /phpcs.xml.dist export-ignore
 /README.md      export-ignore
+/composer.json   export-ignore
+/tests           export-ignore
