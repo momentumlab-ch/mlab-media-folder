@@ -30,11 +30,11 @@ final class Health {
 	const CACHE_TTL = HOUR_IN_SECONDS;
 
 	/**
-	 * True while a file that other entries share must not be removed from disk.
+	 * Absolute normalized paths that surviving attachments still reference.
 	 *
-	 * @var bool
+	 * @var array<string,bool>
 	 */
-	private $protecting = false;
+	private $protected_paths = array();
 
 	/**
 	 * Registers hooks.
@@ -46,7 +46,6 @@ final class Health {
 		add_action( 'untrashed_post', array( __CLASS__, 'clear_cache' ) );
 		add_action( 'delete_attachment', array( $this, 'protect_shared_file' ), 9 );
 		add_action( 'delete_attachment', array( __CLASS__, 'clear_cache' ), 10 );
-		add_action( 'deleted_post', array( $this, 'release' ) );
 		add_action( 'updated_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
 		add_action( 'added_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
 		add_action( 'deleted_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
@@ -311,23 +310,64 @@ final class Health {
 	 * @param int $attachment_id Attachment about to be deleted.
 	 */
 	public function protect_shared_file( $attachment_id ) {
-		$this->protecting = (bool) self::others_sharing_file( $attachment_id, 1 );
+		$this->protected_paths = array();
+		foreach ( self::others_sharing_file( $attachment_id, -1 ) as $other_id ) {
+			foreach ( self::attachment_paths( $other_id ) as $path ) {
+				$this->protected_paths[ wp_normalize_path( $path ) ] = true;
+			}
+		}
+	}
+
+	/**
+	 * All physical files currently referenced by one attachment.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string[]
+	 */
+	private static function attachment_paths( $attachment_id ) {
+		$file = get_attached_file( (int) $attachment_id );
+		if ( ! is_string( $file ) || '' === $file ) {
+			return array();
+		}
+
+		$paths = array( $file );
+		$dir   = dirname( $file );
+		$meta  = wp_get_attachment_metadata( (int) $attachment_id );
+		if ( is_array( $meta ) ) {
+			if ( ! empty( $meta['thumb'] ) ) {
+				$paths[] = path_join( $dir, wp_basename( (string) $meta['thumb'] ) );
+			}
+			if ( ! empty( $meta['original_image'] ) ) {
+				$paths[] = path_join( $dir, wp_basename( (string) $meta['original_image'] ) );
+			}
+			foreach ( (array) ( $meta['sizes'] ?? array() ) as $size ) {
+				if ( is_array( $size ) && ! empty( $size['file'] ) ) {
+					$paths[] = path_join( $dir, wp_basename( (string) $size['file'] ) );
+				}
+			}
+		}
+
+		$backups = get_post_meta( (int) $attachment_id, '_wp_attachment_backup_sizes', true );
+		foreach ( (array) $backups as $backup ) {
+			if ( is_array( $backup ) && ! empty( $backup['file'] ) ) {
+				$paths[] = path_join( $dir, wp_basename( (string) $backup['file'] ) );
+			}
+		}
+
+		return array_values( array_unique( $paths ) );
 	}
 
 	/**
 	 * Filter for every file WordPress is about to delete.
 	 *
+	 * Only paths still referenced by a surviving attachment are suppressed.
+	 *
 	 * @param string $path Absolute file path.
-	 * @return string Empty to skip the delete.
+	 * @return string Empty to skip a protected delete.
 	 */
 	public function keep_file( $path ) {
-		return $this->protecting ? '' : $path;
+		$normalized = wp_normalize_path( (string) $path );
+		return isset( $this->protected_paths[ $normalized ] ) ? '' : $path;
 	}
 
-	/**
-	 * After the delete: later deletes in the same request are checked on their own.
-	 */
-	public function release() {
-		$this->protecting = false;
-	}
 }
