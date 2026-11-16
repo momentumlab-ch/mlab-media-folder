@@ -79,6 +79,9 @@ final class Query {
 		if ( in_array( $raw, self::TASKS, true ) ) {
 			return $raw;
 		}
+		if ( str_starts_with( $raw, 'view-' ) && Dynamic_Views::get( substr( $raw, 5 ) ) ) {
+			return $raw;
+		}
 		$id = absint( $raw );
 		return ( $id && Folders::exists( $id ) ) ? $id : '';
 	}
@@ -122,6 +125,10 @@ final class Query {
 			if ( $hidden ) {
 				$args['post__not_in'] = array_values( array_unique( array_merge( (array) ( $args['post__not_in'] ?? array() ), $hidden ) ) ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 			}
+		}
+
+		if ( is_string( $folder ) && str_starts_with( $folder, 'view-' ) ) {
+			return Dynamic_Views::apply( $args, substr( $folder, 5 ) );
 		}
 
 		if ( self::UNATTACHED === $folder ) {
