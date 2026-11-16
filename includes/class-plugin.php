@@ -85,6 +85,7 @@ final class Plugin {
 		}
 
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
+		Background_Audit::restart_scan();
 	}
 
 	/**
