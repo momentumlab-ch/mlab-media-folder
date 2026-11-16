@@ -93,12 +93,11 @@ final class Background_Audit {
 			if ( '' === $file || preg_match( '#^[a-z][a-z0-9+.-]*://#i', $file ) ) {
 				continue;
 			}
-			$relative = str_replace( '\\', '/', $file );
-			$segments = explode( '/', $relative );
-			if ( '/' === $relative[0] || preg_match( '/^[a-z]:/i', $relative ) || in_array( '..', $segments, true ) || in_array( '.', $segments, true ) ) {
+			$relative = Content_Audit::safe_relative_path( $file );
+			if ( null === $relative ) {
 				continue;
 			}
-			if ( ! file_exists( $base . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $segments ) ) ) {
+			if ( ! file_exists( $base . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $relative ) ) ) {
 				$state['missing'][] = (int) $row->ID;
 			}
 		}
