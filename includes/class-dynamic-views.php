@@ -19,7 +19,7 @@ final class Dynamic_Views {
 	/**
 	 * Return all saved views.
 	 *
-	 * @return array<int,array{id:string,name:string,mime:string,author:int,days:int}>
+	 * @return array<int,array{id:string,name:string,mime:string,author:int,days:int,min_mb:int}>
 	 */
 	public static function all(): array {
 		if ( ! Features::available( 'dynamic_views' ) ) {
@@ -33,7 +33,7 @@ final class Dynamic_Views {
 	 * Get one view by ID.
 	 *
 	 * @param string $id View ID.
-	 * @return array{id:string,name:string,mime:string,author:int,days:int}|null
+	 * @return array{id:string,name:string,mime:string,author:int,days:int,min_mb:int}|null
 	 */
 	public static function get( string $id ): ?array {
 		foreach ( self::all() as $view ) {
@@ -126,6 +126,7 @@ final class Dynamic_Views {
 			'mime'   => $mime,
 			'author' => absint( $input['author'] ?? 0 ),
 			'days'   => min( 3650, absint( $input['days'] ?? 0 ) ),
+			'min_mb' => min( 102400, absint( $input['min_mb'] ?? 0 ) ),
 		);
 	}
 
@@ -175,6 +176,21 @@ final class Dynamic_Views {
 					'inclusive' => true,
 				),
 			);
+		}
+
+		if ( 0 < (int) $view['min_mb'] ) {
+			$size_clause = array(
+				'key'     => Content_Audit::SIZE_META,
+				'value'   => (int) $view['min_mb'] * MB_IN_BYTES,
+				'compare' => '>=',
+				'type'    => 'NUMERIC',
+			);
+			$existing = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
+			$existing[] = $size_clause;
+			if ( 1 < count( $existing ) && ! isset( $existing['relation'] ) ) {
+				$existing['relation'] = 'AND';
+			}
+			$args['meta_query'] = $existing; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		}
 
 		return $args;
