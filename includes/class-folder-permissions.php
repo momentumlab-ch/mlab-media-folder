@@ -20,6 +20,13 @@ final class Folder_Permissions {
 	const CONFIGURED_OPTION = 'mlab_media_folder_permissions_configured';
 
 	/**
+	 * Request-local cache of inaccessible folder IDs by user.
+	 *
+	 * @var array<int,int[]>
+	 */
+	private static $inaccessible_cache = array();
+
+	/**
 	 * Whether a user can access one folder.
 	 *
 	 * @param int $folder_id Folder ID.
@@ -84,6 +91,11 @@ final class Folder_Permissions {
 			return array();
 		}
 
+		$user_id = get_current_user_id();
+		if ( isset( self::$inaccessible_cache[ $user_id ] ) ) {
+			return self::$inaccessible_cache[ $user_id ];
+		}
+
 		$ids = get_terms(
 			array(
 				'taxonomy'   => Taxonomy::NAME,
@@ -95,12 +107,13 @@ final class Folder_Permissions {
 			return array();
 		}
 
-		return array_values(
+		self::$inaccessible_cache[ $user_id ] = array_values(
 			array_filter(
 				array_map( 'intval', $ids ),
 				static fn( int $id ): bool => ! self::can_access( $id )
 			)
 		);
+		return self::$inaccessible_cache[ $user_id ];
 	}
 
 	/**
@@ -161,6 +174,7 @@ final class Folder_Permissions {
 		if ( Features::available( 'advanced_folder_style' ) ) {
 			update_term_meta( $target_id, self::COLOR_META, $rules['color'] );
 		}
+		self::$inaccessible_cache = array();
 		Folders::clear_cache();
 	}
 
@@ -190,6 +204,7 @@ final class Folder_Permissions {
 		if ( Features::available( 'advanced_folder_style' ) ) {
 			update_term_meta( $folder_id, self::COLOR_META, $color );
 		}
+		self::$inaccessible_cache = array();
 		Folders::clear_cache();
 	}
 }
