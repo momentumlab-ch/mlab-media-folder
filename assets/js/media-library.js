@@ -522,6 +522,48 @@
 		} );
 	}
 
+	function startMoveFolder( folder, $row ) {
+		var $form = $( '<form class="mlab-media-folder-inline mlab-media-folder-inline-move"></form>' );
+		var $select = $( '<select class="mlab-media-folder-move-select"></select>' );
+		var $save = $( '<button type="submit" class="button button-small button-primary"></button>' ).text( i18n.save );
+		var $cancel = $( '<button type="button" class="button button-small"></button>' ).text( i18n.cancel );
+
+		$select.append( $( '<option></option>' ).val( '0' ).text( i18n.all ) );
+		state.folders.forEach( function ( candidate ) {
+			if ( candidate.id === folder.id || isDescendant( candidate.id, folder.id ) ) {
+				return;
+			}
+			var depth = candidate.depth || 0;
+			var prefix = new Array( depth + 1 ).join( '— ' );
+			$select.append( $( '<option></option>' ).val( candidate.id ).text( prefix + candidate.name ) );
+		} );
+		$select.val( String( folder.parent || 0 ) );
+
+		function close() {
+			$form.remove();
+			$row.show();
+		}
+
+		$form.append( $select, $save, $cancel ).on( 'submit', function ( event ) {
+			event.preventDefault();
+			$save.prop( 'disabled', true );
+			moveFolder( folder.id, parseInt( $select.val(), 10 ) || 0 )
+				.catch( function () {
+					$save.prop( 'disabled', false );
+				} );
+		} );
+		$cancel.on( 'click', close );
+		$select.on( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key ) {
+				event.preventDefault();
+				close();
+			}
+		} );
+
+		$row.hide().after( $form );
+		$select.trigger( 'focus' );
+	}
+
 	/* ---------- rendering ---------- */
 
 	function selectedFolderId() {
@@ -595,6 +637,7 @@
 				var items = [
 					[ i18n.newSubfolder, 'sub' ],
 					[ i18n.rename, 'rename' ],
+					[ i18n.moveFolder, 'move' ],
 				];
 				if ( data.features && data.features.advanced_folder_style && data.features.advanced_folder_style.available ) {
 					items.push( [ i18n.duplicateFolder, 'duplicate' ] );
@@ -940,6 +983,8 @@
 				startCreate( folder.id );
 			} else if ( 'rename' === action ) {
 				startRename( folder, $row );
+			} else if ( 'move' === action ) {
+				startMoveFolder( folder, $row );
 			} else if ( 'duplicate' === action ) {
 				api( '/folders/' + folder.id + '/duplicate', { method: 'POST' } )
 					.then( reload )
