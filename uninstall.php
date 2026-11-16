@@ -75,6 +75,7 @@ delete_option( 'mlab_media_folder_automation' );
 delete_option( 'mlab_media_folder_optimization' );
 delete_option( 'mlab_media_folder_dynamic_views' );
 delete_option( 'mlab_media_folder_bulk_optimize' );
+delete_option( 'mlab_media_folder_ai_bulk_queue' );
 delete_option( 'mlab_media_folder_counts_generation' );
 
 delete_site_transient( 'mlab_media_folder_health' );
@@ -91,4 +92,5 @@ wp_clear_scheduled_hook( 'mlab_media_folder_audit_batch' );
 wp_clear_scheduled_hook( 'mlab_media_folder_content_audit_batch' );
 wp_clear_scheduled_hook( 'mlab_media_folder_usage_audit_batch' );
 wp_clear_scheduled_hook( 'mlab_media_folder_ai_enrich' );
+wp_clear_scheduled_hook( 'mlab_media_folder_ai_bulk_batch' );
 wp_clear_scheduled_hook( 'mlab_media_folder_bulk_optimize_batch' );
