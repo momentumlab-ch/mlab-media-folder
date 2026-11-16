@@ -38,10 +38,15 @@ final class Usage_Audit {
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function content_changed( int $post_id, $post ): void {
-		unset( $post_id );
-		if ( $post instanceof \WP_Post && 'attachment' !== $post->post_type && 'revision' !== $post->post_type ) {
-			self::restart();
+		if ( ! $post instanceof \WP_Post || 'attachment' === $post->post_type || 'revision' === $post->post_type ) {
+			return;
 		}
+
+		$state = self::status();
+		if ( '' !== $state['generation'] ) {
+			self::mark_post_references( $post_id, (string) $post->post_content, $state['generation'] );
+		}
+		self::mark_dirty( $state );
 	}
 
 	/**
@@ -52,9 +57,10 @@ final class Usage_Audit {
 	 */
 	public function deleted_post( int $post_id, $post ): void {
 		unset( $post_id );
-		if ( $post instanceof \WP_Post && 'attachment' !== $post->post_type ) {
-			self::restart();
+		if ( ! $post instanceof \WP_Post || 'attachment' === $post->post_type ) {
+			return;
 		}
+		self::mark_dirty( self::status() );
 	}
 
 	/**
@@ -69,6 +75,7 @@ final class Usage_Audit {
 				'cursor'     => 0,
 				'checked'    => 0,
 				'complete'   => false,
+				'dirty'      => false,
 				'updated'    => time(),
 			),
 			false
@@ -120,23 +127,7 @@ final class Usage_Audit {
 			$state['cursor'] = $post_id;
 			++$state['checked'];
 
-			$ids = self::ids_from_content( (string) $post->post_content );
-
-			$thumbnail = absint( get_post_meta( $post_id, '_thumbnail_id', true ) );
-			if ( 0 < $thumbnail ) {
-				$ids[] = $thumbnail;
-			}
-
-			$product_gallery = (string) get_post_meta( $post_id, '_product_image_gallery', true );
-			if ( '' !== $product_gallery ) {
-				$ids = array_merge( $ids, array_map( 'absint', explode( ',', $product_gallery ) ) );
-			}
-
-			foreach ( array_values( array_unique( array_filter( $ids ) ) ) as $attachment_id ) {
-				if ( 'attachment' === get_post_type( $attachment_id ) ) {
-					update_post_meta( $attachment_id, self::SEEN_META, $state['generation'] );
-				}
-			}
+			self::mark_post_references( $post_id, (string) $post->post_content, $state['generation'] );
 		}
 
 		$state['complete'] = count( (array) $posts ) < self::BATCH;
@@ -146,8 +137,57 @@ final class Usage_Audit {
 			Folders::clear_cache();
 		}
 
-		if ( ! $state['complete'] && ! wp_next_scheduled( self::HOOK ) ) {
+		if ( $state['complete'] ) {
+			Folders::clear_cache();
+			if ( ! empty( $state['dirty'] ) ) {
+				self::restart();
+				return;
+			}
+		} elseif ( ! wp_next_scheduled( self::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::HOOK );
+		}
+	}
+
+	/**
+	 * Mark the current scan dirty; completed scans restart immediately.
+	 *
+	 * @param array<string,mixed> $state Current audit state.
+	 */
+	private static function mark_dirty( array $state ): void {
+		if ( ! empty( $state['complete'] ) ) {
+			self::restart();
+			return;
+		}
+
+		$state['dirty']   = true;
+		$state['updated'] = time();
+		update_option( self::OPTION, $state, false );
+	}
+
+	/**
+	 * Mark all references currently visible in one post.
+	 *
+	 * @param int    $post_id    Post ID.
+	 * @param string $content    Post content.
+	 * @param string $generation Audit generation.
+	 */
+	private static function mark_post_references( int $post_id, string $content, string $generation ): void {
+		$ids = self::ids_from_content( $content );
+
+		$thumbnail = absint( get_post_meta( $post_id, '_thumbnail_id', true ) );
+		if ( 0 < $thumbnail ) {
+			$ids[] = $thumbnail;
+		}
+
+		$product_gallery = (string) get_post_meta( $post_id, '_product_image_gallery', true );
+		if ( '' !== $product_gallery ) {
+			$ids = array_merge( $ids, array_map( 'absint', explode( ',', $product_gallery ) ) );
+		}
+
+		foreach ( array_values( array_unique( array_filter( $ids ) ) ) as $attachment_id ) {
+			if ( 'attachment' === get_post_type( $attachment_id ) ) {
+				update_post_meta( $attachment_id, self::SEEN_META, $generation );
+			}
 		}
 	}
 
@@ -178,7 +218,7 @@ final class Usage_Audit {
 	/**
 	 * Current normalized state.
 	 *
-	 * @return array{generation:string,cursor:int,checked:int,complete:bool,updated:int}
+	 * @return array{generation:string,cursor:int,checked:int,complete:bool,dirty:bool,updated:int}
 	 */
 	public static function status(): array {
 		$state = get_option( self::OPTION, array() );
@@ -190,6 +230,7 @@ final class Usage_Audit {
 				'cursor'     => 0,
 				'checked'    => 0,
 				'complete'   => false,
+				'dirty'      => false,
 				'updated'    => 0,
 			),
 			$state
