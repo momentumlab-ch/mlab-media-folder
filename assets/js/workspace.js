@@ -10,6 +10,7 @@
 	var $results;
 	var $inspector;
 	var timer;
+	var inspectorMode = false;
 
 	function escapeHtml( value ) {
 		return $( '<div>' ).text( value == null ? '' : String( value ) ).html();
@@ -109,6 +110,7 @@
 	}
 
 	function inspect( id ) {
+		inspectorMode = true;
 		closeResults();
 		$inspector.removeAttr( 'hidden' ).addClass( 'is-loading' ).html( '<span class="spinner is-active"></span>' );
 		wp.apiFetch( { path: data.restPath + '/attachment/' + id } )
@@ -183,8 +185,29 @@
 		$inspector = $( '<aside class="mlab-mf-inspector" hidden aria-live="polite"></aside>' ).appendTo( 'body' );
 	}
 
+	function captureAttachmentClick( event ) {
+		if ( ! inspectorMode ) {
+			return;
+		}
+		var attachment = event.target.closest && event.target.closest( '.attachment[data-id]' );
+		if ( ! attachment || event.target.closest( '.mlab-mf-workspace, .mlab-mf-inspector' ) ) {
+			return;
+		}
+		var id = parseInt( attachment.getAttribute( 'data-id' ), 10 );
+		if ( ! id ) {
+			return;
+		}
+		event.preventDefault();
+		event.stopPropagation();
+		if ( event.stopImmediatePropagation ) {
+			event.stopImmediatePropagation();
+		}
+		inspect( id );
+	}
+
 	$( function () {
 		build();
+		document.addEventListener( 'click', captureAttachmentClick, true );
 
 		$( document )
 			.on( 'input', '.mlab-mf-global-search input', function () {
@@ -198,6 +221,7 @@
 				inspect( $( this ).data( 'attachment' ) );
 			} )
 			.on( 'click', '.mlab-mf-inspector-close', function () {
+				inspectorMode = false;
 				$inspector.attr( 'hidden', true ).removeClass( 'is-open' );
 				$( 'body' ).removeClass( 'mlab-mf-inspector-open' );
 			} )
@@ -205,6 +229,7 @@
 				if ( $inspector.hasClass( 'is-open' ) ) {
 					$inspector.find( '.mlab-mf-inspector-close' ).trigger( 'click' );
 				} else {
+					inspectorMode = true;
 					$inspector.removeAttr( 'hidden' ).addClass( 'is-open' ).html( '<p class="mlab-mf-inspector-empty">' + escapeHtml( data.workspaceI18n.inspectHint ) + '</p>' );
 					$( 'body' ).addClass( 'mlab-mf-inspector-open' );
 				}
