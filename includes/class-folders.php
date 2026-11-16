@@ -158,11 +158,29 @@ final class Folders {
 	}
 
 	/**
+	 * Number of visible attachments uploaded in the last seven days.
+	 */
+	private static function count_recent() {
+		global $wpdb;
+
+		$visible = self::visible_sql();
+		$after   = wp_date( 'Y-m-d H:i:s', time() - ( 7 * DAY_IN_SECONDS ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; the visibility clause is generated internally.
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p WHERE {$visible} AND p.post_date >= %s",
+				$after
+			)
+		);
+	}
+
+	/**
 	 * Counts for the virtual entries: all images and the task views. The
 	 * "duplicate" and "missing" views list the entries the library hides, so
 	 * they count those entries.
 	 *
-	 * @return array{all:int, entries:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
+	 * @return array{all:int, entries:int, recent:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
 	 */
 	public static function totals() {
 		global $wpdb;
@@ -188,6 +206,7 @@ final class Folders {
 		return array(
 			'all'        => self::count_visible(),
 			'entries'    => $entries,
+			'recent'     => self::count_recent(),
 			'unfiled'    => self::count_visible( '', $in_folder ),
 			'noalt'      => self::count_visible( $alt_join, $no_alt ),
 			'unattached' => self::count_visible( '', 'AND p.post_parent = 0' ),
