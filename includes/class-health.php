@@ -134,11 +134,11 @@ final class Health {
 				SELECT m2.meta_value AS file
 				FROM {$wpdb->postmeta} m2
 				INNER JOIN {$wpdb->posts} p2 ON p2.ID = m2.post_id
-				WHERE m2.meta_key = '_wp_attached_file' AND p2.post_type = 'attachment' AND p2.post_status <> 'trash'
+				WHERE m2.meta_key = '_wp_attached_file' AND m2.meta_value <> '' AND p2.post_type = 'attachment' AND p2.post_status <> 'trash'
 				GROUP BY m2.meta_value
 				HAVING COUNT(*) > 1
 			) d ON d.file = m.meta_value
-			WHERE m.meta_key = '_wp_attached_file' AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+			WHERE m.meta_key = '_wp_attached_file' AND m.meta_value <> '' AND p.post_type = 'attachment' AND p.post_status <> 'trash'
 			ORDER BY m.post_id ASC"
 		);
 
@@ -146,6 +146,9 @@ final class Health {
 		$extra = array();
 		$seen  = array();
 		foreach ( (array) $rows as $row ) {
+			if ( null === Content_Audit::safe_relative_path( (string) $row->file ) ) {
+				continue;
+			}
 			$id    = (int) $row->post_id;
 			$all[] = $id;
 			if ( isset( $seen[ $row->file ] ) ) {
@@ -265,7 +268,7 @@ final class Health {
 	 */
 	public static function others_sharing_file( $attachment_id, $limit = 3 ) {
 		$file = (string) get_post_meta( (int) $attachment_id, '_wp_attached_file', true );
-		if ( '' === $file ) {
+		if ( null === Content_Audit::safe_relative_path( $file ) ) {
 			return array();
 		}
 		$ids = get_posts(
