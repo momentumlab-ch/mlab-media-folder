@@ -80,6 +80,14 @@ final class Plugin {
 	}
 
 	/**
+	 * Deactivation: remove pending one-shot audits. They are scheduled again on activation.
+	 */
+	public static function deactivate() {
+		wp_clear_scheduled_hook( Background_Audit::HOOK );
+		wp_clear_scheduled_hook( Content_Audit::HOOK );
+	}
+
+	/**
 	 * Runs upgrade routines when the stored version differs from the code version.
 	 */
 	public function maybe_upgrade() {
