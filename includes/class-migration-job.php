@@ -94,11 +94,16 @@ final class Migration_Job {
 			return;
 		}
 
-		$state['cursor']       = (int) $result['cursor'];
-		$state['checked']      = (int) $state['checked'] + (int) $result['checked'];
-		$state['assignments'] = (int) $state['assignments'] + (int) $result['assignments'];
-		$state['complete']    = ! empty( $result['complete'] );
-		$state['updated']     = time();
+		$state = array_merge(
+			$state,
+			array(
+				'cursor'      => (int) $result['cursor'],
+				'checked'     => (int) $state['checked'] + (int) $result['checked'],
+				'assignments' => (int) $state['assignments'] + (int) $result['assignments'],
+				'complete'    => ! empty( $result['complete'] ),
+				'updated'     => time(),
+			)
+		);
 		if ( $state['complete'] ) {
 			unset( $state['map'] );
 		}
