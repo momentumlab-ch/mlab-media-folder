@@ -158,7 +158,7 @@ final class Updater {
 		) . '</p>';
 		$other_notes .= '<h3>' . esc_html__( 'Updates', 'mlab-media-folder' ) . '</h3>';
 		$other_notes .= '<p>' . esc_html__(
-			'Standalone installations update from signed GitHub release assets. When MomentumLab Core manages this plugin, the built-in GitHub updater stands down so only the Core and License Server update path remains active.',
+			'Standalone installations update from published GitHub release assets. When MomentumLab Core manages this plugin, the built-in GitHub updater stands down so only the Core and License Server update path remains active.',
 			'mlab-media-folder'
 		) . '</p>';
 
