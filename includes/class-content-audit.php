@@ -40,6 +40,11 @@ final class Content_Audit {
 	const SIG_META = '_mlab_media_folder_signature';
 
 	/**
+	 * Attachment meta containing the latest readable physical file size in bytes.
+	 */
+	const SIZE_META = '_mlab_media_folder_file_size';
+
+	/**
 	 * Registers lifecycle hooks.
 	 */
 	public function hooks() {
@@ -65,6 +70,7 @@ final class Content_Audit {
 		if ( '_wp_attached_file' === $meta_key && 'attachment' === get_post_type( $post_id ) ) {
 			delete_post_meta( $post_id, self::HASH_META );
 			delete_post_meta( $post_id, self::SIG_META );
+			delete_post_meta( $post_id, self::SIZE_META );
 			self::restart_scan();
 		}
 	}
@@ -88,6 +94,7 @@ final class Content_Audit {
 	public static function force_restart() {
 		delete_post_meta_by_key( self::HASH_META );
 		delete_post_meta_by_key( self::SIG_META );
+		delete_post_meta_by_key( self::SIZE_META );
 		self::restart_scan();
 	}
 
@@ -179,6 +186,7 @@ final class Content_Audit {
 			if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 				delete_post_meta( (int) $row->ID, self::HASH_META );
 				delete_post_meta( (int) $row->ID, self::SIG_META );
+				delete_post_meta( (int) $row->ID, self::SIZE_META );
 				continue;
 			}
 
@@ -187,6 +195,8 @@ final class Content_Audit {
 			if ( false === $size || false === $mtime ) {
 				continue;
 			}
+
+			update_post_meta( (int) $row->ID, self::SIZE_META, (int) $size );
 
 			$signature = $size . ':' . $mtime;
 			if (
