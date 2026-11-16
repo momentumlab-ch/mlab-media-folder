@@ -114,10 +114,12 @@ final class Dynamic_Views {
 			return new \WP_Error( 'mlab_media_folder_view_name', __( 'Enter a name for the Dynamic View.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
 		$id = sanitize_key( (string) ( $input['id'] ?? '' ) );
+
 		if ( '' === $id ) {
 			$id = 'v' . strtolower( wp_generate_password( 10, false, false ) );
 		}
-		$mime         = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
+		$mime = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
+
 		$allowed_mime = array( '', 'image', 'video', 'audio', 'application/pdf' );
 		$mime         = in_array( $mime, $allowed_mime, true ) ? $mime : '';
 
