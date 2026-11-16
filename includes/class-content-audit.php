@@ -161,7 +161,7 @@ final class Content_Audit {
 		$processed_all      = true;
 
 		foreach ( (array) $rows as $row ) {
-			if ( $processed_this_run > 0 && microtime( true ) - $started >= 12 ) {
+			if ( $processed_this_run > 0 && 12 <= microtime( true ) - $started ) {
 				$processed_all = false;
 				break;
 			}
@@ -231,7 +231,13 @@ final class Content_Audit {
 	 */
 	public static function status() {
 		$state = get_option( self::OPTION );
-		return is_array( $state ) ? $state : array( 'cursor' => 0, 'checked' => 0, 'complete' => false );
+		return is_array( $state )
+			? $state
+			: array(
+				'cursor'   => 0,
+				'checked'  => 0,
+				'complete' => false,
+			);
 	}
 
 	/**
