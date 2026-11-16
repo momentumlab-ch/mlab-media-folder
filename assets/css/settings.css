@@ -112,3 +112,10 @@
 .mlab-mf-license-detail span{font-size:11px;color:var(--mlab-muted)}
 .mlab-mf-license-detail code{justify-self:end}
 @media(max-width:640px){.mlab-mf-license-detail{grid-template-columns:1fr}.mlab-mf-license-detail code{justify-self:start}}
+
+.mlab-mf-migration-status{
+	margin:12px 0;padding:12px 14px;border:1px solid var(--mlab-line);border-radius:12px;background:var(--mlab-soft)
+}
+.mlab-mf-migration-status strong{display:block;margin-bottom:4px}
+.mlab-mf-migration-status p{margin:0;color:var(--mlab-muted)}
+.mlab-mf-migration-status.has-error{border-color:#d92d20;background:#fff5f5}
