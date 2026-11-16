@@ -517,6 +517,20 @@ final class Folders {
 			return new WP_Error( 'mlab_media_folder_forbidden_parent', __( 'You are not allowed to move this folder content to its parent.', 'mlab-media-folder' ), array( 'status' => 403 ) );
 		}
 
+		$attachment_ids = get_objects_in_term( $id, Taxonomy::NAME );
+		if ( is_wp_error( $attachment_ids ) ) {
+			return $attachment_ids;
+		}
+		foreach ( (array) $attachment_ids as $attachment_id ) {
+			if ( ! current_user_can( 'edit_post', (int) $attachment_id ) ) {
+				return new WP_Error(
+					'mlab_media_folder_delete_attachment_forbidden',
+					__( 'This folder contains media you are not allowed to edit.', 'mlab-media-folder' ),
+					array( 'status' => 403 )
+				);
+			}
+		}
+
 		$children = get_terms(
 			array(
 				'taxonomy'   => Taxonomy::NAME,
@@ -531,8 +545,7 @@ final class Folders {
 			}
 		}
 
-		$attachment_ids = get_objects_in_term( $id, Taxonomy::NAME );
-		if ( ! is_wp_error( $attachment_ids ) && $attachment_ids && $parent_id ) {
+		if ( $attachment_ids && $parent_id ) {
 			foreach ( $attachment_ids as $attachment_id ) {
 				wp_set_object_terms( (int) $attachment_id, array( $parent_id ), Taxonomy::NAME, false );
 			}
