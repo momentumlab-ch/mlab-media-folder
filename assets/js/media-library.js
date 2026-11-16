@@ -38,6 +38,7 @@
 
 	var state = {
 		folders: data.folders || [],
+		dynamicViews: data.dynamicViews || [],
 		totals: data.totals || { all: 0, unfiled: 0 },
 		current: data.current === '' || data.current === undefined ? '' : String( data.current ),
 		expanded: loadExpanded(),
@@ -295,7 +296,7 @@
 				};
 			} );
 			state.totals = response.totals || state.totals;
-			if ( state.current && ! isTask( state.current ) && ! findFolder( state.current ) ) {
+			if ( state.current && ! isTask( state.current ) && state.current.indexOf( 'view-' ) !== 0 && ! findFolder( state.current ) ) {
 				applyFilter( '' );
 			}
 			renderTree();
@@ -669,6 +670,17 @@
 				.appendTo( $tasks );
 		} );
 		$tree.append( section( i18n.todo ), $tasks );
+
+		if ( state.dynamicViews.length ) {
+			var $views = $( '<ul class="mlab-media-folder-fixed mlab-media-folder-views"></ul>' );
+			state.dynamicViews.forEach( function ( view ) {
+				var target = 'view-' + view.id;
+				$( '<li class="mlab-media-folder-item"></li>' )
+					.append( makeRow( { target: target, label: view.name, count: '', done: false, icon: 'dashicons-filter', current: target === state.current } ) )
+					.appendTo( $views );
+			} );
+			$tree.append( section( i18n.savedViews ), $views );
+		}
 
 		$tree.append( section( i18n.title ) );
 		var $root = $( '<ul class="mlab-media-folder-root"></ul>' );
