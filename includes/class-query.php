@@ -83,7 +83,7 @@ final class Query {
 			return $raw;
 		}
 		$id = absint( $raw );
-		return ( $id && Folders::exists( $id ) ) ? $id : '';
+		return ( $id && Folders::exists( $id ) && Folder_Permissions::can_access( $id ) ) ? $id : '';
 	}
 
 	/**
@@ -120,6 +120,17 @@ final class Query {
 	 * @return array
 	 */
 	public static function apply( array $args, $folder, $clean = false ) {
+		$blocked_folders = Folder_Permissions::inaccessible_ids();
+		if ( $blocked_folders ) {
+			$access_clause = array(
+				'taxonomy'         => Taxonomy::NAME,
+				'field'            => 'term_id',
+				'terms'            => $blocked_folders,
+				'operator'         => 'NOT IN',
+				'include_children' => false,
+			);
+			$args['tax_query'] = self::merge( $args['tax_query'] ?? array(), $access_clause ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
 		if ( $clean && self::DUPLICATE !== $folder && self::MISSING !== $folder && 'trash' !== ( $args['post_status'] ?? '' ) ) {
 			$hidden = Health::hidden_ids();
 			if ( $hidden ) {
