@@ -39,4 +39,4 @@ require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-plugin.php';
 
 register_activation_hook( __FILE__, array( '\MomentumLab\MediaFolder\Plugin', 'activate' ) );
 
-register_deactivation_hook( __FILE__, array( '\\MomentumLab\\MediaFolder\\Plugin', 'deactivate' ) );
+register_deactivation_hook( __FILE__, array( '\MomentumLab\MediaFolder\Plugin', 'deactivate' ) );
