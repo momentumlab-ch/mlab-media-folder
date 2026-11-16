@@ -219,6 +219,47 @@ final class Admin {
 		wp_enqueue_style( 'mlab-media-folder', MLAB_MEDIA_FOLDER_URL . 'assets/css/media-folder.css', array(), $this->asset_version( 'assets/css/media-folder.css' ) );
 		wp_enqueue_script( 'mlab-media-folder-library', MLAB_MEDIA_FOLDER_URL . 'assets/js/media-library.js', array( 'jquery', 'wp-api-fetch' ), $this->asset_version( 'assets/js/media-library.js' ), true );
 		wp_localize_script( 'mlab-media-folder-library', 'mlabMediaFolderLibrary', $data );
+
+		wp_enqueue_script( 'mlab-media-folder-workspace', MLAB_MEDIA_FOLDER_URL . 'assets/js/workspace.js', array( 'jquery', 'wp-api-fetch' ), $this->asset_version( 'assets/js/workspace.js' ), true );
+		wp_localize_script(
+			'mlab-media-folder-workspace',
+			'mlabMediaFolderWorkspace',
+			array(
+				'restPath'   => '/' . Rest_Controller::NAMESPACE,
+				'param'      => Query::PARAM,
+				'settingsUrl'=> admin_url( 'upload.php?page=' . Settings_Page::SLUG ),
+				'brandMark'  => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-mark.svg',
+				'features'   => Features::matrix(),
+				'workspaceI18n' => array(
+					'search'      => __( 'Search files, folders, filenames and alt text…', 'mlab-media-folder' ),
+					'folders'     => __( 'Folders', 'mlab-media-folder' ),
+					'media'       => __( 'Media', 'mlab-media-folder' ),
+					'noResults'   => __( 'No matching files or folders.', 'mlab-media-folder' ),
+					'settings'    => __( 'Settings', 'mlab-media-folder' ),
+					'inspector'   => __( 'Inspector', 'mlab-media-folder' ),
+					'inspectHint' => __( 'Search for a media item and open it here to inspect its metadata and health status.', 'mlab-media-folder' ),
+					'close'       => __( 'Close inspector', 'mlab-media-folder' ),
+					'filename'    => __( 'Filename', 'mlab-media-folder' ),
+					'folder'      => __( 'Folder', 'mlab-media-folder' ),
+					'unfiled'     => __( 'Unfiled', 'mlab-media-folder' ),
+					'author'      => __( 'Uploader', 'mlab-media-folder' ),
+					'size'        => __( 'File size', 'mlab-media-folder' ),
+					'altText'     => __( 'Alt text', 'mlab-media-folder' ),
+					'tags'        => __( 'Media tags', 'mlab-media-folder' ),
+					'duplicate'   => __( 'Duplicate', 'mlab-media-folder' ),
+					'missing'     => __( 'File missing', 'mlab-media-folder' ),
+					'noAlt'       => __( 'No alt text', 'mlab-media-folder' ),
+					'aiMetadata'  => __( 'AI metadata', 'mlab-media-folder' ),
+					'aiReady'     => __( 'Generate a suggestion with the API key configured for this site.', 'mlab-media-folder' ),
+					'aiNeedsKey'  => __( 'Add the customer API key in Media Folder settings first.', 'mlab-media-folder' ),
+					'generate'    => __( 'Generate suggestion', 'mlab-media-folder' ),
+					'generating'  => __( 'Generating suggestion…', 'mlab-media-folder' ),
+					'title'       => __( 'Title', 'mlab-media-folder' ),
+					'apply'       => __( 'Apply approved fields', 'mlab-media-folder' ),
+					'error'       => __( 'That did not work. Please try again.', 'mlab-media-folder' ),
+				),
+			)
+		);
 	}
 
 	/**
