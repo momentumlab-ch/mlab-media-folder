@@ -30,6 +30,11 @@ final class Background_Audit {
 	}
 
 	public function restart() {
+		self::restart_scan();
+	}
+
+	/** Restart the persisted audit and schedule the first batch. */
+	public static function restart_scan() {
 		delete_option( self::OPTION );
 		Health::clear_cache();
 		if ( ! wp_next_scheduled( self::HOOK ) ) {
