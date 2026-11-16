@@ -42,6 +42,8 @@ final class Features {
 
 	/**
 	 * Whether a named feature is available.
+	 *
+	 * @param string $feature Feature key.
 	 */
 	public static function available( string $feature ): bool {
 		$free = array(
