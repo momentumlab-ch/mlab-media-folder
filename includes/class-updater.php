@@ -145,6 +145,32 @@ final class Updater {
 		$tested = $this->readme_requirements( $readme )['tested'];
 		$about  = preg_match( '/^== Description ==\s*(.*?)(?=^== |\z)/ms', $readme, $m ) ? $m[1] : $plugin['Description'];
 
+		$installation  = '<ol>';
+		$installation .= '<li>' . esc_html__( 'Install and activate the plugin.', 'mlab-media-folder' ) . '</li>';
+		$installation .= '<li>' . esc_html__( 'Open Media > Library. The folder panel and Media Health status appear automatically.', 'mlab-media-folder' ) . '</li>';
+		$installation .= '<li>' . esc_html__( 'Use Scan again to rebuild the missing-file and duplicate-content audits when required.', 'mlab-media-folder' ) . '</li>';
+		$installation .= '</ol>';
+
+		$other_notes  = '<h3>' . esc_html__( 'Media Health', 'mlab-media-folder' ) . '</h3>';
+		$other_notes .= '<p>' . esc_html__(
+			'Missing files are checked against the local uploads directory in resumable background batches. Duplicate content is fingerprinted with SHA-256 in small batches. Shared physical files are protected when duplicate attachment entries are deleted.',
+			'mlab-media-folder'
+		) . '</p>';
+		$other_notes .= '<h3>' . esc_html__( 'Updates', 'mlab-media-folder' ) . '</h3>';
+		$other_notes .= '<p>' . esc_html__(
+			'Standalone installations update from signed GitHub release assets. When MomentumLab Core manages this plugin, the built-in GitHub updater stands down so only the Core and License Server update path remains active.',
+			'mlab-media-folder'
+		) . '</p>';
+
+		$screenshots  = '<p><em>' . esc_html__(
+			'UI previews based on the implemented Media Library workflow; not captures from a live WordPress site.',
+			'mlab-media-folder'
+		) . '</em></p>';
+		$screenshots .= '<p><img src="' . esc_url( MLAB_MEDIA_FOLDER_URL . 'assets/screenshots/media-library-preview.svg' ) . '" alt="';
+		$screenshots .= esc_attr__( 'Media Library UI preview', 'mlab-media-folder' ) . '" style="max-width:100%;height:auto"></p>';
+		$screenshots .= '<p><img src="' . esc_url( MLAB_MEDIA_FOLDER_URL . 'assets/screenshots/media-health-preview.svg' ) . '" alt="';
+		$screenshots .= esc_attr__( 'Media Health UI preview', 'mlab-media-folder' ) . '" style="max-width:100%;height:auto"></p>';
+
 		return (object) array(
 			'name'          => $plugin['Name'],
 			'slug'          => $this->slug(),
@@ -159,10 +185,11 @@ final class Updater {
 			'icons'         => $this->icons(),
 			'sections'      => array(
 				'description'  => $this->markdown_to_html( $about ),
-				'installation' => '<ol><li>' . esc_html__( 'Install and activate the plugin.', 'mlab-media-folder' ) . '</li><li>' . esc_html__( 'Open Media > Library. The folder panel and Media Health status appear automatically.', 'mlab-media-folder' ) . '</li><li>' . esc_html__( 'Use Scan again to rebuild the missing-file and duplicate-content audits when required.', 'mlab-media-folder' ) . '</li></ol>',
-				'other_notes'  => '<h3>' . esc_html__( 'Media Health', 'mlab-media-folder' ) . '</h3><p>' . esc_html__( 'Missing files are checked against the local uploads directory in resumable background batches. Duplicate content is fingerprinted with SHA-256 in small batches. Shared physical files are protected when duplicate attachment entries are deleted.', 'mlab-media-folder' ) . '</p><h3>' . esc_html__( 'Updates', 'mlab-media-folder' ) . '</h3><p>' . esc_html__( 'Standalone installations update from signed GitHub release assets. When MomentumLab Core manages this plugin, the built-in GitHub updater stands down so only the Core and License Server update path remains active.', 'mlab-media-folder' ) . '</p>',
-				'screenshots'  => '<p><em>' . esc_html__( 'UI previews based on the implemented Media Library workflow; not captures from a live WordPress site.', 'mlab-media-folder' ) . '</em></p><p><img src="' . esc_url( MLAB_MEDIA_FOLDER_URL . 'assets/screenshots/media-library-preview.svg' ) . '" alt="' . esc_attr__( 'Media Library UI preview', 'mlab-media-folder' ) . '" style="max-width:100%;height:auto"></p><p><img src="' . esc_url( MLAB_MEDIA_FOLDER_URL . 'assets/screenshots/media-health-preview.svg' ) . '" alt="' . esc_attr__( 'Media Health UI preview', 'mlab-media-folder' ) . '" style="max-width:100%;height:auto"></p>',
+				'installation' => $installation,
+				'other_notes'  => $other_notes,
+				'screenshots'  => $screenshots,
 				'changelog'    => $this->markdown_to_html( $changelog ),
+
 			),
 		);
 	}
