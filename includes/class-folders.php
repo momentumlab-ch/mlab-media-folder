@@ -27,6 +27,34 @@ final class Folders {
 	const MAX_ASSIGN = 500;
 
 	/**
+	 * Generation option for folder/Smart View count caches.
+	 */
+	const CACHE_GENERATION_OPTION = 'mlab_media_folder_counts_generation';
+
+	/**
+	 * Object-cache group for count payloads.
+	 */
+	const CACHE_GROUP = 'mlab_media_folder';
+
+	/**
+	 * Invalidate count caches for every user without enumerating cache keys.
+	 */
+	public static function clear_cache(): void {
+		$generation = absint( get_option( self::CACHE_GENERATION_OPTION, 1 ) );
+		update_option( self::CACHE_GENERATION_OPTION, max( 2, $generation + 1 ), false );
+	}
+
+	/**
+	 * Per-user cache key because Pro folder permissions can change visible totals.
+	 */
+	private static function cache_key( string $scope ): string {
+		$generation = absint( get_option( self::CACHE_GENERATION_OPTION, 1 ) );
+		return sanitize_key(
+			$scope . ':' . $generation . ':' . get_current_user_id() . ':' . ( Features::is_pro() ? 'pro' : 'free' )
+		);
+	}
+
+	/**
 	 * Display name of a term. WordPress stores term names HTML-encoded
 	 * ("&amp;"); the API returns plain text and every output escapes it.
 	 *
@@ -118,6 +146,12 @@ final class Folders {
 	public static function counts() {
 		global $wpdb;
 
+		$key    = self::cache_key( 'counts' );
+		$cached = wp_cache_get( $key, self::CACHE_GROUP );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
 		$where = self::visible_sql();
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count, no API equivalent; the condition comes from visible_sql().
@@ -138,6 +172,7 @@ final class Folders {
 		foreach ( (array) $rows as $row ) {
 			$counts[ (int) $row->term_id ] = (int) $row->files;
 		}
+		wp_cache_set( $key, $counts, self::CACHE_GROUP, 300 );
 		return $counts;
 	}
 
@@ -214,6 +249,12 @@ final class Folders {
 	public static function totals() {
 		global $wpdb;
 
+		$key    = self::cache_key( 'totals' );
+		$cached = wp_cache_get( $key, self::CACHE_GROUP );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
 		$entries = 0;
 		foreach ( (array) wp_count_attachments() as $mime => $count ) {
 			if ( 'trash' !== $mime ) {
@@ -232,7 +273,7 @@ final class Folders {
 		$health['duplicate'] = array_values( array_filter( $health['duplicate'], static fn( int $id ): bool => Folder_Permissions::can_access_attachment( $id ) ) );
 		$health['missing']   = array_values( array_filter( $health['missing'], static fn( int $id ): bool => Folder_Permissions::can_access_attachment( $id ) ) );
 
-		return array(
+		$totals = array(
 			'all'        => self::count_visible(),
 			'entries'    => $entries,
 			'recent'     => self::count_recent(),
@@ -243,6 +284,8 @@ final class Folders {
 			'duplicate'  => count( $health['duplicate'] ),
 			'missing'    => count( $health['missing'] ),
 		);
+		wp_cache_set( $key, $totals, self::CACHE_GROUP, 300 );
+		return $totals;
 	}
 
 	/**
@@ -339,6 +382,7 @@ final class Folders {
 			return $result;
 		}
 
+		self::clear_cache();
 		return array(
 			'id'     => (int) $result['term_id'],
 			'name'   => $name,
@@ -435,6 +479,7 @@ final class Folders {
 		}
 
 		$term = get_term( $id, Taxonomy::NAME );
+		self::clear_cache();
 		return array(
 			'id'     => (int) $term->term_id,
 			'name'   => self::name( $term ),
@@ -486,6 +531,7 @@ final class Folders {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		self::clear_cache();
 		return true;
 	}
 
