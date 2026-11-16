@@ -62,7 +62,7 @@ final class Image_Optimization {
 			return $formats;
 		}
 
-		$mime                = 'avif' === $format ? 'image/avif' : 'image/webp';
+		$mime                  = 'avif' === $format ? 'image/avif' : 'image/webp';
 		$formats['image/jpeg'] = $mime;
 
 		if ( ! empty( $settings['convert_png'] ) ) {
