@@ -847,9 +847,9 @@ body.mlab-media-folder-file-dragging .uploader-window {
 .mlab-media-folder-panel,
 .mlab-media-folder-banner,
 .mlab-media-folder-bulkbar {
-  --mlab-accent: #23819e;
-  --mlab-ink: #172c35;
-  --mlab-ink-soft: #53646b;
+  --mlab-accent: #f2aa00;
+  --mlab-ink: #111111;
+  --mlab-ink-soft: #667085;
   --mlab-radius: 12px;
   font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -952,4 +952,26 @@ body.mlab-mf-inspector-open #wpbody-content{padding-right:360px}
 	width:1px!important;
 	height:1px!important;
 	opacity:0!important;
+}
+
+/* 3.0 unified Momentum selection language: warm gold, dark text, no low-contrast white-on-gold. */
+.mlab-media-folder-row.is-current {
+	background:#fff4d6;
+	color:#111111;
+	box-shadow:inset 3px 0 0 #f2aa00;
+}
+.mlab-media-folder-row.is-current .mlab-media-folder-name .dashicons,
+.mlab-media-folder-row.is-current .mlab-media-folder-more {
+	color:#111111;
+}
+.mlab-media-folder-row.is-current .mlab-media-folder-count {
+	background:rgba(242,170,0,.16);
+	color:#111111;
+}
+.mlab-media-folder-row.is-current .mlab-media-folder-toggle::before {
+	border-left-color:#111111;
+}
+.mlab-media-folder-row.is-current .mlab-media-folder-toggle[aria-expanded="true"]::before {
+	border-top-color:#111111;
+	border-left-color:transparent;
 }
