@@ -397,6 +397,9 @@ final class Rest_Controller {
 			return $result;
 		}
 		if ( $request->has_param( 'color' ) && Features::available( 'advanced_folder_style' ) ) {
+			if ( ! current_user_can( Plugin::settings_capability() ) ) {
+				return new \WP_Error( 'mlab_media_folder_color_forbidden', __( 'You are not allowed to change folder colors.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+			}
 			$rules = Folder_Permissions::get( (int) $request['id'] );
 			Folder_Permissions::save( (int) $request['id'], $rules['roles'], $rules['users'], (string) $request['color'] );
 			$result['color'] = Folder_Permissions::get( (int) $request['id'] )['color'];
