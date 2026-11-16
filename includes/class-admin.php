@@ -67,7 +67,7 @@ final class Admin {
 	 * Restarts both read-only health audits from the Media Library.
 	 */
 	public function rescan() {
-		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+		if ( ! current_user_can( Plugin::audit_capability() ) ) {
 			wp_die( esc_html__( 'You are not allowed to run the media audit.', 'mlab-media-folder' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( 'mlab_media_folder_rescan' );
