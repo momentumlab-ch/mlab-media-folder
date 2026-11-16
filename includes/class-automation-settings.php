@@ -23,17 +23,17 @@ final class Automation_Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'provider'        => 'openai',
-			'model'           => 'gpt-6-luna',
-			'language'        => get_locale(),
-			'company_name'    => get_bloginfo( 'name' ),
-			'naming_pattern'  => '%companyname%-%imagename%-%counter%',
-			'naming_enabled'  => false,
-			'auto_alt'        => false,
-			'auto_tags'       => false,
-			'glossary'        => '',
-			'blocked_terms'   => '',
-			'api_key'         => '',
+			'provider'       => 'openai',
+			'model'          => 'gpt-6-luna',
+			'language'       => get_locale(),
+			'company_name'   => get_bloginfo( 'name' ),
+			'naming_pattern' => '%companyname%-%imagename%-%counter%',
+			'naming_enabled' => false,
+			'auto_alt'       => false,
+			'auto_tags'      => false,
+			'glossary'       => '',
+			'blocked_terms'  => '',
+			'api_key'        => '',
 		);
 	}
 
@@ -113,8 +113,9 @@ final class Automation_Settings {
 	 * @return array<string,string>
 	 */
 	public static function glossary_map(): array {
-		$map = array();
-		foreach ( preg_split( '/\R/u', (string) self::get()['glossary'] ) ?: array() as $line ) {
+		$map   = array();
+		$lines = preg_split( '/\R/u', (string) self::get()['glossary'] );
+		foreach ( false === $lines ? array() : $lines as $line ) {
 			$parts = array_map( 'trim', explode( '=', $line, 2 ) );
 			if ( 2 === count( $parts ) && '' !== $parts[0] && '' !== $parts[1] ) {
 				$map[ $parts[0] ] = $parts[1];
@@ -129,7 +130,8 @@ final class Automation_Settings {
 	 * @return string[]
 	 */
 	public static function blocked_terms(): array {
-		$terms = preg_split( '/[\r\n,]+/u', (string) self::get()['blocked_terms'] ) ?: array();
+		$terms = preg_split( '/[\r\n,]+/u', (string) self::get()['blocked_terms'] );
+		$terms = false === $terms ? array() : $terms;
 		return array_values( array_filter( array_map( 'trim', $terms ) ) );
 	}
 }
