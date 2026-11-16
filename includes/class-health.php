@@ -62,8 +62,13 @@ final class Health {
 	 */
 	public static function maybe_clear_file_cache( $meta_id, $post_id, $meta_key, $meta_value ) {
 		unset( $meta_id, $meta_value );
-		if ( '_wp_attached_file' === $meta_key && 'attachment' === get_post_type( $post_id ) ) {
+		if ( 'attachment' !== get_post_type( $post_id ) ) {
+			return;
+		}
+		if ( '_wp_attached_file' === $meta_key ) {
 			self::clear_cache();
+		} elseif ( '_wp_attachment_image_alt' === $meta_key ) {
+			Folders::clear_cache();
 		}
 	}
 
@@ -72,6 +77,7 @@ final class Health {
 	 */
 	public static function clear_cache() {
 		delete_site_transient( self::CACHE_KEY );
+		Folders::clear_cache();
 	}
 
 	/**
