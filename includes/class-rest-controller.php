@@ -247,6 +247,9 @@ final class Rest_Controller {
 		$folder_rows = array();
 		if ( ! is_wp_error( $folders ) ) {
 			foreach ( $folders as $term ) {
+				if ( ! Folder_Permissions::can_access( (int) $term->term_id ) ) {
+					continue;
+				}
 				$folder_rows[] = array(
 					'id'   => (int) $term->term_id,
 					'name' => Folders::name( $term ),
@@ -277,7 +280,7 @@ final class Rest_Controller {
 
 		$media = array();
 		foreach ( array_map( 'intval', (array) $ids ) as $id ) {
-			if ( ! current_user_can( 'edit_post', $id ) ) {
+			if ( ! current_user_can( 'edit_post', $id ) || ! Folder_Permissions::can_access_attachment( $id ) ) {
 				continue;
 			}
 			$media[] = array(
@@ -352,31 +355,17 @@ final class Rest_Controller {
 			return new \WP_Error( 'mlab_media_folder_pro_required', __( 'Media AI requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ), array( 'status' => 403 ) );
 		}
 
-		$id = (int) $request['id'];
-		if ( $request->has_param( 'alt_text' ) ) {
-			update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( (string) $request['alt_text'] ) );
-		}
+		$suggestion = array(
+			'alt_text'    => $request->has_param( 'alt_text' ) ? (string) $request['alt_text'] : '',
+			'title'       => $request->has_param( 'title' ) ? (string) $request['title'] : '',
+			'description' => $request->has_param( 'description' ) ? (string) $request['description'] : '',
+			'tags'        => $request->has_param( 'tags' ) ? (array) $request['tags'] : array(),
+		);
 
-		$post_update = array( 'ID' => $id );
-		if ( $request->has_param( 'title' ) ) {
-			$post_update['post_title'] = sanitize_text_field( (string) $request['title'] );
+		$result = AI::apply( (int) $request['id'], $suggestion, true, true, true );
+		if ( is_wp_error( $result ) ) {
+			return $result;
 		}
-		if ( $request->has_param( 'description' ) ) {
-			$post_update['post_content'] = sanitize_textarea_field( (string) $request['description'] );
-		}
-		if ( 1 < count( $post_update ) ) {
-			wp_update_post( $post_update );
-		}
-
-		if ( $request->has_param( 'tags' ) ) {
-			$tags = array_slice(
-				array_values( array_filter( array_map( 'sanitize_text_field', (array) $request['tags'] ) ) ),
-				0,
-				20
-			);
-			wp_set_object_terms( $id, $tags, Tags::NAME, false );
-		}
-
 		return $this->attachment( $request );
 	}
 
