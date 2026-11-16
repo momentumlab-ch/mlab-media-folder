@@ -187,7 +187,10 @@ final class Rest_Controller {
 				'callback'            => array( $this, 'ai_apply' ),
 				'permission_callback' => array( $this, 'can_edit_attachment' ),
 				'args'                => array(
-					'id'          => array( 'type' => 'integer', 'minimum' => 1 ),
+					'id'          => array(
+						'type'    => 'integer',
+						'minimum' => 1,
+					),
 					'alt_text'    => array( 'type' => 'string' ),
 					'title'       => array( 'type' => 'string' ),
 					'description' => array( 'type' => 'string' ),
