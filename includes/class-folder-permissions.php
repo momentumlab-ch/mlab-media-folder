@@ -17,6 +17,7 @@ final class Folder_Permissions {
 	const ROLES_META = '_mlab_mf_allowed_roles';
 	const USERS_META = '_mlab_mf_allowed_users';
 	const COLOR_META = '_mlab_mf_color';
+	const CONFIGURED_OPTION = 'mlab_media_folder_permissions_configured';
 
 	/**
 	 * Whether a user can access one folder.
@@ -25,7 +26,7 @@ final class Folder_Permissions {
 	 * @param int $user_id User ID, or 0 for current user.
 	 */
 	public static function can_access( int $folder_id, int $user_id = 0 ): bool {
-		if ( ! Features::available( 'folder_permissions' ) || 0 === $folder_id ) {
+		if ( 0 === $folder_id || ! self::configured() ) {
 			return true;
 		}
 
@@ -64,6 +65,14 @@ final class Folder_Permissions {
 	}
 
 	/**
+	 * Whether access restrictions have ever been configured.
+	 *
+	 * Stored restrictions stay active even if the Pro entitlement later becomes
+	 * unavailable, so a licensing outage can never expose previously private media.
+	 */
+	public static function configured(): bool {
+		return (bool) get_option( self::CONFIGURED_OPTION, false );
+	}
 
 	/**
 	 * Folder IDs the current user must not see.
@@ -71,7 +80,7 @@ final class Folder_Permissions {
 	 * @return int[]
 	 */
 	public static function inaccessible_ids(): array {
-		if ( ! Features::available( 'folder_permissions' ) || current_user_can( 'manage_options' ) ) {
+		if ( ! self::configured() || current_user_can( 'manage_options' ) ) {
 			return array();
 		}
 
@@ -111,7 +120,7 @@ final class Folder_Permissions {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public static function visible( array $folders ): array {
-		if ( ! Features::available( 'folder_permissions' ) ) {
+		if ( ! self::configured() ) {
 			return $folders;
 		}
 		return array_values(
@@ -174,6 +183,9 @@ final class Folder_Permissions {
 
 		update_term_meta( $folder_id, self::ROLES_META, $roles );
 		update_term_meta( $folder_id, self::USERS_META, $users );
+		if ( $roles || $users ) {
+			update_option( self::CONFIGURED_OPTION, 1, false );
+		}
 
 		if ( Features::available( 'advanced_folder_style' ) ) {
 			update_term_meta( $folder_id, self::COLOR_META, $color );
