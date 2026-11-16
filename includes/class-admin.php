@@ -104,6 +104,7 @@ final class Admin {
 			'canManage'    => current_user_can( Plugin::manage_capability() ),
 			'canSettings'  => current_user_can( Plugin::settings_capability() ),
 			'features'     => Features::matrix(),
+			'aiReady'      => 'none' !== Automation_Settings::api_key_source(),
 			'maxAssign'    => Folders::MAX_ASSIGN,
 			'folders'      => Folders::flattened_tree(),
 			'dynamicViews' => Dynamic_Views::all(),
@@ -186,6 +187,10 @@ final class Admin {
 				'showAll'         => __( 'Show all files', 'mlab-media-folder' ),
 				'moveTo'          => __( 'Move to…', 'mlab-media-folder' ),
 				'moveSelected'    => __( 'Move selected files to a folder', 'mlab-media-folder' ),
+				'bulkAi'          => __( 'AI alt text & tags', 'mlab-media-folder' ),
+				/* translators: %d: number of images queued. */
+				'bulkAiQueued'    => __( '%d image(s) queued for AI metadata.', 'mlab-media-folder' ),
+				'aiNeedsKey'      => __( 'Add the customer API key in Media Folder settings first.', 'mlab-media-folder' ),
 				/* translators: 1: number of files, 2: folder name. */
 				'movedTo'         => __( '%1$d file(s) moved to "%2$s".', 'mlab-media-folder' ),
 				'undo'            => __( 'Undo', 'mlab-media-folder' ),
