@@ -841,3 +841,42 @@ body.mlab-media-folder-file-dragging .uploader-window {
 		transition: none;
 	}
 }
+
+
+/* MomentumLab visual refinement: scoped to our plugin, never to other admin notices. */
+.mlab-media-folder-panel,
+.mlab-media-folder-banner,
+.mlab-media-folder-bulkbar {
+  --mlab-accent: #23819e;
+  --mlab-ink: #172c35;
+  --mlab-ink-soft: #53646b;
+  --mlab-radius: 12px;
+  font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.mlab-media-folder-sidebar {
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(23,44,53,.08);
+}
+.mlab-media-folder-row {
+  min-height: 40px;
+}
+.mlab-media-folder-toggle,
+.mlab-media-folder-more {
+  min-height: 40px;
+}
+.mlab-media-folder-row.is-current {
+  background: var(--mlab-accent);
+}
+.mlab-media-folder-sidebar button:focus-visible,
+.mlab-media-folder-bulkbar button:focus-visible {
+  outline: 2px solid var(--mlab-accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mlab-media-folder-panel *,
+  .mlab-media-folder-banner *,
+  .mlab-media-folder-bulkbar * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
