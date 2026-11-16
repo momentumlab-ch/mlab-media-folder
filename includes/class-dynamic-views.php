@@ -49,27 +49,11 @@ final class Dynamic_Views {
 			return new \WP_Error( 'mlab_media_folder_pro_required', __( 'Dynamic Views require MomentumLab Media Folder Pro.', 'mlab-media-folder' ), array( 'status' => 403 ) );
 		}
 
-		$name = trim( sanitize_text_field( (string) ( $input['name'] ?? '' ) ) );
-		if ( '' === $name ) {
-			return new \WP_Error( 'mlab_media_folder_view_name', __( 'Enter a name for the Dynamic View.', 'mlab-media-folder' ), array( 'status' => 400 ) );
+		$view = self::normalize( $input );
+		if ( is_wp_error( $view ) ) {
+			return $view;
 		}
-
-		$id = sanitize_key( (string) ( $input['id'] ?? '' ) );
-		if ( '' === $id ) {
-			$id = 'v' . strtolower( wp_generate_password( 10, false, false ) );
-		}
-
-		$mime = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
-		$allowed_mime = array( '', 'image', 'video', 'audio', 'application/pdf' );
-		$mime = in_array( $mime, $allowed_mime, true ) ? $mime : '';
-
-		$view = array(
-			'id'     => $id,
-			'name'   => $name,
-			'mime'   => $mime,
-			'author' => absint( $input['author'] ?? 0 ),
-			'days'   => min( 3650, absint( $input['days'] ?? 0 ) ),
-		);
+		$id = (string) $view['id'];
 
 		$views = self::all();
 		$found = false;
@@ -86,6 +70,57 @@ final class Dynamic_Views {
 
 		update_option( self::OPTION, array_values( $views ), false );
 		return $view;
+	}
+
+	/**
+	 * Replace the complete saved-view collection from the settings screen.
+	 *
+	 * @param array<int,array<string,mixed>> $views Submitted views.
+	 */
+	public static function replace( array $views ): void {
+		if ( ! Features::available( 'dynamic_views' ) ) {
+			return;
+		}
+		$normalized = array();
+		foreach ( $views as $view ) {
+			if ( ! is_array( $view ) || '' === trim( (string) ( $view['name'] ?? '' ) ) ) {
+				continue;
+			}
+			$result = self::normalize( $view );
+			if ( is_wp_error( $result ) ) {
+				continue;
+			}
+			$normalized[] = $result;
+		}
+		update_option( self::OPTION, array_values( $normalized ), false );
+	}
+
+	/**
+	 * Normalize one view without persisting it.
+	 *
+	 * @param array<string,mixed> $input Raw input.
+	 * @return array<string,mixed>|\WP_Error
+	 */
+	private static function normalize( array $input ) {
+		$name = trim( sanitize_text_field( (string) ( $input['name'] ?? '' ) ) );
+		if ( '' === $name ) {
+			return new \WP_Error( 'mlab_media_folder_view_name', __( 'Enter a name for the Dynamic View.', 'mlab-media-folder' ), array( 'status' => 400 ) );
+		}
+		$id = sanitize_key( (string) ( $input['id'] ?? '' ) );
+		if ( '' === $id ) {
+			$id = 'v' . strtolower( wp_generate_password( 10, false, false ) );
+		}
+		$mime = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
+		$allowed_mime = array( '', 'image', 'video', 'audio', 'application/pdf' );
+		$mime = in_array( $mime, $allowed_mime, true ) ? $mime : '';
+
+		return array(
+			'id'     => $id,
+			'name'   => $name,
+			'mime'   => $mime,
+			'author' => absint( $input['author'] ?? 0 ),
+			'days'   => min( 3650, absint( $input['days'] ?? 0 ) ),
+		);
 	}
 
 	/**
