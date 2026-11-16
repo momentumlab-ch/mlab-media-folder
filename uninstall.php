@@ -78,6 +78,7 @@ delete_option( 'mlab_media_folder_dynamic_views' );
 delete_option( 'mlab_media_folder_bulk_optimize' );
 delete_option( 'mlab_media_folder_ai_bulk_queue' );
 delete_option( 'mlab_media_folder_counts_generation' );
+delete_option( 'mlab_media_folder_permissions_configured' );
 
 delete_site_transient( 'mlab_media_folder_health' );
 delete_site_transient( 'mlab_media_folder_github_release' );
