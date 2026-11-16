@@ -300,7 +300,7 @@ final class Admin {
 		if ( ! isset( $_POST[ Query::PARAM ] ) ) {
 			return;
 		}
-		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $attachment_id ) ) {
+		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $attachment_id ) || ! Folder_Permissions::can_access_attachment( $attachment_id ) ) {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitised in parse().
@@ -319,7 +319,7 @@ final class Admin {
 	 * @return array
 	 */
 	public function add_folder_field( $fields, $post ) {
-		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $post->ID ) ) {
+		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $post->ID ) || ! Folder_Permissions::can_access_attachment( (int) $post->ID ) ) {
 			return $fields;
 		}
 
