@@ -245,5 +245,6 @@ return array(
 		'You are not allowed to change Media Folder settings.' => 'Keine Berechtigung zum Ändern der Media Folder Einstellungen.',
 		'You are not allowed to migrate media folders.' => 'Keine Berechtigung zum Migrieren von Medienordnern.',
 		'You are not allowed to run bulk image optimization.' => 'Keine Berechtigung für die Bulk-Bildoptimierung.',
+		'Move folder to…' => 'Ordner verschieben nach …',
 	),
 );
