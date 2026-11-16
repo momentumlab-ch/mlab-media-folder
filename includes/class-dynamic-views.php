@@ -59,7 +59,7 @@ final class Dynamic_Views {
 		if ( is_wp_error( $view ) ) {
 			return $view;
 		}
-		$id    = (string) $view['id'];
+		$id = (string) $view['id'];
 
 		$views = self::all();
 		$found = false;
@@ -112,11 +112,11 @@ final class Dynamic_Views {
 		if ( '' === $name ) {
 			return new \WP_Error( 'mlab_media_folder_view_name', __( 'Enter a name for the Dynamic View.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
-		$id   = sanitize_key( (string) ( $input['id'] ?? '' ) );
+		$id = sanitize_key( (string) ( $input['id'] ?? '' ) );
 		if ( '' === $id ) {
 			$id = 'v' . strtolower( wp_generate_password( 10, false, false ) );
 		}
-		$mime         = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
+		$mime = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
 		$allowed_mime = array( '', 'image', 'video', 'audio', 'application/pdf' );
 		$mime = in_array( $mime, $allowed_mime, true ) ? $mime : '';
 
@@ -185,7 +185,7 @@ final class Dynamic_Views {
 				'compare' => '>=',
 				'type'    => 'NUMERIC',
 			);
-			$existing = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
+			$existing    = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
 			$existing[] = $size_clause;
 			if ( 1 < count( $existing ) && ! isset( $existing['relation'] ) ) {
 				$existing['relation'] = 'AND';
