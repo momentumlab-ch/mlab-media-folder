@@ -9,11 +9,16 @@ namespace MomentumLab\MediaFolder;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Stores Pro-only reusable media filters without replacing the native library.
+ */
 final class Dynamic_Views {
 
 	const OPTION = 'mlab_media_folder_dynamic_views';
 
 	/**
+	 * Return all saved views.
+	 *
 	 * @return array<int,array{id:string,name:string,mime:string,author:int,days:int}>
 	 */
 	public static function all(): array {
@@ -27,11 +32,12 @@ final class Dynamic_Views {
 	/**
 	 * Get one view by ID.
 	 *
+	 * @param string $id View ID.
 	 * @return array{id:string,name:string,mime:string,author:int,days:int}|null
 	 */
 	public static function get( string $id ): ?array {
 		foreach ( self::all() as $view ) {
-			if ( $id === (string) ( $view['id'] ?? '' ) ) {
+			if ( (string) ( $view['id'] ?? '' ) === $id ) {
 				return $view;
 			}
 		}
@@ -53,12 +59,12 @@ final class Dynamic_Views {
 		if ( is_wp_error( $view ) ) {
 			return $view;
 		}
-		$id = (string) $view['id'];
+		$id    = (string) $view['id'];
 
 		$views = self::all();
 		$found = false;
 		foreach ( $views as $index => $candidate ) {
-			if ( $id === (string) ( $candidate['id'] ?? '' ) ) {
+			if ( (string) ( $candidate['id'] ?? '' ) === $id ) {
 				$views[ $index ] = $view;
 				$found = true;
 				break;
@@ -106,11 +112,11 @@ final class Dynamic_Views {
 		if ( '' === $name ) {
 			return new \WP_Error( 'mlab_media_folder_view_name', __( 'Enter a name for the Dynamic View.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
-		$id = sanitize_key( (string) ( $input['id'] ?? '' ) );
+		$id   = sanitize_key( (string) ( $input['id'] ?? '' ) );
 		if ( '' === $id ) {
 			$id = 'v' . strtolower( wp_generate_password( 10, false, false ) );
 		}
-		$mime = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
+		$mime         = sanitize_text_field( (string) ( $input['mime'] ?? '' ) );
 		$allowed_mime = array( '', 'image', 'video', 'audio', 'application/pdf' );
 		$mime = in_array( $mime, $allowed_mime, true ) ? $mime : '';
 
@@ -125,16 +131,18 @@ final class Dynamic_Views {
 
 	/**
 	 * Delete a saved view.
+	 *
+	 * @param string $id View ID.
 	 */
 	public static function delete( string $id ): bool {
 		if ( ! Features::available( 'dynamic_views' ) ) {
 			return false;
 		}
 		$before = self::all();
-		$after = array_values(
+		$after  = array_values(
 			array_filter(
 				$before,
-				static fn( array $view ): bool => $id !== (string) ( $view['id'] ?? '' )
+				static fn( array $view ): bool => (string) ( $view['id'] ?? '' ) !== $id
 			)
 		);
 		update_option( self::OPTION, $after, false );
@@ -145,6 +153,7 @@ final class Dynamic_Views {
 	 * Apply a saved view to WP_Query args.
 	 *
 	 * @param array<string,mixed> $args Query args.
+	 * @param string              $id   View ID.
 	 * @return array<string,mixed>
 	 */
 	public static function apply( array $args, string $id ): array {
