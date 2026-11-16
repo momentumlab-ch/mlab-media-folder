@@ -18,6 +18,17 @@ require_once dirname( __DIR__ ) . '/includes/class-features.php';
 
 use MomentumLab\MediaFolder\Features;
 
+
+if ( 'none' !== Features::license_source() ) {
+	fwrite( STDERR, "Unexpected license source in isolated test.\n" );
+	exit( 1 );
+}
+$status = Features::license_status();
+if ( Features::PRO_PRODUCT !== $status['product'] || $status['pro'] ) {
+	fwrite( STDERR, "License status regression failed.\n" );
+	exit( 1 );
+}
+
 if ( ! Features::available( 'folders' ) || ! Features::available( 'global_search' ) ) {
 	fwrite( STDERR, "Free feature gate failed.\n" );
 	exit( 1 );
