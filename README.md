@@ -16,7 +16,7 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 **Ordnerbaum.** Neben der Mediathek (Raster- und Listenansicht) erscheint eine Ordner-Leiste mit verschachtelten Ordnern und der Anzahl Dateien pro Ordner. Dazu kommen die Ansichten «Alle Dateien» und «Ohne Ordner».
 
-**Workflow «Zu erledigen».** Die Leiste führt durch drei Schritte: sortieren, beschreiben, prüfen. «Nächster Schritt» zeigt die erste offene Aufgabe. Unter «Zu erledigen» stehen Ansichten mit Anzahl: «Ohne Ordner», «Ohne Alternativtext» (Bilder mit leerem Alt-Text) und «Nicht in einer Seite» (Dateien, die nicht aus einer Seite oder einem Beitrag hochgeladen wurden), «Doppelt» (Einträge, die auf dieselbe Datei zeigen) und «Datei fehlt» (Einträge, deren Datei nicht mehr auf dem Server liegt). Die Mediathek listet Datenbank-Einträge, nicht Dateien; darum erscheint ein Bild mehrfach, wenn mehrere Einträge darauf zeigen. In der Mediathek selbst erscheint jede Datei nur einmal: Einträge ohne Datei sind ausgeblendet, und von mehreren Einträgen für dieselbe Datei steht nur der erste in der Liste. Die Zähler entsprechen den angezeigten Bildern. In den Medien-Dialogen des Editors bleiben alle Einträge sichtbar. Löscht man einen Eintrag, bleibt eine Datei, die noch ein anderer Eintrag nutzt, auf dem Server. Ist eine Ansicht offen, steht über den Dateien, wo die Dateien gefunden wurden und was zu tun ist.
+**Workflow «Zu erledigen».** Die Leiste führt durch sortieren, beschreiben und prüfen. «Nächster Schritt» zeigt die erste offene Aufgabe. «Doppelt» erkennt sowohl mehrere Einträge mit derselben physischen Datei als auch Kopien mit identischem SHA-256-Inhalt. «Datei fehlt» basiert nach dem ersten Hintergrundlauf auf einer vollständigen Prüfung der Mediathek. Die normale Mediathek blendet nur zusätzliche Einträge aus, die wirklich dieselbe physische Datei teilen; eigenständige Dateien mit identischem Inhalt bleiben sichtbar, bis sie bewusst bereinigt werden. Gemeinsame Dateien sind beim Löschen eines Attachment-Eintrags geschützt.
 
 **Herkunft.** In den Anhang-Details zeigt das Feld «Herkunft», wer die Datei wann hochgeladen hat, in welche Seite oder welchen Beitrag sie hochgeladen wurde oder wo sie Beitragsbild ist, in welchem Ordner sie liegt und was noch offen ist.
 
@@ -34,7 +34,9 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 **Anpassbare Leiste.** Die Ordner-Leiste lässt sich auf einen schmalen Streifen einklappen und am rechten Rand in der Breite ziehen (180 bis 480 px, auch mit den Pfeiltasten; Doppelklick setzt zurück). Breite und Zustand merkt sich der Browser.
 
-**Automatische Updates.** WordPress prüft die GitHub-Releases dieses Repos auf neue Versionen (siehe [Updates](#updates)).
+**Medienstatus.** Zwei resumierbare Hintergrundprüfungen kontrollieren fehlende Dateien und identische Dateiinhalte. Der Status erscheint direkt in der Mediathek; berechtigte Benutzer können beide Prüfungen mit «Erneut prüfen» neu starten. Grosse Dateien werden in kleinen Batches verarbeitet, damit normale Admin-Aufrufe nicht blockiert werden.
+
+**Automatische Updates.** Standalone-Installationen prüfen die GitHub-Releases dieses Repos. Wenn MomentumLab Core die Update-Verwaltung für `mlab-media-folder` übernimmt, deaktiviert sich der GitHub-Fallback automatisch; dadurch gibt es nie zwei konkurrierende Updatequellen.
 
 Ordner ordnen nur die Verwaltung. Die URLs der Dateien auf der Website ändern sich nicht.
 
@@ -52,7 +54,9 @@ Ab Version 1.1.0 holt sich das Plugin Updates selbst aus diesem Repo:
 
 - Der Plugin-Header enthält `Update URI: https://github.com/momentumlab-ch/mlab-media-folder`. Dadurch fragt WordPress nicht WordPress.org, sondern das Plugin selbst nach Updates.
 - Das Plugin liest das neueste veröffentlichte Release über die GitHub-API (`/releases/latest`). Entwürfe und Pre-Releases werden ignoriert.
-- Als Update gilt nur die angehängte Datei `mlab-media-folder-<version>.zip`, nie das automatisch erzeugte Quellcode-ZIP von GitHub.
+- Als Standalone-Update gilt nur die angehängte Datei `mlab-media-folder-<version>.zip`, nie das automatisch erzeugte Quellcode-ZIP von GitHub.
+- Der Release-Workflow erzeugt zusätzlich `mlab-media-folder.zip` für MomentumLab License Server/Core. Produkt-Slug: `mlab-media-folder`, Repo: `momentumlab-ch/mlab-media-folder`, Main File: `mlab-media-folder/mlab-media-folder.php`.
+- Sobald MomentumLab Core über den Filter `mlab_core_manages_plugin` meldet, dass es dieses Plugin verwaltet, registriert der Standalone-Updater keine eigene Updatequelle mehr.
 - WordPress sucht von sich aus alle 12 Stunden nach Updates. Das Plugin merkt sich die Antwort von GitHub 1 Stunde lang.
 - Sofort prüfen: **Dashboard › Aktualisierungen › Erneut prüfen**. Das fragt GitHub neu (WordPress lässt das höchstens einmal pro Minute zu).
 - Neue Versionen erscheinen wie gewohnt unter **Dashboard › Aktualisierungen** und auf der Plugin-Seite, mit den Release-Notes unter «Details ansehen». Auto-Updates lassen sich pro Plugin einschalten.
@@ -98,7 +102,10 @@ uninstall.php              Aufräumen beim Löschen
 |---|---|---|
 | Filter `mlab_media_folder_use_capability` | `upload_files` | Wer Ordner sieht und Dateien verschiebt |
 | Filter `mlab_media_folder_manage_capability` | `upload_files` | Wer Ordner anlegt, umbenennt, verschiebt und löscht |
-| Filter `mlab_media_folder_update_repository` | `momentumlab-ch/mlab-media-folder` | GitHub-Repo für die Update-Prüfung |
+| Filter `mlab_media_folder_update_repository` | `momentumlab-ch/mlab-media-folder` | GitHub-Repo für die Standalone-Update-Prüfung |
+| Filter `mlab_media_folder_check_missing_files` | `true` | Lokale Missing-File-Prüfung deaktivieren, z. B. bei Offload-Speicher |
+| Filter `mlab_media_folder_check_content_duplicates` | `true` | SHA-256-Inhaltsprüfung deaktivieren |
+| Filter `mlab_core_manages_plugin` | `false` | Von MomentumLab Core gesetzter Integrationsvertrag; bei `true` übernimmt Core/Lizenzserver die Updates |
 | Konstante `MLAB_MEDIA_FOLDER_KEEP_DATA` | nicht gesetzt | Auf `true` setzen, um die Ordner beim Löschen des Plugins zu behalten |
 
 ### Deinstallation
