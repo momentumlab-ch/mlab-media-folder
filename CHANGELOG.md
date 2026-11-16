@@ -25,6 +25,7 @@
 
 ### Security
 - Pro folder permissions are enforced server-side in direct folder filters, media queries, counts, global search, Inspector, AI endpoints and upload assignment.
+- Stored folder restrictions remain enforced if the Pro entitlement expires or the license service is temporarily unavailable; licensing can disable editing, never security.
 - AI credentials are encrypted at rest and can be supplied from `wp-config.php` instead of the database.
 - Manual AI never changes metadata until the user explicitly applies a suggestion; bulk AI preserves existing alt text.
 - Image optimization never automatically replaces or deletes uploaded originals in 3.0.
