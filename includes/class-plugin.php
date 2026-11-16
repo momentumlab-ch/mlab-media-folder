@@ -49,6 +49,7 @@ final class Plugin {
 
 		( new Health() )->hooks();
 		( new Background_Audit() )->hooks();
+		( new Content_Audit() )->hooks();
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
 
@@ -73,6 +74,9 @@ final class Plugin {
 		if ( ! wp_next_scheduled( Background_Audit::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Background_Audit::HOOK );
 		}
+		if ( ! wp_next_scheduled( Content_Audit::HOOK ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Content_Audit::HOOK );
+		}
 	}
 
 	/**
@@ -86,6 +90,7 @@ final class Plugin {
 
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
 		Background_Audit::restart_scan();
+		Content_Audit::restart_scan();
 	}
 
 	/**
