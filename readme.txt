@@ -35,6 +35,7 @@ Developer hooks
 
 * `mlab_media_folder_use_capability` (default `upload_files`): who can see folders and move files.
 * `mlab_media_folder_manage_capability` (default `upload_files`): who can create, rename, move and delete folders.
+* `mlab_media_folder_audit_capability` (default `manage_options`): who can manually restart full Media Health audits.
 * REST namespace `mlab-media-folder/v1`: `GET/POST /folders`, `PATCH/DELETE /folders/{id}`, `POST /assign`.
 * `mlab_media_folder_update_repository` (default `momentumlab-ch/mlab-media-folder`): GitHub repository that is checked for updates.
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
