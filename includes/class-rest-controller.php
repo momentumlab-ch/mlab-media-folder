@@ -364,6 +364,7 @@ final class Rest_Controller {
 				'alt_text'    => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
 				'description' => $post ? (string) $post->post_content : '',
 				'author'      => (string) $author,
+				'usage'       => self::attachment_usage( $post ),
 				'date'        => $post ? get_the_date( DATE_ATOM, $post ) : '',
 				'folder_id'   => Folders::of_attachment( $id ),
 				'folder'      => implode( ' › ', Folders::path( Folders::of_attachment( $id ) ) ),
@@ -379,6 +380,55 @@ final class Rest_Controller {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Human-readable attachment usage for the Inspector.
+	 *
+	 * @param \WP_Post|null $post Attachment post.
+	 * @return string[]
+	 */
+	private static function attachment_usage( $post ): array {
+		if ( ! $post instanceof \WP_Post ) {
+			return array();
+		}
+
+		$rows   = array();
+		$parent = $post->post_parent ? get_post( $post->post_parent ) : null;
+		if ( $parent ) {
+			$rows[] = sprintf(
+				/* translators: %s: post title. */
+				__( 'Uploaded to: %s', 'mlab-media-folder' ),
+				get_the_title( $parent ) ? get_the_title( $parent ) : __( '(no title)', 'mlab-media-folder' )
+			);
+		}
+
+		$featured = get_posts(
+			array(
+				'post_type'        => 'any',
+				'post_status'      => 'any',
+				'numberposts'      => 3,
+				'meta_key'         => '_thumbnail_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => (int) $post->ID, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'suppress_filters' => true,
+			)
+		);
+		foreach ( $featured as $featured_post ) {
+			$rows[] = sprintf(
+				/* translators: %s: post title. */
+				__( 'Featured image of: %s', 'mlab-media-folder' ),
+				get_the_title( $featured_post ) ? get_the_title( $featured_post ) : __( '(no title)', 'mlab-media-folder' )
+			);
+		}
+
+		if ( ! $rows ) {
+			$usage = Usage_Audit::status();
+			$rows[] = ! empty( $usage['complete'] )
+				? __( 'No usage found by the completed background audit.', 'mlab-media-folder' )
+				: __( 'No direct usage found. Background usage audit is still running.', 'mlab-media-folder' );
+		}
+
+		return $rows;
 	}
 
 	/**
