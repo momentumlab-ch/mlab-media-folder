@@ -35,7 +35,8 @@ jobs:
         run: |
           header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folder.php)
           constant=$(sed -n "s/^define( 'MLAB_MEDIA_FOLDER_VERSION', '\(.*\)' );/\1/p" mlab-media-folder.php)
-          if [ "$header" != "$constant" ]; then
+          stable=$(sed -n 's/^Stable tag:[[:space:]]*//p' readme.txt)
+          if [ "$header" != "$constant" ] || [ "$header" != "$stable" ]; then
             echo "::error::Release versions differ: header=$header constant=$constant stable-tag=$stable."
             exit 1
           fi
