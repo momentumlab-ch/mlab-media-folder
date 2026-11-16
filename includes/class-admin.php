@@ -283,7 +283,7 @@ final class Admin {
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitised in parse().
 		$folder = Query::parse( wp_unslash( $_POST[ Query::PARAM ] ) );
-		if ( is_int( $folder ) && $folder > 0 ) {
+		if ( is_int( $folder ) && $folder > 0 && Folder_Permissions::can_access( $folder ) ) {
 			wp_set_object_terms( (int) $attachment_id, array( $folder ), Taxonomy::NAME, false );
 		}
 	}
