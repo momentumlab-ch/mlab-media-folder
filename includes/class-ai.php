@@ -85,7 +85,7 @@ final class AI {
 					'Authorization' => 'Bearer ' . $key,
 					'Content-Type'  => 'application/json',
 				),
-				'body' => wp_json_encode( $body ),
+				'body'    => wp_json_encode( $body ),
 			)
 		);
 		if ( is_wp_error( $response ) ) {
