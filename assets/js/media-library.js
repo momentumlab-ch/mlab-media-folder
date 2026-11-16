@@ -1414,12 +1414,20 @@
 		var $hint = $( '<span class="mlab-media-folder-bulkbar-hint"></span>' ).text( i18n.sweepHint );
 		var $all = $( '<button type="button" class="button"></button>' );
 		var $actions = $( '<span class="mlab-media-folder-bulkbar-actions"></span>' );
+		var $ai = null;
+		if ( data.features && data.features.ai_metadata && data.features.ai_metadata.available ) {
+			$ai = $( '<button type="button" class="button mlab-media-folder-bulkbar-ai"></button>' ).text( i18n.bulkAi );
+		}
 		var $cancel = $( '<button type="button" class="button"></button>' ).text( i18n.cancel );
 		var $move = $( '<select class="mlab-media-folder-bulkbar-move"></select>' ).attr( 'aria-label', i18n.moveSelected );
 		var moveSignature = '';
 		var loadingAll = false;
 
-		$bar.append( $count, $hint, $all, $move, $actions, $cancel ).appendTo( $wrap );
+		$bar.append( $count, $hint, $all, $move );
+		if ( $ai ) {
+			$bar.append( $ai );
+		}
+		$bar.append( $actions, $cancel ).appendTo( $wrap );
 
 		/**
 		 * "Move to…" works without dragging, so it also suits touch screens.
@@ -1452,6 +1460,29 @@
 			} );
 		} );
 
+		if ( $ai ) {
+			$ai.on( 'click', function () {
+				var selection = gridSelection();
+				var ids = selection ? selection.pluck( 'id' ).slice( 0, 100 ) : [];
+				if ( ! ids.length || ! data.aiReady ) {
+					if ( ! data.aiReady ) {
+						announce( i18n.aiNeedsKey, true );
+					}
+					return;
+				}
+				$ai.prop( 'disabled', true );
+				api( '/ai/bulk', { method: 'POST', data: { ids: ids } } )
+					.then( function ( response ) {
+						announce( sprintf( i18n.bulkAiQueued, response.queued || 0 ) );
+						update();
+					} )
+					.catch( function ( error ) {
+						announce( errorMessage( error ), true );
+						update();
+					} );
+			} );
+		}
+
 		function coreButtons() {
 			return $( '.attachments-browser .media-toolbar' )
 				.find( '.delete-selected-button, .delete-selected-permanently-button' )
@@ -1480,6 +1511,9 @@
 			$hint.prop( 'hidden', count > 0 );
 			fillMove();
 			$move.prop( 'disabled', ! count );
+			if ( $ai ) {
+				$ai.prop( 'disabled', ! count || ! data.aiReady ).attr( 'title', data.aiReady ? '' : i18n.aiNeedsKey );
+			}
 			$all.text( loadingAll ? i18n.loadingAll : allSelected() ? i18n.selectNone : i18n.selectAll ).prop( 'disabled', loadingAll );
 
 			$actions.empty();
