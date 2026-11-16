@@ -24,6 +24,15 @@ define( 'MLAB_MEDIA_FOLDER_FILE', __FILE__ );
 define( 'MLAB_MEDIA_FOLDER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MLAB_MEDIA_FOLDER_URL', plugin_dir_url( __FILE__ ) );
 
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-features.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-secrets.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-automation-settings.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-optimization-settings.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-naming.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-tags.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-ai.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-image-optimization.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-settings-page.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-taxonomy.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-folders.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-rest-controller.php';
