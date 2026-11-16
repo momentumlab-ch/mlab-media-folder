@@ -88,6 +88,52 @@ final class AI {
 		return self::normalize( $json );
 	}
 
+	/**
+	 * Apply approved suggestion fields.
+	 *
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param array<string,mixed> $suggestion    Sanitized suggestion.
+	 * @param bool                $alt            Write alt text.
+	 * @param bool                $tags           Write media tags.
+	 * @param bool                $title          Write title/description.
+	 * @return true|\WP_Error
+	 */
+	public static function apply( int $attachment_id, array $suggestion, bool $alt = true, bool $tags = true, bool $title = true ) {
+		if ( 'attachment' !== get_post_type( $attachment_id ) ) {
+			return new \WP_Error( 'mlab_media_folder_attachment_missing', __( 'Attachment not found.', 'mlab-media-folder' ) );
+		}
+
+		if ( $alt && array_key_exists( 'alt_text', $suggestion ) ) {
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', sanitize_text_field( (string) $suggestion['alt_text'] ) );
+		}
+
+		if ( $title ) {
+			$post = array( 'ID' => $attachment_id );
+			if ( isset( $suggestion['title'] ) ) {
+				$post['post_title'] = sanitize_text_field( (string) $suggestion['title'] );
+			}
+			if ( isset( $suggestion['description'] ) ) {
+				$post['post_content'] = sanitize_textarea_field( (string) $suggestion['description'] );
+			}
+			if ( 1 < count( $post ) ) {
+				$result = wp_update_post( $post, true );
+				if ( is_wp_error( $result ) ) {
+					return $result;
+				}
+			}
+		}
+
+		if ( $tags && isset( $suggestion['tags'] ) && is_array( $suggestion['tags'] ) ) {
+			$terms = array_slice( array_values( array_filter( array_map( 'sanitize_text_field', $suggestion['tags'] ) ) ), 0, 20 );
+			$result = wp_set_object_terms( $attachment_id, $terms, Tags::NAME, false );
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+		}
+
+		return true;
+	}
+
 	private static function prompt( int $attachment_id, array $settings ): string {
 		$filename = wp_basename( (string) get_attached_file( $attachment_id ) );
 		$folder = Folders::path( Folders::of_attachment( $attachment_id ) );
