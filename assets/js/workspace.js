@@ -176,11 +176,15 @@
 
 		var $actions = $( '<div class="mlab-mf-workspace-actions"></div>' );
 		$actions.append(
+			$( '<button type="button" class="button mlab-mf-folder-drawer-toggle"></button>' ).text( data.workspaceI18n.folders ),
 			$( '<a class="button"></a>' ).attr( 'href', data.settingsUrl ).text( data.workspaceI18n.settings ),
 			$( '<button type="button" class="button mlab-mf-inspector-toggle"></button>' ).text( data.workspaceI18n.inspector )
 		);
 		$workspace.append( $brand, $searchWrap, $actions );
 		$wrap.before( $workspace );
+
+		// Some plugins inject notices directly into the Media Library wrapper. Keep them outside our workspace.
+		$wrap.children( '.notice, .updated, .error' ).not( '.mlab-mf-own-notice, .mlab-media-folder-audit-notice' ).insertBefore( $workspace );
 
 		$inspector = $( '<aside class="mlab-mf-inspector" hidden aria-live="polite"></aside>' ).appendTo( 'body' );
 	}
@@ -225,6 +229,9 @@
 				$inspector.attr( 'hidden', true ).removeClass( 'is-open' );
 				$( 'body' ).removeClass( 'mlab-mf-inspector-open' );
 			} )
+			.on( 'click', '.mlab-mf-folder-drawer-toggle', function () {
+				$( 'body' ).toggleClass( 'mlab-mf-folder-drawer-open' );
+			} )
 			.on( 'click', '.mlab-mf-inspector-toggle', function () {
 				if ( $inspector.hasClass( 'is-open' ) ) {
 					$inspector.find( '.mlab-mf-inspector-close' ).trigger( 'click' );
@@ -241,9 +248,18 @@
 				applyAi( $( this ).data( 'id' ) );
 			} )
 			.on( 'click', function ( event ) {
+				if ( $( 'body' ).hasClass( 'mlab-mf-folder-drawer-open' ) && ! $( event.target ).closest( '.mlab-media-folder-panel, .mlab-mf-folder-drawer-toggle' ).length ) {
+					$( 'body' ).removeClass( 'mlab-mf-folder-drawer-open' );
+				}
 				if ( $results && ! $( event.target ).closest( '.mlab-mf-global-search' ).length ) {
 					closeResults();
 				}
 			} );
+
+		$( document ).on( 'keydown.mlabMediaFolderWorkspace', function ( event ) {
+			if ( 'Escape' === event.key ) {
+				$( 'body' ).removeClass( 'mlab-mf-folder-drawer-open' );
+			}
+		} );
 	} );
 } )( jQuery, window.wp, window.mlabMediaFolderWorkspace );
