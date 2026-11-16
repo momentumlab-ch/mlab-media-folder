@@ -975,3 +975,43 @@ body.mlab-mf-inspector-open #wpbody-content{padding-right:360px}
 	border-top-color:#111111;
 	border-left-color:transparent;
 }
+
+.mlab-mf-folder-drawer-toggle{display:none!important}
+@media(max-width:782px){
+	.mlab-mf-folder-drawer-toggle{display:inline-flex!important;align-items:center;justify-content:center}
+	.mlab-media-folder-panel,
+	.mlab-media-folder-panel.is-collapsed{
+		position:fixed!important;
+		z-index:100003;
+		top:46px;
+		left:0;
+		bottom:0;
+		width:min(86vw,360px)!important;
+		max-width:360px;
+		margin:0!important;
+		padding:10px;
+		background:#f6f7f7;
+		transform:translateX(-105%);
+		transition:transform .2s ease;
+		box-shadow:16px 0 48px rgba(16,24,40,.2);
+		overflow:auto;
+	}
+	body.mlab-mf-folder-drawer-open .mlab-media-folder-panel{
+		transform:translateX(0);
+	}
+	.mlab-media-folder-panel .mlab-media-folder-sidebar{
+		max-height:none!important;
+		min-height:calc(100vh - 80px);
+	}
+	body.mlab-mf-folder-drawer-open:after{
+		content:"";
+		position:fixed;
+		z-index:100002;
+		inset:32px 0 0;
+		background:rgba(16,24,40,.28);
+		backdrop-filter:blur(2px);
+	}
+}
+@media(prefers-reduced-motion:reduce){
+	.mlab-media-folder-panel{transition:none!important}
+}
