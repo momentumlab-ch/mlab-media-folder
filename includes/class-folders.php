@@ -94,6 +94,17 @@ final class Folders {
 		if ( $hidden ) {
 			$where .= ' AND p.ID NOT IN (' . implode( ',', $hidden ) . ')';
 		}
+
+		$blocked = Folder_Permissions::inaccessible_ids();
+		if ( $blocked ) {
+			$where .= " AND NOT EXISTS (
+				SELECT 1 FROM {$GLOBALS['wpdb']->term_relationships} atr
+				INNER JOIN {$GLOBALS['wpdb']->term_taxonomy} att ON att.term_taxonomy_id = atr.term_taxonomy_id
+				WHERE atr.object_id = p.ID
+				AND att.taxonomy = '" . Taxonomy::NAME . "'
+				AND att.term_id IN (" . implode( ',', array_map( 'intval', $blocked ) ) . ')
+			)';
+		}
 		return $where;
 	}
 
@@ -169,6 +180,8 @@ final class Folders {
 		$no_alt    = "AND p.post_mime_type LIKE 'image/%' AND ( a.meta_id IS NULL OR a.meta_value = '' )";
 
 		$health = Health::scan();
+		$health['duplicate'] = array_values( array_filter( $health['duplicate'], static fn( int $id ): bool => Folder_Permissions::can_access_attachment( $id ) ) );
+		$health['missing']   = array_values( array_filter( $health['missing'], static fn( int $id ): bool => Folder_Permissions::can_access_attachment( $id ) ) );
 
 		return array(
 			'all'        => self::count_visible(),
