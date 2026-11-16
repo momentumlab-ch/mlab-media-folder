@@ -326,8 +326,7 @@ final class Folders {
 			return $result;
 		}
 
-		$rules = Folder_Permissions::get( $id );
-		Folder_Permissions::save( (int) $result['id'], $rules['roles'], $rules['users'], $rules['color'] );
+		Folder_Permissions::copy( $id, (int) $result['id'] );
 		return $result;
 	}
 
