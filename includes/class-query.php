@@ -170,7 +170,7 @@ final class Query {
 			}
 
 			$args['post_parent'] = 0;
-			$unused_clause          = array(
+			$unused_clause       = array(
 				'relation' => 'OR',
 				array(
 					'key'     => Usage_Audit::SEEN_META,
@@ -182,8 +182,8 @@ final class Query {
 					'compare' => '!=',
 				),
 			);
-			$existing               = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
-			$existing[]             = $unused_clause;
+			$existing            = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
+			$existing[]          = $unused_clause;
 			if ( 1 < count( $existing ) && ! isset( $existing['relation'] ) ) {
 				$existing['relation'] = 'AND';
 			}
