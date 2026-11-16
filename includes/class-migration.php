@@ -113,7 +113,16 @@ final class Migration {
 	 */
 	public static function import( string $taxonomy ) {
 		$sources = self::sources();
-		if ( ! isset( $sources[ $taxonomy ] ) || ! taxonomy_exists( $taxonomy ) ) {
+		if ( ! isset( $sources[ $taxonomy ] ) ) {
+			return new \WP_Error( 'mlab_media_folder_migration_source', __( 'The selected migration source is not available.', 'mlab-media-folder' ), array( 'status' => 400 ) );
+		}
+
+		if ( '__filebird_fbv' === $taxonomy ) {
+			return self::import_filebird_tables();
+		}
+
+		self::ensure_source_taxonomy( $taxonomy );
+		if ( ! taxonomy_exists( $taxonomy ) ) {
 			return new \WP_Error( 'mlab_media_folder_migration_source', __( 'The selected migration source is not available.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
 
