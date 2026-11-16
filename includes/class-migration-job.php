@@ -95,7 +95,7 @@ final class Migration_Job {
 		}
 
 		$state['cursor']       = (int) $result['cursor'];
-		$state['checked']     = (int) $state['checked'] + (int) $result['checked'];
+		$state['checked']      = (int) $state['checked'] + (int) $result['checked'];
 		$state['assignments'] = (int) $state['assignments'] + (int) $result['assignments'];
 		$state['complete']    = ! empty( $result['complete'] );
 		$state['updated']     = time();
