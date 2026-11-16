@@ -32,6 +32,11 @@ final class Query {
 	const UNFILED = 'none';
 
 	/**
+	 * Value for attachments uploaded in the last seven days.
+	 */
+	const RECENT = 'recent';
+
+	/**
 	 * Value for images that have no alternative text.
 	 */
 	const NO_ALT = 'noalt';
@@ -54,7 +59,7 @@ final class Query {
 	/**
 	 * Views that list files needing attention instead of a folder.
 	 */
-	const TASKS = array( self::UNFILED, self::NO_ALT, self::UNATTACHED, self::DUPLICATE, self::MISSING );
+	const TASKS = array( self::RECENT, self::UNFILED, self::NO_ALT, self::UNATTACHED, self::DUPLICATE, self::MISSING );
 
 	/**
 	 * Registers hooks.
@@ -140,6 +145,16 @@ final class Query {
 
 		if ( is_string( $folder ) && str_starts_with( $folder, 'view-' ) ) {
 			return Dynamic_Views::apply( $args, substr( $folder, 5 ) );
+		}
+
+		if ( self::RECENT === $folder ) {
+			$args['date_query'] = array(
+				array(
+					'after'     => '7 days ago',
+					'inclusive' => true,
+				),
+			);
+			return $args;
 		}
 
 		if ( self::UNATTACHED === $folder ) {
