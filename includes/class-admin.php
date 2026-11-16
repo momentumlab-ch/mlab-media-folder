@@ -40,12 +40,21 @@ final class Admin {
 		$content = Content_Audit::status();
 		$checked = absint( $files['checked'] );
 		$missing = count( (array) $files['missing'] );
-		$file_label = ! empty( $files['complete'] )
-			? sprintf( /* translators: 1: number checked, 2: missing files. */ __( 'Files checked: %1$d · Missing: %2$d', 'mlab-media-folder' ), $checked, $missing )
-			: sprintf( /* translators: number checked so far. */ __( 'File audit running: %d checked so far', 'mlab-media-folder' ), $checked );
-		$content_label = ! empty( $content['complete'] )
-			? sprintf( /* translators: number fingerprinted. */ __( 'Duplicate-content audit complete: %d checked', 'mlab-media-folder' ), absint( $content['checked'] ) )
-			: sprintf( /* translators: number fingerprinted so far. */ __( 'Duplicate-content audit running: %d checked so far', 'mlab-media-folder' ), absint( $content['checked'] ) );
+		if ( ! empty( $files['complete'] ) ) {
+			/* translators: 1: number checked, 2: missing files. */
+			$file_label = sprintf( __( 'Files checked: %1$d · Missing: %2$d', 'mlab-media-folder' ), $checked, $missing );
+		} else {
+			/* translators: number checked so far. */
+			$file_label = sprintf( __( 'File audit running: %d checked so far', 'mlab-media-folder' ), $checked );
+		}
+
+		if ( ! empty( $content['complete'] ) ) {
+			/* translators: number fingerprinted. */
+			$content_label = sprintf( __( 'Duplicate-content audit complete: %d checked', 'mlab-media-folder' ), absint( $content['checked'] ) );
+		} else {
+			/* translators: number fingerprinted so far. */
+			$content_label = sprintf( __( 'Duplicate-content audit running: %d checked so far', 'mlab-media-folder' ), absint( $content['checked'] ) );
+		}
 		echo '<div class="notice notice-info mlab-media-folder-audit-notice"><p><strong>' . esc_html__( 'Media health', 'mlab-media-folder' ) . '</strong><br>' . esc_html( $file_label ) . '<br>' . esc_html( $content_label ) . '</p>';
 		if ( current_user_can( Plugin::manage_capability() ) ) {
 			$url = wp_nonce_url( admin_url( 'admin-post.php?action=mlab_media_folder_rescan' ), 'mlab_media_folder_rescan' );
