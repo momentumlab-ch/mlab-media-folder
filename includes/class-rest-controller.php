@@ -282,6 +282,7 @@ final class Rest_Controller {
 				'number'     => 12,
 			)
 		);
+
 		$folder_rows = array();
 		if ( ! is_wp_error( $folders ) ) {
 			foreach ( $folders as $term ) {
@@ -297,6 +298,7 @@ final class Rest_Controller {
 		}
 
 		$like = '%' . $wpdb->esc_like( $query ) . '%';
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery -- Bounded cross-field media search for the admin workspace.
 		$ids = $wpdb->get_col(
 			$wpdb->prepare(
