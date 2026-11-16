@@ -1,0 +1,19 @@
+{
+  "name": "momentumlab/mlab-media-folder",
+  "description": "Development tooling for MomentumLab Media Folder.",
+  "type": "wordpress-plugin",
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "wp-coding-standards/wpcs": "^3.2"
+  },
+  "scripts": {
+    "lint": "phpcs --standard=phpcs.xml.dist ."
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true
+  }
+}
