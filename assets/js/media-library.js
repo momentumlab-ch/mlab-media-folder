@@ -593,7 +593,10 @@
 					[ i18n.rename, 'rename' ],
 				];
 				if ( data.features && data.features.advanced_folder_style && data.features.advanced_folder_style.available ) {
-					items.push( [ i18n.duplicateFolder, 'duplicate' ], [ i18n.folderColor, 'color' ] );
+					items.push( [ i18n.duplicateFolder, 'duplicate' ] );
+					if ( data.canSettings ) {
+						items.push( [ i18n.folderColor, 'color' ] );
+					}
 				}
 				items.push( [ i18n.delete, 'delete' ] );
 				items.forEach( function ( item ) {
