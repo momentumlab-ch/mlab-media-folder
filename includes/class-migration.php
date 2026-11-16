@@ -21,9 +21,9 @@ final class Migration {
 	 */
 	public static function sources(): array {
 		$sources = array(
-			'__filebird_fbv'    => 'FileBird',
+			'__filebird_fbv'      => 'FileBird',
 			'happyfiles_category' => 'HappyFiles',
-			'nt_wmc_folder'     => 'FileBird (legacy taxonomy)',
+			'nt_wmc_folder'       => 'FileBird (legacy taxonomy)',
 		);
 
 		/**
@@ -190,6 +190,8 @@ final class Migration {
 
 	/**
 	 * Whether a taxonomy has stored terms even when its source plugin is inactive.
+	 *
+	 * @param string $taxonomy Source taxonomy.
 	 */
 	private static function taxonomy_has_data( string $taxonomy ): bool {
 		global $wpdb;
@@ -210,6 +212,8 @@ final class Migration {
 
 	/**
 	 * Register a hidden source taxonomy for this request so core term APIs can read inactive-plugin data.
+	 *
+	 * @param string $taxonomy Source taxonomy.
 	 */
 	private static function ensure_source_taxonomy( string $taxonomy ): void {
 		if ( taxonomy_exists( $taxonomy ) ) {
