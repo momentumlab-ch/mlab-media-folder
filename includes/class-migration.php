@@ -21,7 +21,9 @@ final class Migration {
 	 */
 	public static function sources(): array {
 		$sources = array(
-			'nt_wmc_folder' => 'FileBird',
+			'__filebird_fbv'    => 'FileBird',
+			'happyfiles_category' => 'HappyFiles',
+			'nt_wmc_folder'     => 'FileBird (legacy taxonomy)',
 		);
 
 		/**
@@ -38,14 +40,43 @@ final class Migration {
 	 * @return array<int,array{taxonomy:string,label:string,folders:int,attachments:int}>
 	 */
 	public static function detect(): array {
+		global $wpdb;
+
 		$out = array();
-		foreach ( self::sources() as $taxonomy => $label ) {
-			if ( ! taxonomy_exists( $taxonomy ) ) {
+		foreach ( self::sources() as $source => $label ) {
+			if ( '__filebird_fbv' === $source ) {
+				$folder_table     = $wpdb->prefix . 'fbv';
+				$assignment_table = $wpdb->prefix . 'fbv_attachment_folder';
+
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery -- Read-only migration source detection.
+				$folder_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $folder_table ) ) );
+				$assign_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) );
+				if ( $folder_table === $folder_exists && $assignment_table === $assign_exists ) {
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Verified table names are derived from the trusted WordPress prefix.
+					$folders = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$folder_table}" );
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Verified table names are derived from the trusted WordPress prefix.
+					$attachments = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$assignment_table}" );
+					if ( 0 < $folders ) {
+						$out[] = array(
+							'taxonomy'    => $source,
+							'label'       => $label,
+							'folders'     => $folders,
+							'attachments' => $attachments,
+						);
+					}
+				}
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery
 				continue;
 			}
+
+			if ( ! self::taxonomy_has_data( $source ) ) {
+				continue;
+			}
+			self::ensure_source_taxonomy( $source );
+
 			$terms = get_terms(
 				array(
-					'taxonomy'   => $taxonomy,
+					'taxonomy'   => $source,
 					'hide_empty' => false,
 					'fields'     => 'ids',
 				)
@@ -53,15 +84,16 @@ final class Migration {
 			if ( is_wp_error( $terms ) || ! $terms ) {
 				continue;
 			}
+
 			$attachments = 0;
 			foreach ( $terms as $term_id ) {
-				$objects = get_objects_in_term( (int) $term_id, $taxonomy );
+				$objects = get_objects_in_term( (int) $term_id, $source );
 				if ( ! is_wp_error( $objects ) ) {
 					$attachments += count( $objects );
 				}
 			}
 			$out[] = array(
-				'taxonomy'    => sanitize_key( $taxonomy ),
+				'taxonomy'    => sanitize_key( $source ),
 				'label'       => sanitize_text_field( (string) $label ),
 				'folders'     => count( $terms ),
 				'attachments' => $attachments,
@@ -69,6 +101,7 @@ final class Migration {
 		}
 		return $out;
 	}
+
 
 	/**
 	 * Copy one hierarchical taxonomy into Media Folder.
@@ -147,6 +180,127 @@ final class Migration {
 				break;
 			}
 			$pending = $next;
+		}
+
+		return array(
+			'folders'     => $created,
+			'assignments' => $assignments,
+		);
+	}
+
+	/**
+	 * Whether a taxonomy has stored terms even when its source plugin is inactive.
+	 */
+	private static function taxonomy_has_data( string $taxonomy ): bool {
+		global $wpdb;
+
+		if ( taxonomy_exists( $taxonomy ) ) {
+			return true;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Read-only source detection.
+		$count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
+				$taxonomy
+			)
+		);
+		return 0 < (int) $count;
+	}
+
+	/**
+	 * Register a hidden source taxonomy for this request so core term APIs can read inactive-plugin data.
+	 */
+	private static function ensure_source_taxonomy( string $taxonomy ): void {
+		if ( taxonomy_exists( $taxonomy ) ) {
+			return;
+		}
+		register_taxonomy(
+			$taxonomy,
+			'attachment',
+			array(
+				'public'       => false,
+				'show_ui'      => false,
+				'hierarchical' => true,
+				'rewrite'      => false,
+			)
+		);
+	}
+
+	/**
+	 * Import current FileBird custom tables.
+	 *
+	 * @return array{folders:int,assignments:int}|\WP_Error
+	 */
+	private static function import_filebird_tables() {
+		global $wpdb;
+
+		$folder_table     = $wpdb->prefix . 'fbv';
+		$assignment_table = $wpdb->prefix . 'fbv_attachment_folder';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery -- Read-only migration source.
+		$folder_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $folder_table ) ) );
+		$assign_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) );
+		if ( $folder_table !== $folder_exists || $assignment_table !== $assign_exists ) {
+			return new \WP_Error( 'mlab_media_folder_filebird_missing', __( 'FileBird migration tables were not found.', 'mlab-media-folder' ) );
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Verified table name from trusted WordPress prefix.
+		$folders = $wpdb->get_results( "SELECT id, name, parent FROM {$folder_table} ORDER BY id ASC" );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Verified table name from trusted WordPress prefix.
+		$relations = $wpdb->get_results( "SELECT attachment_id, folder_id FROM {$assignment_table}" );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+
+		$map         = array();
+		$created     = 0;
+		$assignments = 0;
+		$pending     = (array) $folders;
+		$guard       = 0;
+
+		while ( $pending && 100 > $guard ) {
+			++$guard;
+			$next     = array();
+			$progress = false;
+
+			foreach ( $pending as $folder ) {
+				$source_id     = (int) $folder->id;
+				$source_parent = (int) $folder->parent;
+				if ( 0 !== $source_parent && ! isset( $map[ $source_parent ] ) ) {
+					$next[] = $folder;
+					continue;
+				}
+
+				$parent = 0 === $source_parent ? 0 : (int) $map[ $source_parent ];
+				$name   = sanitize_text_field( (string) $folder->name );
+				$target = self::find_child_by_name( $name, $parent );
+				if ( ! $target ) {
+					$result = Folders::create( $name, $parent );
+					if ( is_wp_error( $result ) ) {
+						return $result;
+					}
+					$target = (int) $result['id'];
+					++$created;
+				}
+				$map[ $source_id ] = $target;
+				$progress          = true;
+			}
+
+			if ( ! $progress ) {
+				break;
+			}
+			$pending = $next;
+		}
+
+		foreach ( (array) $relations as $relation ) {
+			$attachment_id = absint( $relation->attachment_id );
+			$source_folder = absint( $relation->folder_id );
+			if ( ! $attachment_id || ! isset( $map[ $source_folder ] ) || 'attachment' !== get_post_type( $attachment_id ) ) {
+				continue;
+			}
+			$result = wp_set_object_terms( $attachment_id, array( (int) $map[ $source_folder ] ), Taxonomy::NAME, false );
+			if ( ! is_wp_error( $result ) ) {
+				++$assignments;
+			}
 		}
 
 		return array(
