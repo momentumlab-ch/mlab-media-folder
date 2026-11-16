@@ -55,6 +55,7 @@ final class Plugin {
 		( new Updater() )->hooks();
 		( new Image_Optimization() )->hooks();
 		( new Upload_Naming() )->hooks();
+		( new Automation_Queue() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
@@ -89,6 +90,7 @@ final class Plugin {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( Background_Audit::HOOK );
 		wp_clear_scheduled_hook( Content_Audit::HOOK );
+		wp_clear_scheduled_hook( Automation_Queue::HOOK );
 	}
 
 	/**
