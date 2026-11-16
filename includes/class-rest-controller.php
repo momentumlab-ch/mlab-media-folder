@@ -422,7 +422,7 @@ final class Rest_Controller {
 		}
 
 		if ( ! $rows ) {
-			$usage = Usage_Audit::status();
+			$usage  = Usage_Audit::status();
 			$rows[] = ! empty( $usage['complete'] )
 				? __( 'No usage found by the completed background audit.', 'mlab-media-folder' )
 				: __( 'No direct usage found. Background usage audit is still running.', 'mlab-media-folder' );
