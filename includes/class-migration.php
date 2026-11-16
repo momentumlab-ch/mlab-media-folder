@@ -9,6 +9,9 @@ namespace MomentumLab\MediaFolder;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Copies supported folder structures into Media Folder without mutating sources.
+ */
 final class Migration {
 
 	/**
@@ -72,6 +75,7 @@ final class Migration {
 	 *
 	 * Existing source terms and relationships are never changed or deleted.
 	 *
+	 * @param string $taxonomy Source taxonomy.
 	 * @return array{folders:int,assignments:int}|\WP_Error
 	 */
 	public static function import( string $taxonomy ) {
@@ -92,14 +96,15 @@ final class Migration {
 			return $terms;
 		}
 
-		$map = array();
-		$created = 0;
+		$map         = array();
+		$created     = 0;
 		$assignments = 0;
-		$pending = $terms;
-		$guard = 0;
+		$pending     = $terms;
+		$guard       = 0;
 
-		while ( $pending && 50 > $guard++ ) {
-			$next = array();
+		while ( $pending && 50 > $guard ) {
+			++$guard;
+			$next     = array();
 			$progress = false;
 
 			foreach ( $pending as $term ) {
@@ -110,7 +115,7 @@ final class Migration {
 				}
 
 				$parent = 0 === $source_parent ? 0 : (int) $map[ $source_parent ];
-				$name = Folders::name( $term );
+				$name   = Folders::name( $term );
 				$target = self::find_child_by_name( $name, $parent );
 
 				if ( ! $target ) {
@@ -152,13 +157,16 @@ final class Migration {
 
 	/**
 	 * Find an existing direct child by display name.
+	 *
+	 * @param string $name      Folder name.
+	 * @param int    $parent_id Parent folder ID.
 	 */
-	private static function find_child_by_name( string $name, int $parent ): int {
+	private static function find_child_by_name( string $name, int $parent_id ): int {
 		$terms = get_terms(
 			array(
 				'taxonomy'   => Taxonomy::NAME,
 				'hide_empty' => false,
-				'parent'     => $parent,
+				'parent'     => $parent_id,
 			)
 		);
 		if ( is_wp_error( $terms ) ) {
