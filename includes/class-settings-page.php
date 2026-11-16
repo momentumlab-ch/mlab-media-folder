@@ -22,6 +22,7 @@ final class Settings_Page {
 	public function hooks(): void {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_post_mlab_media_folder_save_settings', array( $this, 'save' ) );
+		add_action( 'admin_post_mlab_media_folder_migrate', array( $this, 'migrate' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 	}
 
@@ -72,6 +73,28 @@ final class Settings_Page {
 		Automation_Settings::save( $automation );
 		Optimization_Settings::save( $optimization );
 
+		if ( Features::available( 'dynamic_views' ) ) {
+			$views = isset( $_POST['dynamic_views'] ) && is_array( $_POST['dynamic_views'] )
+				? wp_unslash( $_POST['dynamic_views'] )
+				: array();
+			Dynamic_Views::replace( $views );
+		}
+
+		if ( Features::available( 'folder_permissions' ) && isset( $_POST['permissions'] ) && is_array( $_POST['permissions'] ) ) {
+			$permissions = wp_unslash( $_POST['permissions'] );
+			foreach ( $permissions as $folder_id => $rules ) {
+				$folder_id = absint( $folder_id );
+				if ( ! $folder_id || ! is_array( $rules ) || ! Folders::exists( $folder_id ) ) {
+					continue;
+				}
+				$roles = isset( $rules['roles'] ) && is_array( $rules['roles'] ) ? $rules['roles'] : array();
+				$users = isset( $rules['users'] )
+					? preg_split( '/[\s,]+/', sanitize_text_field( (string) $rules['users'] ) )
+					: array();
+				Folder_Permissions::save( $folder_id, $roles, is_array( $users ) ? $users : array(), (string) ( $rules['color'] ?? '' ) );
+			}
+		}
+
 		$url = add_query_arg(
 			array(
 				'page'    => self::SLUG,
@@ -80,6 +103,30 @@ final class Settings_Page {
 			admin_url( 'upload.php' )
 		);
 		wp_safe_redirect( $url );
+		exit;
+	}
+
+	/**
+	 * Import one detected folder taxonomy without touching the source plugin data.
+	 */
+	public function migrate(): void {
+		if ( ! current_user_can( Plugin::settings_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to migrate media folders.', 'mlab-media-folder' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'mlab_media_folder_migrate' );
+
+		$taxonomy = isset( $_POST['taxonomy'] ) ? sanitize_key( wp_unslash( $_POST['taxonomy'] ) ) : '';
+		$result   = Migration::import( $taxonomy );
+
+		$args = array( 'page' => self::SLUG );
+		if ( is_wp_error( $result ) ) {
+			$args['migration_error'] = rawurlencode( $result->get_error_message() );
+		} else {
+			$args['migration_folders'] = (int) $result['folders'];
+			$args['migration_files']   = (int) $result['assignments'];
+		}
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'upload.php' ) ) );
 		exit;
 	}
 
@@ -94,7 +141,19 @@ final class Settings_Page {
 		$automation = Automation_Settings::get();
 		$optimization = Optimization_Settings::get();
 		$capabilities = Image_Optimization::capabilities();
-		$is_pro = Features::is_pro();
+		$is_pro       = Features::is_pro();
+		$views        = Dynamic_Views::all();
+		$folders      = Folders::flattened_tree();
+		$roles        = wp_roles()->roles;
+		$authors      = get_users(
+			array(
+				'capability' => 'upload_files',
+				'number'     => 200,
+				'orderby'    => 'display_name',
+				'order'      => 'ASC',
+			)
+		);
+		$migrations   = Migration::detect();
 		?>
 		<div class="wrap mlab-mf-settings">
 			<div class="mlab-mf-brandbar">
@@ -109,6 +168,23 @@ final class Settings_Page {
 					<?php echo esc_html( $is_pro ? __( 'Pro active', 'mlab-media-folder' ) : __( 'Free', 'mlab-media-folder' ) ); ?>
 				</div>
 			</div>
+
+			<?php if ( isset( $_GET['migration_folders'], $_GET['migration_files'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
+				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: 1: folders, 2: assignments. */
+							__( 'Migration complete: %1$d folders created, %2$d media assignments copied.', 'mlab-media-folder' ),
+							absint( $_GET['migration_folders'] ),
+							absint( $_GET['migration_files'] )
+						)
+					);
+					?>
+				</p></div>
+			<?php elseif ( isset( $_GET['migration_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
+				<div class="notice notice-error is-dismissible mlab-mf-own-notice"><p><?php echo esc_html( rawurldecode( sanitize_text_field( wp_unslash( $_GET['migration_error'] ) ) ) ); ?></p></div>
+			<?php endif; ?>
 
 			<?php if ( isset( $_GET['updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation only. ?>
 				<div class="notice notice-success is-dismissible mlab-mf-own-notice"><p><?php esc_html_e( 'Media Folder settings saved.', 'mlab-media-folder' ); ?></p></div>
@@ -211,6 +287,56 @@ final class Settings_Page {
 						</div>
 						<label class="mlab-mf-check"><input type="checkbox" name="optimization[convert_png]" value="1" <?php checked( ! empty( $optimization['convert_png'] ) ); ?>> <?php esc_html_e( 'Also convert PNG derivatives when transparency is supported', 'mlab-media-folder' ); ?></label>
 						<div class="mlab-mf-safe"><span class="dashicons dashicons-shield"></span><div><strong><?php esc_html_e( 'Safe by default', 'mlab-media-folder' ); ?></strong><p><?php esc_html_e( 'Version 3.0 never replaces or deletes uploaded originals. Existing media and URLs are not changed.', 'mlab-media-folder' ); ?></p></div></div>
+					</section>
+
+					<section class="mlab-mf-card mlab-mf-card-wide">
+						<div class="mlab-mf-card-heading"><div><span class="mlab-mf-kicker"><?php esc_html_e( 'Smart Views', 'mlab-media-folder' ); ?></span><h2><?php esc_html_e( 'Saved Dynamic Views', 'mlab-media-folder' ); ?> <?php self::pro_badge(); ?></h2></div></div>
+						<p><?php esc_html_e( 'Create reusable views by media type, uploader and age. They appear directly below the core Smart Views in the Media Library.', 'mlab-media-folder' ); ?></p>
+						<?php self::locked_note( 'dynamic_views' ); ?>
+						<div class="<?php echo Features::available( 'dynamic_views' ) ? '' : 'mlab-mf-disabled'; ?>">
+							<?php
+							$view_rows   = $views;
+							$view_rows[] = array( 'id' => '', 'name' => '', 'mime' => '', 'author' => 0, 'days' => 0 );
+							foreach ( $view_rows as $index => $view ) :
+								?>
+								<div class="mlab-mf-rule-row">
+									<input type="hidden" name="dynamic_views[<?php echo (int) $index; ?>][id]" value="<?php echo esc_attr( (string) $view['id'] ); ?>">
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Name', 'mlab-media-folder' ); ?></span><input type="text" name="dynamic_views[<?php echo (int) $index; ?>][name]" value="<?php echo esc_attr( (string) $view['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. Recent event images', 'mlab-media-folder' ); ?>"></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Type', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][mime]"><option value="" <?php selected( $view['mime'], '' ); ?>><?php esc_html_e( 'All media', 'mlab-media-folder' ); ?></option><option value="image" <?php selected( $view['mime'], 'image' ); ?>><?php esc_html_e( 'Images', 'mlab-media-folder' ); ?></option><option value="video" <?php selected( $view['mime'], 'video' ); ?>><?php esc_html_e( 'Video', 'mlab-media-folder' ); ?></option><option value="audio" <?php selected( $view['mime'], 'audio' ); ?>><?php esc_html_e( 'Audio', 'mlab-media-folder' ); ?></option><option value="application/pdf" <?php selected( $view['mime'], 'application/pdf' ); ?>>PDF</option></select></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Uploader', 'mlab-media-folder' ); ?></span><select name="dynamic_views[<?php echo (int) $index; ?>][author]"><option value="0"><?php esc_html_e( 'Any uploader', 'mlab-media-folder' ); ?></option><?php foreach ( $authors as $author ) : ?><option value="<?php echo (int) $author->ID; ?>" <?php selected( (int) $view['author'], (int) $author->ID ); ?>><?php echo esc_html( $author->display_name ); ?></option><?php endforeach; ?></select></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Last days', 'mlab-media-folder' ); ?></span><input type="number" min="0" max="3650" name="dynamic_views[<?php echo (int) $index; ?>][days]" value="<?php echo esc_attr( (string) $view['days'] ); ?>" placeholder="0"></label>
+								</div>
+							<?php endforeach; ?>
+						</div>
+					</section>
+
+					<section class="mlab-mf-card mlab-mf-card-wide">
+						<div class="mlab-mf-card-heading"><div><span class="mlab-mf-kicker"><?php esc_html_e( 'Access', 'mlab-media-folder' ); ?></span><h2><?php esc_html_e( 'Folder permissions', 'mlab-media-folder' ); ?> <?php self::pro_badge(); ?></h2></div></div>
+						<p><?php esc_html_e( 'Empty rules mean everyone who can use the Media Library can access the folder. Administrators always retain access.', 'mlab-media-folder' ); ?></p>
+						<?php self::locked_note( 'folder_permissions' ); ?>
+						<div class="<?php echo Features::available( 'folder_permissions' ) ? '' : 'mlab-mf-disabled'; ?>">
+							<?php foreach ( $folders as $folder ) : $rules = Folder_Permissions::get( (int) $folder['id'] ); ?>
+								<div class="mlab-mf-permission-row">
+									<div class="mlab-mf-folder-path"><?php echo esc_html( str_repeat( '— ', (int) $folder['depth'] ) . $folder['name'] ); ?></div>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Roles', 'mlab-media-folder' ); ?></span><select multiple size="3" name="permissions[<?php echo (int) $folder['id']; ?>][roles][]"><?php foreach ( $roles as $role_key => $role ) : ?><option value="<?php echo esc_attr( $role_key ); ?>" <?php echo in_array( $role_key, $rules['roles'], true ) ? 'selected' : ''; ?>><?php echo esc_html( translate_user_role( $role['name'] ) ); ?></option><?php endforeach; ?></select></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Specific user IDs', 'mlab-media-folder' ); ?></span><input type="text" name="permissions[<?php echo (int) $folder['id']; ?>][users]" value="<?php echo esc_attr( implode( ', ', $rules['users'] ) ); ?>" placeholder="12, 44"></label>
+									<label class="mlab-mf-field"><span><?php esc_html_e( 'Folder color', 'mlab-media-folder' ); ?></span><input type="color" name="permissions[<?php echo (int) $folder['id']; ?>][color]" value="<?php echo esc_attr( $rules['color'] ?: '#f2aa00' ); ?>"></label>
+								</div>
+							<?php endforeach; ?>
+						</div>
+					</section>
+
+					<section class="mlab-mf-card mlab-mf-card-wide">
+						<div class="mlab-mf-card-heading"><div><span class="mlab-mf-kicker"><?php esc_html_e( 'Tools', 'mlab-media-folder' ); ?></span><h2><?php esc_html_e( 'Import / Migration', 'mlab-media-folder' ); ?></h2></div></div>
+						<p><?php esc_html_e( 'Copy folder structures into Media Folder without deleting or modifying the source plugin data.', 'mlab-media-folder' ); ?></p>
+						<?php if ( ! $migrations ) : ?>
+							<div class="mlab-mf-safe"><span class="dashicons dashicons-yes-alt"></span><div><strong><?php esc_html_e( 'No supported source detected', 'mlab-media-folder' ); ?></strong><p><?php esc_html_e( 'When a supported folder taxonomy is present it will appear here automatically.', 'mlab-media-folder' ); ?></p></div></div>
+						<?php else : foreach ( $migrations as $source ) : ?>
+							<div class="mlab-mf-migration-row">
+								<div><strong><?php echo esc_html( $source['label'] ); ?></strong><p><?php echo esc_html( sprintf( __( '%1$d folders · %2$d media relationships detected', 'mlab-media-folder' ), $source['folders'], $source['attachments'] ) ); ?></p></div>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="mlab_media_folder_migrate"><input type="hidden" name="taxonomy" value="<?php echo esc_attr( $source['taxonomy'] ); ?>"><?php wp_nonce_field( 'mlab_media_folder_migrate' ); ?><button type="submit" class="button"><?php esc_html_e( 'Copy into Media Folder', 'mlab-media-folder' ); ?></button></form>
+							</div>
+						<?php endforeach; endif; ?>
 					</section>
 
 					<section class="mlab-mf-card mlab-mf-card-wide">
