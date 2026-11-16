@@ -12,6 +12,18 @@ Folders for the WordPress media library: folder tree, drag and drop, upload into
 
 == Description ==
 
+Version 3.0 extends the native WordPress Media Library without replacing its core workflows.
+
+* Unified workspace with global search across folders, filenames, titles and alt text.
+* Optional Inspector with folder, uploader, file size, alt text, tags and Media Health status.
+* Mobile folder drawer and Inspector bottom sheet.
+* Smart Views for Recent uploads, Potentially unused, Unfiled, No alt text, Not in a page, Duplicates and File missing.
+* Existing 2.x folder, drag-and-drop, bulk, undo and Media Health functionality remains available in Free.
+* Free image optimization can create WebP derivatives for new uploads while uploaded originals remain untouched.
+* Pro unlock `mlab-media-folder-pro` adds customer-owned AI metadata, glossary rules, naming rules, folder permissions, saved Dynamic Views, AVIF/privacy and bounded bulk automation.
+* AI uses the API key configured by each customer/site. Suggestions are explicit and manual AI never overwrites media until approved.
+* Migration copies supported HappyFiles and FileBird folder structures into Media Folder without modifying the source data.
+
 * Folder tree next to the media library (grid and list view), with nested folders.
 * Create, rename, move (drag a folder onto another) and delete folders.
 * Move files by dragging them onto a folder. In bulk-select mode all selected files move together.
