@@ -122,7 +122,7 @@ final class Query {
 	public static function apply( array $args, $folder, $clean = false ) {
 		$blocked_folders = Folder_Permissions::inaccessible_ids();
 		if ( $blocked_folders ) {
-			$access_clause = array(
+			$access_clause  = array(
 				'taxonomy'         => Taxonomy::NAME,
 				'field'            => 'term_id',
 				'terms'            => $blocked_folders,
