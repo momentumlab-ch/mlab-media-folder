@@ -26,6 +26,8 @@ final class Automation_Queue {
 
 	/**
 	 * Schedule AI enrichment for one new image when explicitly enabled.
+	 *
+	 * @param int $attachment_id Attachment ID.
 	 */
 	public function schedule( int $attachment_id ): void {
 		if ( ! Features::available( 'advanced_automation' ) || ! wp_attachment_is_image( $attachment_id ) ) {
@@ -47,6 +49,8 @@ final class Automation_Queue {
 
 	/**
 	 * Generate and apply only the fields the administrator enabled.
+	 *
+	 * @param int $attachment_id Attachment ID.
 	 */
 	public function run( int $attachment_id ): void {
 		if ( ! Features::available( 'advanced_automation' ) || 'attachment' !== get_post_type( $attachment_id ) ) {
