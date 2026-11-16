@@ -78,7 +78,7 @@ final class Rest_Controller {
 							'type'    => 'integer',
 							'minimum' => 0,
 						),
-						'color' => array( 'type' => 'string' ),
+						'color'  => array( 'type' => 'string' ),
 					),
 				),
 				array(
@@ -97,7 +97,10 @@ final class Rest_Controller {
 				'callback'            => array( $this, 'duplicate_folder' ),
 				'permission_callback' => array( $this, 'can_manage' ),
 				'args'                => array(
-					'id' => array( 'type' => 'integer', 'minimum' => 1 ),
+					'id' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
+					),
 				),
 			)
 		);
@@ -152,7 +155,10 @@ final class Rest_Controller {
 				'callback'            => array( $this, 'attachment' ),
 				'permission_callback' => array( $this, 'can_edit_attachment' ),
 				'args'                => array(
-					'id' => array( 'type' => 'integer', 'minimum' => 1 ),
+					'id' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
+					),
 				),
 			)
 		);
@@ -165,7 +171,10 @@ final class Rest_Controller {
 				'callback'            => array( $this, 'ai_suggest' ),
 				'permission_callback' => array( $this, 'can_edit_attachment' ),
 				'args'                => array(
-					'id' => array( 'type' => 'integer', 'minimum' => 1 ),
+					'id' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
+					),
 				),
 			)
 		);
@@ -233,7 +242,12 @@ final class Rest_Controller {
 
 		$query = trim( sanitize_text_field( (string) $request['q'] ) );
 		if ( mb_strlen( $query ) < 2 ) {
-			return rest_ensure_response( array( 'folders' => array(), 'media' => array() ) );
+			return rest_ensure_response(
+				array(
+					'folders' => array(),
+					'media'   => array(),
+				)
+			);
 		}
 
 		$folders = get_terms(
@@ -293,7 +307,12 @@ final class Rest_Controller {
 			);
 		}
 
-		return rest_ensure_response( array( 'folders' => $folder_rows, 'media' => $media ) );
+		return rest_ensure_response(
+			array(
+				'folders' => $folder_rows,
+				'media'   => $media,
+			)
+		);
 	}
 
 	/**
@@ -352,7 +371,11 @@ final class Rest_Controller {
 	 */
 	public function ai_apply( WP_REST_Request $request ) {
 		if ( ! Features::available( 'ai_metadata' ) ) {
-			return new \WP_Error( 'mlab_media_folder_pro_required', __( 'Media AI requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+			return new \WP_Error(
+				'mlab_media_folder_pro_required',
+				__( 'Media AI requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ),
+				array( 'status' => 403 )
+			);
 		}
 
 		$suggestion = array(
@@ -398,7 +421,11 @@ final class Rest_Controller {
 		}
 		if ( $request->has_param( 'color' ) && Features::available( 'advanced_folder_style' ) ) {
 			if ( ! current_user_can( Plugin::settings_capability() ) ) {
-				return new \WP_Error( 'mlab_media_folder_color_forbidden', __( 'You are not allowed to change folder colors.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+				return new \WP_Error(
+					'mlab_media_folder_color_forbidden',
+					__( 'You are not allowed to change folder colors.', 'mlab-media-folder' ),
+					array( 'status' => 403 )
+				);
 			}
 			$rules = Folder_Permissions::get( (int) $request['id'] );
 			Folder_Permissions::save( (int) $request['id'], $rules['roles'], $rules['users'], (string) $request['color'] );
