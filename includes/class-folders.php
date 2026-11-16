@@ -89,6 +89,8 @@ final class Folders {
 	 * @return string
 	 */
 	private static function visible_sql() {
+		global $wpdb;
+
 		$where  = "p.post_type = 'attachment' AND p.post_status <> 'trash'";
 		$hidden = array_map( 'intval', Health::hidden_ids() );
 		if ( $hidden ) {
@@ -98,8 +100,8 @@ final class Folders {
 		$blocked = Folder_Permissions::inaccessible_ids();
 		if ( $blocked ) {
 			$where .= " AND NOT EXISTS (
-				SELECT 1 FROM {$GLOBALS['wpdb']->term_relationships} atr
-				INNER JOIN {$GLOBALS['wpdb']->term_taxonomy} att ON att.term_taxonomy_id = atr.term_taxonomy_id
+				SELECT 1 FROM {$wpdb->term_relationships} atr
+				INNER JOIN {$wpdb->term_taxonomy} att ON att.term_taxonomy_id = atr.term_taxonomy_id
 				WHERE atr.object_id = p.ID
 				AND att.taxonomy = '" . Taxonomy::NAME . "'
 				AND att.term_id IN (" . implode( ',', array_map( 'intval', $blocked ) ) . ')
