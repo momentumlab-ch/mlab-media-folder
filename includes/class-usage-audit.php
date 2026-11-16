@@ -135,10 +135,6 @@ final class Usage_Audit {
 		update_option( self::OPTION, $state, false );
 		if ( $state['complete'] ) {
 			Folders::clear_cache();
-		}
-
-		if ( $state['complete'] ) {
-			Folders::clear_cache();
 			if ( ! empty( $state['dirty'] ) ) {
 				self::restart();
 				return;
