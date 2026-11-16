@@ -22,7 +22,8 @@ Version 3.0 extends the native WordPress Media Library without replacing its cor
 * Free image optimization can create WebP derivatives for new uploads while uploaded originals remain untouched.
 * Pro unlock `mlab-media-folder-pro` adds customer-owned AI metadata, glossary rules, naming rules, folder permissions, saved Dynamic Views, AVIF/privacy and bounded bulk automation.
 * AI uses the API key configured by each customer/site. Suggestions are explicit and manual AI never overwrites media until approved.
-* Migration copies supported HappyFiles and FileBird folder structures into Media Folder without modifying the source data.
+* Migration copies supported HappyFiles and FileBird folder structures into Media Folder without modifying the source data. Large assignment sets run in resumable background batches with progress state.
+* Folder structures can be exported as portable JSON for backup/documentation.
 
 * Folder tree next to the media library (grid and list view), with nested folders.
 * Create, rename, move (drag a folder onto another) and delete folders.
@@ -59,7 +60,8 @@ Developer hooks
 * Smart Views: Recent uploads and a conservative Potentially unused view backed by a resumable background usage audit; existing Unfiled, No alt text, Duplicates and File missing views remain.
 * Pro: customer-owned OpenAI metadata suggestions, glossary rules, blocked terms, upload naming rules, role/user folder permissions, folder colors/duplication, saved Dynamic Views and bounded bulk AI.
 * Image optimization: opt-in WebP optimization for new WordPress derivatives in Free; Pro adds AVIF, derivative metadata privacy and explicit background rebuild of existing derivatives. Uploaded originals are never automatically replaced or deleted.
-* Migration: non-destructive copy from HappyFiles, current FileBird tables and the legacy FileBird taxonomy. Source data is never modified.
+* Migration: non-destructive copy from HappyFiles, current FileBird tables and the legacy FileBird taxonomy. Media assignments run in resumable background batches and source data is never modified.
+* Tools: portable JSON export for folder hierarchy, colors and role rules.
 * Licensing: Pro features unlock through MomentumLab Core / License Server entitlement `mlab-media-folder-pro`. Existing 2.x functionality remains available in Free.
 * Performance: permission-aware folder and Smart View counters are cached with targeted generation invalidation; audits and bulk work run in bounded background batches.
 * Security: AI API keys are customer-owned and encrypted at rest; manual AI is suggestion-first; folder permissions are enforced in queries, search, Inspector, AI and upload assignment.
