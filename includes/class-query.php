@@ -42,6 +42,11 @@ final class Query {
 	const NO_ALT = 'noalt';
 
 	/**
+	 * Value for files that appear unused after a complete conservative usage audit.
+	 */
+	const UNUSED = 'unused';
+
+	/**
 	 * Value for files that were not uploaded to a page or post.
 	 */
 	const UNATTACHED = 'unattached';
@@ -59,7 +64,7 @@ final class Query {
 	/**
 	 * Views that list files needing attention instead of a folder.
 	 */
-	const TASKS = array( self::RECENT, self::UNFILED, self::NO_ALT, self::UNATTACHED, self::DUPLICATE, self::MISSING );
+	const TASKS = array( self::RECENT, self::UNFILED, self::NO_ALT, self::UNUSED, self::UNATTACHED, self::DUPLICATE, self::MISSING );
 
 	/**
 	 * Registers hooks.
@@ -154,6 +159,35 @@ final class Query {
 					'inclusive' => true,
 				),
 			);
+			return $args;
+		}
+
+		if ( self::UNUSED === $folder ) {
+			$usage = Usage_Audit::status();
+			if ( empty( $usage['complete'] ) || '' === $usage['generation'] ) {
+				$args['post__in'] = array( 0 );
+				return $args;
+			}
+
+			$args['post_parent'] = 0;
+			$unused_clause = array(
+				'relation' => 'OR',
+				array(
+					'key'     => Usage_Audit::SEEN_META,
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => Usage_Audit::SEEN_META,
+					'value'   => $usage['generation'],
+					'compare' => '!=',
+				),
+			);
+			$existing = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
+			$existing[] = $unused_clause;
+			if ( 1 < count( $existing ) && ! isset( $existing['relation'] ) ) {
+				$existing['relation'] = 'AND';
+			}
+			$args['meta_query'] = $existing; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			return $args;
 		}
 
