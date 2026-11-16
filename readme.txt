@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.3.1
+Stable tag: 2.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,14 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 2.4.0 =
+* New: resumable full-library missing-file audit in small background batches, with progress on the Media Library screen.
+* Change: completed full-library audit results power the "File missing" task; bounded synchronous checks remain available while an audit is running.
+* Security: attachment paths are constrained to the uploads directory and filesystem checks fail safely when uploads are unavailable or offloaded.
+* Design: scoped MomentumLab styling with Montserrat fallback, improved focus states, tap targets and reduced-motion support.
+* Quality: pull requests lint PHP 8.0–8.4 and JavaScript and verify release version consistency.
+
 
 = 2.3.1 =
 * Change: the media library shows each file once. Entries without a file are hidden, and of several entries for one file only the first is listed. The counters equal the images shown. "Duplicates" and "File missing" list the hidden entries. The editor's media dialogs still list every entry.
