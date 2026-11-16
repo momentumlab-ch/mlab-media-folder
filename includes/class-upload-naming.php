@@ -39,9 +39,9 @@ final class Upload_Naming {
 			return $file;
 		}
 
-		$original = (string) $file['name'];
-		$extension = pathinfo( $original, PATHINFO_EXTENSION );
-		$base = pathinfo( $original, PATHINFO_FILENAME );
+		$original    = (string) $file['name'];
+		$extension   = pathinfo( $original, PATHINFO_EXTENSION );
+		$base        = pathinfo( $original, PATHINFO_FILENAME );
 		$folder_name = '';
 
 		// Folder is used only as naming context; the actual assignment remains in the existing upload workflow.
@@ -50,7 +50,7 @@ final class Upload_Naming {
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Query::parse validates the value.
 			$folder = Query::parse( wp_unslash( $_POST[ Query::PARAM ] ) );
 			if ( is_int( $folder ) && 0 < $folder ) {
-				$path = Folders::path( $folder );
+				$path        = Folders::path( $folder );
 				$folder_name = $path ? end( $path ) : '';
 			}
 		}
