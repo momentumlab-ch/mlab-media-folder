@@ -335,11 +335,19 @@ final class Admin {
 		$health = Health::scan();
 
 		if ( in_array( (int) $post->ID, $health['duplicate'], true ) ) {
-			$others = array_filter( array_map( 'get_post', Health::others_sharing_file( $post->ID ) ) );
+			$other_ids = array_values(
+				array_unique(
+					array_merge(
+						Health::others_sharing_file( $post->ID ),
+						Health::others_sharing_content( $post->ID )
+					)
+				)
+			);
+			$others = array_filter( array_map( 'get_post', $other_ids ) );
 			if ( $others ) {
-				$rows[] = esc_html__( 'Same file as', 'mlab-media-folder' ) . ': ' . implode( ', ', array_map( array( $this, 'attachment_link' ), $others ) );
+				$rows[] = esc_html__( 'Same file or content as', 'mlab-media-folder' ) . ': ' . implode( ', ', array_map( array( $this, 'attachment_link' ), $others ) );
 			}
-			$todo[] = esc_html__( 'Duplicate: keep one entry', 'mlab-media-folder' );
+			$todo[] = esc_html__( 'Duplicate: compare and keep the correct entry', 'mlab-media-folder' );
 		}
 		if ( in_array( (int) $post->ID, $health['missing'], true ) ) {
 			$todo[] = esc_html__( 'File is missing on the server', 'mlab-media-folder' );
