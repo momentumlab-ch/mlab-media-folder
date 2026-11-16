@@ -23,15 +23,15 @@ final class Optimization_Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'enabled'        => false,
-			'max_dimension'  => 2560,
-			'format'         => 'webp',
-			'convert_png'    => false,
-			'jpeg_quality'   => 82,
-			'webp_quality'   => 82,
-			'avif_quality'   => 72,
-			'keep_original'  => true,
-			'exif_policy'    => 'keep',
+			'enabled'       => false,
+			'max_dimension' => 2560,
+			'format'        => 'webp',
+			'convert_png'   => false,
+			'jpeg_quality'  => 82,
+			'webp_quality'  => 82,
+			'avif_quality'  => 72,
+			'keep_original' => true,
+			'exif_policy'   => 'keep',
 		);
 	}
 
@@ -57,9 +57,9 @@ final class Optimization_Settings {
 		$next['enabled']       = ! empty( $input['enabled'] );
 		$next['max_dimension'] = max( 1280, min( 7680, absint( $input['max_dimension'] ?? $current['max_dimension'] ) ) );
 
-		$format = sanitize_key( (string) ( $input['format'] ?? $current['format'] ) );
+		$format          = sanitize_key( (string) ( $input['format'] ?? $current['format'] ) );
 		$allowed_formats = Features::is_pro() ? array( 'original', 'webp', 'avif' ) : array( 'original', 'webp' );
-		$next['format'] = in_array( $format, $allowed_formats, true ) ? $format : 'webp';
+		$next['format']  = in_array( $format, $allowed_formats, true ) ? $format : 'webp';
 
 		$next['convert_png']  = ! empty( $input['convert_png'] );
 		$next['jpeg_quality'] = max( 50, min( 100, absint( $input['jpeg_quality'] ?? $current['jpeg_quality'] ) ) );
@@ -70,7 +70,7 @@ final class Optimization_Settings {
 		$next['keep_original'] = true;
 
 		if ( Features::is_pro() ) {
-			$policy = sanitize_key( (string) ( $input['exif_policy'] ?? $current['exif_policy'] ) );
+			$policy              = sanitize_key( (string) ( $input['exif_policy'] ?? $current['exif_policy'] ) );
 			$next['exif_policy'] = in_array( $policy, array( 'keep', 'strip_gps', 'strip_all' ), true ) ? $policy : 'keep';
 		}
 
