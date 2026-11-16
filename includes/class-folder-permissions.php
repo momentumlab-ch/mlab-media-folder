@@ -9,18 +9,27 @@ namespace MomentumLab\MediaFolder;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Resolves inherited role/user rules for Pro folders.
+ */
 final class Folder_Permissions {
 
 	const ROLES_META = '_mlab_mf_allowed_roles';
 	const USERS_META = '_mlab_mf_allowed_users';
 	const COLOR_META = '_mlab_mf_color';
 
+	/**
+	 * Whether a user can access one folder.
+	 *
+	 * @param int $folder_id Folder ID.
+	 * @param int $user_id User ID, or 0 for current user.
+	 */
 	public static function can_access( int $folder_id, int $user_id = 0 ): bool {
 		if ( ! Features::available( 'folder_permissions' ) || 0 === $folder_id ) {
 			return true;
 		}
 
-		$user_id = $user_id ?: get_current_user_id();
+		$user_id = 0 < $user_id ? $user_id : get_current_user_id();
 		$user    = get_userdata( $user_id );
 		if ( ! $user ) {
 			return false;
@@ -42,18 +51,23 @@ final class Folder_Permissions {
 	/**
 	 * Access rules inherit from the nearest ancestor that defines them.
 	 *
+	 * @param int $folder_id Folder ID.
 	 * @return array{roles:string[],users:int[]}
 	 */
 	private static function effective_rules( int $folder_id ): array {
 		$id    = $folder_id;
 		$guard = 0;
 
-		while ( 0 < $id && 30 > $guard++ ) {
+		while ( 0 < $id && 30 > $guard ) {
+			++$guard;
 			$roles = array_values( array_filter( array_map( 'sanitize_key', (array) get_term_meta( $id, self::ROLES_META, true ) ) ) );
 			$users = array_values( array_filter( array_map( 'absint', (array) get_term_meta( $id, self::USERS_META, true ) ) ) );
 
 			if ( $roles || $users ) {
-				return array( 'roles' => $roles, 'users' => $users );
+				return array(
+					'roles' => $roles,
+					'users' => $users,
+				);
 			}
 
 			$term = get_term( $id, Taxonomy::NAME );
@@ -63,7 +77,10 @@ final class Folder_Permissions {
 			$id = (int) $term->parent;
 		}
 
-		return array( 'roles' => array(), 'users' => array() );
+		return array(
+			'roles' => array(),
+			'users' => array(),
+		);
 	}
 
 	/**
@@ -97,6 +114,8 @@ final class Folder_Permissions {
 
 	/**
 	 * Whether the current user can access an attachment through its folder.
+	 *
+	 * @param int $attachment_id Attachment ID.
 	 */
 	public static function can_access_attachment( int $attachment_id ): bool {
 		$folder_id = Folders::of_attachment( $attachment_id );
@@ -124,13 +143,14 @@ final class Folder_Permissions {
 	/**
 	 * Folder presentation and access metadata.
 	 *
+	 * @param int $folder_id Folder ID.
 	 * @return array{roles:string[],users:int[],color:string}
 	 */
 	public static function get( int $folder_id ): array {
 		return array(
 			'roles' => array_values( array_filter( array_map( 'sanitize_key', (array) get_term_meta( $folder_id, self::ROLES_META, true ) ) ) ),
 			'users' => array_values( array_filter( array_map( 'absint', (array) get_term_meta( $folder_id, self::USERS_META, true ) ) ) ),
-			'color' => sanitize_hex_color( (string) get_term_meta( $folder_id, self::COLOR_META, true ) ) ?: '',
+			'color' => sanitize_hex_color( (string) get_term_meta( $folder_id, self::COLOR_META, true ) ) ? sanitize_hex_color( (string) get_term_meta( $folder_id, self::COLOR_META, true ) ) : '',
 		);
 	}
 
@@ -167,7 +187,7 @@ final class Folder_Permissions {
 
 		$roles = array_values( array_unique( array_filter( array_map( 'sanitize_key', $roles ) ) ) );
 		$users = array_values( array_unique( array_filter( array_map( 'absint', $users ) ) ) );
-		$color = sanitize_hex_color( $color ) ?: '';
+		$color = sanitize_hex_color( $color ) ? sanitize_hex_color( $color ) : '';
 
 		update_term_meta( $folder_id, self::ROLES_META, $roles );
 		update_term_meta( $folder_id, self::USERS_META, $users );
