@@ -456,6 +456,9 @@ final class Folders {
 			if ( $new_parent && ! self::exists( $new_parent ) ) {
 				return new WP_Error( 'mlab_media_folder_bad_parent', __( 'The parent folder does not exist.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 			}
+			if ( $new_parent && ! Folder_Permissions::can_access( $new_parent ) ) {
+				return new WP_Error( 'mlab_media_folder_forbidden_parent', __( 'You are not allowed to move a folder there.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+			}
 			$descendants = get_term_children( $id, Taxonomy::NAME );
 			if ( ! is_wp_error( $descendants ) && in_array( $new_parent, array_map( 'intval', $descendants ), true ) ) {
 				return new WP_Error( 'mlab_media_folder_bad_parent', __( 'A folder cannot be moved into one of its subfolders.', 'mlab-media-folder' ), array( 'status' => 400 ) );
@@ -510,6 +513,9 @@ final class Folders {
 		}
 		$term      = get_term( $id, Taxonomy::NAME );
 		$parent_id = (int) $term->parent;
+		if ( $parent_id && ! Folder_Permissions::can_access( $parent_id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_parent', __( 'You are not allowed to move this folder content to its parent.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 
 		$children = get_terms(
 			array(
@@ -563,7 +569,11 @@ final class Folders {
 		$previous       = array();
 
 		foreach ( $attachment_ids as $attachment_id ) {
-			if ( 'attachment' !== get_post_type( $attachment_id ) || ! current_user_can( 'edit_post', $attachment_id ) ) {
+			if (
+				'attachment' !== get_post_type( $attachment_id )
+				|| ! current_user_can( 'edit_post', $attachment_id )
+				|| ! Folder_Permissions::can_access_attachment( $attachment_id )
+			) {
 				$skipped[] = $attachment_id;
 				continue;
 			}
