@@ -125,12 +125,13 @@ final class Settings_Page {
 		check_admin_referer( 'mlab_media_folder_export' );
 
 		$folders = array();
-		foreach ( Folders::all() as $term ) {
-			$rules = Folder_Permissions::get( (int) $term->term_id );
+		foreach ( Folders::all() as $folder ) {
+			$folder_id = (int) $folder['id'];
+			$rules     = Folder_Permissions::get( $folder_id );
 			$folders[] = array(
-				'source_id' => (int) $term->term_id,
-				'name'      => Folders::name( $term ),
-				'parent_id' => (int) $term->parent,
+				'source_id' => $folder_id,
+				'name'      => (string) $folder['name'],
+				'parent_id' => (int) $folder['parent'],
 				'color'     => (string) $rules['color'],
 				'roles'     => array_values( $rules['roles'] ),
 			);
