@@ -183,7 +183,7 @@ final class Query {
 					'compare' => '!=',
 				),
 			);
-			$existing   = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
+			$existing = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
 			$existing[] = $unused_clause;
 			if ( 1 < count( $existing ) && ! isset( $existing['relation'] ) ) {
 				$existing['relation'] = 'AND';
