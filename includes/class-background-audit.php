@@ -51,6 +51,9 @@ final class Background_Audit {
 	public function run_batch() {
 		global $wpdb;
 		if ( ! apply_filters( 'mlab_media_folder_check_missing_files', true ) ) {
+			// Offloaded storage cannot be verified using local file_exists().
+			delete_option( self::OPTION );
+			Health::clear_cache();
 			return;
 		}
 		$uploads = wp_get_upload_dir();
