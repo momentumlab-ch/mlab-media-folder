@@ -1,5 +1,7 @@
 # Publishes a GitHub release with the plugin archive whenever main carries a
-# plugin version that has no release yet. Installed sites pick the release up
+# plugin version that has no release yet. Publishes slug.zip for the license
+# server and a versioned ZIP for existing standalone updaters.
+# Installed sites pick the release up
 # through the plugin's update check.
 #
 # It also runs for a pushed v* tag or a release published on GitHub, and can
@@ -54,8 +56,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           v="${{ steps.version.outputs.version }}"
-          if gh release view "${{ steps.version.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null \
-            | grep -qx "mlab-media-folder-$v.zip"; then
+          assets=$(gh release view "${{ steps.version.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null || true)
+          if grep -qx 'mlab-media-folder.zip' <<< "$assets" \
+            && grep -qx "mlab-media-folder-$v.zip" <<< "$assets"; then
             echo "Release ${{ steps.version.outputs.tag }} already has its archive."
             echo "done=true" >> "$GITHUB_OUTPUT"
           fi
@@ -65,6 +68,8 @@ jobs:
         run: |
           git archive --format=zip --prefix=mlab-media-folder/ \
             -o "mlab-media-folder-${{ steps.version.outputs.version }}.zip" HEAD
+          cp "mlab-media-folder-${{ steps.version.outputs.version }}.zip" mlab-media-folder.zip
+          unzip -t mlab-media-folder.zip
 
       - name: Release notes from CHANGELOG.md
         if: steps.existing.outputs.done != 'true'
@@ -81,7 +86,7 @@ jobs:
           tag="${{ steps.version.outputs.tag }}"
           zip="mlab-media-folder-${{ steps.version.outputs.version }}.zip"
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$zip" --clobber
+            gh release upload "$tag" mlab-media-folder.zip "$zip" --clobber
           else
-            gh release create "$tag" "$zip" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
+            gh release create "$tag" mlab-media-folder.zip "$zip" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
           fi
