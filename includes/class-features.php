@@ -41,6 +41,34 @@ final class Features {
 	}
 
 	/**
+	 * Licensing source used for the Pro entitlement.
+	 *
+	 * @return string One of core, client or none.
+	 */
+	public static function license_source(): string {
+		if ( function_exists( 'mlab_core_product_unlocked' ) ) {
+			return 'core';
+		}
+		if ( function_exists( 'mlab_license' ) ) {
+			return 'client';
+		}
+		return 'none';
+	}
+
+	/**
+	 * Human-readable licensing state for the settings UI.
+	 *
+	 * @return array{source:string,pro:bool,product:string}
+	 */
+	public static function license_status(): array {
+		return array(
+			'source'  => self::license_source(),
+			'pro'     => self::is_pro(),
+			'product' => self::PRO_PRODUCT,
+		);
+	}
+
+	/**
 	 * Whether a named feature is available.
 	 *
 	 * @param string $feature Feature key.
