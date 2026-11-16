@@ -54,6 +54,8 @@ MomentumLab Core entsperrt Pro über den License-Server-Entitlement-Slug `mlab-m
 
 **Medienstatus.** Zwei resumierbare Hintergrundprüfungen kontrollieren fehlende Dateien und identische Dateiinhalte. Der Status erscheint direkt in der Mediathek; berechtigte Benutzer können beide Prüfungen mit «Erneut prüfen» neu starten. Grosse Dateien werden in kleinen Batches verarbeitet, damit normale Admin-Aufrufe nicht blockiert werden.
 
+**Migration & Export.** Bestehende Strukturen aus HappyFiles und FileBird werden nicht-destruktiv übernommen. Grosse Zuordnungsmengen laufen resumierbar in kleinen Hintergrund-Batches; zusätzlich lässt sich die Ordnerstruktur als portables JSON sichern.
+
 **Automatische Updates.** Standalone-Installationen prüfen die GitHub-Releases dieses Repos. Wenn MomentumLab Core die Update-Verwaltung für `mlab-media-folder` übernimmt, deaktiviert sich der GitHub-Fallback automatisch; dadurch gibt es nie zwei konkurrierende Updatequellen.
 
 Ordner ordnen nur die Verwaltung. Die URLs der Dateien auf der Website ändern sich nicht.
