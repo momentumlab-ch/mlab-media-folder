@@ -16,6 +16,8 @@ final class Secrets {
 
 	/**
 	 * Encrypt a plaintext value. Empty values stay empty.
+	 *
+	 * @param string $plain Plaintext secret.
 	 */
 	public static function encrypt( string $plain ): string {
 		if ( '' === $plain ) {
@@ -26,7 +28,12 @@ final class Secrets {
 		if ( function_exists( 'sodium_crypto_secretbox' ) ) {
 			$nonce  = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
 			$cipher = sodium_crypto_secretbox( $plain, $nonce, $key );
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding encrypted binary for option storage.
 			return 's1:' . base64_encode( $nonce . $cipher );
+		}
+
+		if ( ! function_exists( 'openssl_encrypt' ) ) {
+			return '';
 		}
 
 		$iv  = random_bytes( 12 );
@@ -35,11 +42,14 @@ final class Secrets {
 		if ( false === $out ) {
 			return '';
 		}
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding encrypted binary for option storage.
 		return 'o1:' . base64_encode( $iv . $tag . $out );
 	}
 
 	/**
 	 * Decrypt a stored value. Invalid or stale ciphertext fails closed.
+	 *
+	 * @param string $stored Encoded ciphertext.
 	 */
 	public static function decrypt( string $stored ): string {
 		if ( '' === $stored ) {
@@ -48,6 +58,7 @@ final class Secrets {
 		$key = hash( 'sha256', wp_salt( 'auth' ) . wp_salt( 'secure_auth' ), true );
 
 		if ( str_starts_with( $stored, 's1:' ) && function_exists( 'sodium_crypto_secretbox_open' ) ) {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding encrypted binary stored by this class.
 			$raw = base64_decode( substr( $stored, 3 ), true );
 			if ( false === $raw || strlen( $raw ) <= SODIUM_CRYPTO_SECRETBOX_NONCEBYTES ) {
 				return '';
@@ -59,6 +70,7 @@ final class Secrets {
 		}
 
 		if ( str_starts_with( $stored, 'o1:' ) && function_exists( 'openssl_decrypt' ) ) {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding encrypted binary stored by this class.
 			$raw = base64_decode( substr( $stored, 3 ), true );
 			if ( false === $raw || strlen( $raw ) <= 28 ) {
 				return '';
