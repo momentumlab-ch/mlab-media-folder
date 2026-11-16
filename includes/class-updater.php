@@ -158,8 +158,10 @@ final class Updater {
 			'download_link' => $package,
 			'icons'         => $this->icons(),
 			'sections'      => array(
-				'description' => $this->markdown_to_html( $about ),
-				'changelog'   => $this->markdown_to_html( $changelog ),
+				'description'  => $this->markdown_to_html( $about ),
+				'installation' => '<ol><li>' . esc_html__( 'Install and activate the plugin.', 'mlab-media-folder' ) . '</li><li>' . esc_html__( 'Open Media > Library. The folder panel and Media Health status appear automatically.', 'mlab-media-folder' ) . '</li><li>' . esc_html__( 'Use Scan again to rebuild the missing-file and duplicate-content audits when required.', 'mlab-media-folder' ) . '</li></ol>',
+				'other_notes'  => '<h3>' . esc_html__( 'Media Health', 'mlab-media-folder' ) . '</h3><p>' . esc_html__( 'Missing files are checked against the local uploads directory in resumable background batches. Duplicate content is fingerprinted with SHA-256 in small batches. Shared physical files are protected when duplicate attachment entries are deleted.', 'mlab-media-folder' ) . '</p><h3>' . esc_html__( 'Updates', 'mlab-media-folder' ) . '</h3><p>' . esc_html__( 'Standalone installations update from signed GitHub release assets. When MomentumLab Core manages this plugin, the built-in GitHub updater stands down so only the Core and License Server update path remains active.', 'mlab-media-folder' ) . '</p>',
+				'changelog'    => $this->markdown_to_html( $changelog ),
 			),
 		);
 	}
