@@ -56,7 +56,7 @@ final class Admin {
 			$content_label = sprintf( __( 'Duplicate-content audit running: %d checked so far', 'mlab-media-folder' ), absint( $content['checked'] ) );
 		}
 		echo '<div class="notice notice-info mlab-media-folder-audit-notice"><p><strong>' . esc_html__( 'Media health', 'mlab-media-folder' ) . '</strong><br>' . esc_html( $file_label ) . '<br>' . esc_html( $content_label ) . '</p>';
-		if ( current_user_can( Plugin::manage_capability() ) ) {
+		if ( current_user_can( Plugin::audit_capability() ) ) {
 			$url = wp_nonce_url( admin_url( 'admin-post.php?action=mlab_media_folder_rescan' ), 'mlab_media_folder_rescan' );
 			echo '<p><a class="button button-secondary" href="' . esc_url( $url ) . '">' . esc_html__( 'Scan again', 'mlab-media-folder' ) . '</a></p>';
 		}
