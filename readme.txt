@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.4.0
+Stable tag: 3.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,17 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 3.0.0 =
+* New workspace: unified MomentumLab header, global search across media and folders, right-side Inspector, mobile folder drawer and Inspector bottom sheet.
+* Smart Views: Recent uploads and a conservative Potentially unused view backed by a resumable background usage audit; existing Unfiled, No alt text, Duplicates and File missing views remain.
+* Pro: customer-owned OpenAI metadata suggestions, glossary rules, blocked terms, upload naming rules, role/user folder permissions, folder colors/duplication, saved Dynamic Views and bounded bulk AI.
+* Image optimization: opt-in WebP optimization for new WordPress derivatives in Free; Pro adds AVIF, derivative metadata privacy and explicit background rebuild of existing derivatives. Uploaded originals are never automatically replaced or deleted.
+* Migration: non-destructive copy from HappyFiles, current FileBird tables and the legacy FileBird taxonomy. Source data is never modified.
+* Licensing: Pro features unlock through MomentumLab Core / License Server entitlement `mlab-media-folder-pro`. Existing 2.x functionality remains available in Free.
+* Performance: permission-aware folder and Smart View counters are cached with targeted generation invalidation; audits and bulk work run in bounded background batches.
+* Security: AI API keys are customer-owned and encrypted at rest; manual AI is suggestion-first; folder permissions are enforced in queries, search, Inspector, AI and upload assignment.
+* Compatibility: existing folder URLs, media URLs and uploaded originals are not changed by the upgrade.
 
 = 2.4.0 =
 * New: full-library missing-file audit in small resumable background batches with progress and a protected “Scan again” action.
