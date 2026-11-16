@@ -469,9 +469,31 @@ final class Settings_Page {
 								<?php if ( ! empty( $migration_status['error'] ) ) : ?>
 									<p><?php echo esc_html( (string) $migration_status['error'] ); ?></p>
 								<?php elseif ( ! empty( $migration_status['complete'] ) ) : ?>
-									<p><?php echo esc_html( sprintf( __( '%1$d folders created · %2$d media assignments copied', 'mlab-media-folder' ), (int) ( $migration_status['created'] ?? 0 ), (int) ( $migration_status['assignments'] ?? 0 ) ) ); ?></p>
+									<p>
+										<?php
+										echo esc_html(
+											sprintf(
+												/* translators: 1: number of folders created, 2: number of media assignments copied. */
+												__( '%1$d folders created · %2$d media assignments copied', 'mlab-media-folder' ),
+												(int) ( $migration_status['created'] ?? 0 ),
+												(int) ( $migration_status['assignments'] ?? 0 )
+											)
+										);
+										?>
+									</p>
 								<?php else : ?>
-									<p><?php echo esc_html( sprintf( __( '%1$d media items checked · %2$d assignments copied so far', 'mlab-media-folder' ), (int) ( $migration_status['checked'] ?? 0 ), (int) ( $migration_status['assignments'] ?? 0 ) ) ); ?></p>
+									<p>
+										<?php
+										echo esc_html(
+											sprintf(
+												/* translators: 1: number of media items checked, 2: number of assignments copied. */
+												__( '%1$d media items checked · %2$d assignments copied so far', 'mlab-media-folder' ),
+												(int) ( $migration_status['checked'] ?? 0 ),
+												(int) ( $migration_status['assignments'] ?? 0 )
+											)
+										);
+										?>
+									</p>
 								<?php endif; ?>
 							</div>
 						<?php endif; ?>
