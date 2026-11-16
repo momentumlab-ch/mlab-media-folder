@@ -96,6 +96,7 @@ final class Plugin {
 		wp_clear_scheduled_hook( Content_Audit::HOOK );
 		wp_clear_scheduled_hook( Usage_Audit::HOOK );
 		wp_clear_scheduled_hook( Automation_Queue::HOOK );
+		wp_clear_scheduled_hook( Automation_Queue::BULK_HOOK );
 		wp_clear_scheduled_hook( Bulk_Optimize::HOOK );
 	}
 
