@@ -2,6 +2,7 @@ name: PHP and JavaScript syntax
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
 
@@ -50,3 +51,30 @@ jobs:
         run: composer install --no-interaction --no-progress
       - name: WordPress Coding Standards and PHP compatibility
         run: vendor/bin/phpcs --standard=phpcs.xml.dist .
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release archive exactly like release.yml
+        run: |
+          version=$(sed -n "s/^define( 'MLAB_MEDIA_FOLDER_VERSION', '\(.*\)' );/\1/p" mlab-media-folder.php)
+          git archive --format=zip --prefix=mlab-media-folder/ -o "mlab-media-folder-$version.zip" HEAD
+          unzip -t "mlab-media-folder-$version.zip"
+          unzip -Z1 "mlab-media-folder-$version.zip" > archive-files.txt
+          grep -qx 'mlab-media-folder/mlab-media-folder.php' archive-files.txt
+          grep -qx 'mlab-media-folder/readme.txt' archive-files.txt
+          grep -qx 'mlab-media-folder/includes/class-background-audit.php' archive-files.txt
+          grep -qx 'mlab-media-folder/includes/class-content-audit.php' archive-files.txt
+          ! grep -q '^mlab-media-folder/.github/' archive-files.txt
+          ! grep -q '^mlab-media-folder/tests/' archive-files.txt
+          ! grep -qx 'mlab-media-folder/composer.json' archive-files.txt
+          ! grep -qx 'mlab-media-folder/README.md' archive-files.txt
+          cp "mlab-media-folder-$version.zip" mlab-media-folder.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlab-media-folder-release-candidate
+          path: |
+            mlab-media-folder.zip
+            mlab-media-folder-*.zip
+          retention-days: 7
