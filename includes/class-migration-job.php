@@ -22,6 +22,17 @@ final class Migration_Job {
 	 */
 	public function hooks(): void {
 		add_action( self::HOOK, array( $this, 'run_batch' ) );
+		add_action( 'init', array( $this, 'schedule_if_needed' ), 33 );
+	}
+
+	/**
+	 * Resume an incomplete migration after missed cron events or reactivation.
+	 */
+	public function schedule_if_needed(): void {
+		$state = self::status();
+		if ( $state && empty( $state['complete'] ) && ! empty( $state['taxonomy'] ) && ! wp_next_scheduled( self::HOOK ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::HOOK );
+		}
 	}
 
 	/**
