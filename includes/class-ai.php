@@ -9,10 +9,19 @@ namespace MomentumLab\MediaFolder;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Generates and applies media metadata through a customer-owned AI account.
+ */
 final class AI {
 
 	const ENDPOINT = 'https://api.openai.com/v1/responses';
 
+	/**
+	 * Generate a metadata suggestion for one image.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return array<string,mixed>|\\WP_Error
+	 */
 	public static function suggest( int $attachment_id ) {
 		if ( ! Features::available( 'ai_metadata' ) ) {
 			return new \WP_Error( 'mlab_media_folder_pro_required', __( 'Media AI requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ), array( 'status' => 403 ) );
@@ -40,20 +49,29 @@ final class AI {
 			return new \WP_Error( 'mlab_media_folder_ai_mime', __( 'The attachment is not a supported image.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local attachment file, not a URL.
 		$bytes = file_get_contents( $file );
 		if ( false === $bytes ) {
 			return new \WP_Error( 'mlab_media_folder_ai_read_failed', __( 'The image could not be prepared for AI analysis.', 'mlab-media-folder' ), array( 'status' => 500 ) );
 		}
 
 		$settings = Automation_Settings::get();
-		$body = array(
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Required for an image data URL sent to the selected AI provider.
+		$image_data = base64_encode( $bytes );
+		$body       = array(
 			'model' => (string) $settings['model'],
 			'input' => array(
 				array(
 					'role' => 'user',
 					'content' => array(
-						array( 'type' => 'input_text', 'text' => self::prompt( $attachment_id, $settings ) ),
-						array( 'type' => 'input_image', 'image_url' => 'data:' . $mime . ';base64,' . base64_encode( $bytes ) ),
+						array(
+							'type' => 'input_text',
+							'text' => self::prompt( $attachment_id, $settings ),
+						),
+						array(
+							'type'      => 'input_image',
+							'image_url' => 'data:' . $mime . ';base64,' . $image_data,
+						),
 					),
 				),
 			),
@@ -134,6 +152,12 @@ final class AI {
 		return true;
 	}
 
+	/**
+	 * Build an instruction prompt with local context and glossary rules.
+	 *
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param array<string,mixed> $settings Automation settings.
+	 */
 	private static function prompt( int $attachment_id, array $settings ): string {
 		$filename = wp_basename( (string) get_attached_file( $attachment_id ) );
 		$folder = Folders::path( Folders::of_attachment( $attachment_id ) );
@@ -162,6 +186,11 @@ final class AI {
 		return implode( "\n", $lines );
 	}
 
+	/**
+	 * Extract text output from the Responses API payload.
+	 *
+	 * @param array<string,mixed> $data Provider response.
+	 */
 	private static function response_text( array $data ): string {
 		foreach ( (array) ( $data['output'] ?? array() ) as $item ) {
 			foreach ( (array) ( $item['content'] ?? array() ) as $content ) {
@@ -173,6 +202,12 @@ final class AI {
 		return '';
 	}
 
+	/**
+	 * Decode JSON output, allowing an optional Markdown code fence.
+	 *
+	 * @param string $text Provider output text.
+	 * @return array<string,mixed>|null
+	 */
 	private static function decode_json( string $text ): ?array {
 		$text = trim( $text );
 		$text = preg_replace( '/^```(?:json)?\\s*|\\s*```$/i', '', $text );
@@ -180,6 +215,12 @@ final class AI {
 		return is_array( $data ) ? $data : null;
 	}
 
+	/**
+	 * Sanitize provider output before exposing or applying it.
+	 *
+	 * @param array<string,mixed> $data Provider output.
+	 * @return array<string,mixed>
+	 */
 	private static function normalize( array $data ): array {
 		$tags = is_array( $data['tags'] ?? null ) ? $data['tags'] : array();
 		$tags = array_slice( array_values( array_filter( array_map( 'sanitize_text_field', $tags ) ) ), 0, 12 );
