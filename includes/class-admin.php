@@ -118,6 +118,7 @@ final class Admin {
 				'newFolder'       => __( 'New folder', 'mlab-media-folder' ),
 				'newSubfolder'    => __( 'New subfolder', 'mlab-media-folder' ),
 				'rename'          => __( 'Rename', 'mlab-media-folder' ),
+				'moveFolder'      => __( 'Move folder to…', 'mlab-media-folder' ),
 				'duplicateFolder' => __( 'Duplicate folder', 'mlab-media-folder' ),
 				'folderColor'     => __( 'Folder color', 'mlab-media-folder' ),
 				'delete'          => __( 'Delete', 'mlab-media-folder' ),
