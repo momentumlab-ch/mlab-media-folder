@@ -352,7 +352,7 @@ final class Admin {
 					)
 				)
 			);
-			$others = array_filter( array_map( 'get_post', $other_ids ) );
+			$others    = array_filter( array_map( 'get_post', $other_ids ) );
 			if ( $others ) {
 				$rows[] = esc_html__( 'Same file or content as', 'mlab-media-folder' ) . ': ' . implode( ', ', array_map( array( $this, 'attachment_link' ), $others ) );
 			}
