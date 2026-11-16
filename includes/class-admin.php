@@ -103,8 +103,9 @@ final class Admin {
 			'unfiled'    => Query::UNFILED,
 			'canManage'  => current_user_can( Plugin::manage_capability() ),
 			'maxAssign'  => Folders::MAX_ASSIGN,
-			'folders'    => Folders::flattened_tree(),
-			'totals'     => Folders::totals(),
+			'folders'      => Folders::flattened_tree(),
+			'dynamicViews' => Dynamic_Views::all(),
+			'totals'       => Folders::totals(),
 			'i18n'       => array(
 				'title'           => __( 'Folders', 'mlab-media-folder' ),
 				'all'             => __( 'All files', 'mlab-media-folder' ),
@@ -134,7 +135,8 @@ final class Admin {
 				'selectNone'      => __( 'Clear selection', 'mlab-media-folder' ),
 				'loadingAll'      => __( 'Loading all files…', 'mlab-media-folder' ),
 				'library'         => __( 'Library', 'mlab-media-folder' ),
-				'todo'            => __( 'To do', 'mlab-media-folder' ),
+				'todo'            => __( 'Smart Views', 'mlab-media-folder' ),
+				'savedViews'      => __( 'Saved Views', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
 				/* translators: 1: number of images shown, 2: number of entries in the library. */
