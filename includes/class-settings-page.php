@@ -23,6 +23,7 @@ final class Settings_Page {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_post_mlab_media_folder_save_settings', array( $this, 'save' ) );
 		add_action( 'admin_post_mlab_media_folder_migrate', array( $this, 'migrate' ) );
+		add_action( 'admin_post_mlab_media_folder_export', array( $this, 'export' ) );
 		add_action( 'admin_post_mlab_media_folder_bulk_optimize', array( $this, 'bulk_optimize' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 	}
@@ -111,6 +112,42 @@ final class Settings_Page {
 			admin_url( 'upload.php' )
 		);
 		wp_safe_redirect( $url );
+		exit;
+	}
+
+	/**
+	 * Export a portable JSON snapshot of the folder structure.
+	 */
+	public function export(): void {
+		if ( ! current_user_can( Plugin::settings_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to export media folders.', 'mlab-media-folder' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'mlab_media_folder_export' );
+
+		$folders = array();
+		foreach ( Folders::all() as $term ) {
+			$rules = Folder_Permissions::get( (int) $term->term_id );
+			$folders[] = array(
+				'source_id' => (int) $term->term_id,
+				'name'      => Folders::name( $term ),
+				'parent_id' => (int) $term->parent,
+				'color'     => (string) $rules['color'],
+				'roles'     => array_values( $rules['roles'] ),
+			);
+		}
+
+		$payload = array(
+			'format'      => 'mlab-media-folder-export',
+			'version'     => 1,
+			'plugin'      => MLAB_MEDIA_FOLDER_VERSION,
+			'exported_at' => gmdate( 'c' ),
+			'folders'     => $folders,
+		);
+
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="mlab-media-folder-' . gmdate( 'Ymd-His' ) . '.json"' );
+		echo wp_json_encode( $payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON response with explicit content type.
 		exit;
 	}
 
@@ -424,6 +461,7 @@ final class Settings_Page {
 					<section class="mlab-mf-card mlab-mf-card-wide">
 						<div class="mlab-mf-card-heading"><div><span class="mlab-mf-kicker"><?php esc_html_e( 'Tools', 'mlab-media-folder' ); ?></span><h2><?php esc_html_e( 'Import / Migration', 'mlab-media-folder' ); ?></h2></div></div>
 						<p><?php esc_html_e( 'Copy folder structures into Media Folder without deleting or modifying the source plugin data.', 'mlab-media-folder' ); ?></p>
+						<p><a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=mlab_media_folder_export' ), 'mlab_media_folder_export' ) ); ?>"><?php esc_html_e( 'Export folder structure', 'mlab-media-folder' ); ?></a></p>
 						<?php if ( $migration_status ) : ?>
 							<div class="mlab-mf-migration-status <?php echo ! empty( $migration_status['error'] ) ? 'has-error' : ''; ?>">
 								<strong><?php esc_html_e( 'Migration status', 'mlab-media-folder' ); ?></strong>
