@@ -171,6 +171,7 @@ final class Settings_Page {
 		$optimization     = Optimization_Settings::get();
 		$capabilities     = Image_Optimization::capabilities();
 		$is_pro           = Features::is_pro();
+		$license_status   = Features::license_status();
 		$views            = Dynamic_Views::all();
 		$folders          = Folders::flattened_tree();
 		$roles            = wp_roles()->roles;
@@ -472,6 +473,24 @@ final class Settings_Page {
 
 					<section class="mlab-mf-card mlab-mf-card-wide">
 						<div class="mlab-mf-card-heading"><div><span class="mlab-mf-kicker"><?php esc_html_e( 'License', 'mlab-media-folder' ); ?></span><h2><?php esc_html_e( 'Free & Pro', 'mlab-media-folder' ); ?></h2></div></div>
+						<div class="mlab-mf-license-detail">
+							<strong><?php esc_html_e( 'License source', 'mlab-media-folder' ); ?></strong>
+							<span>
+								<?php
+								if ( 'core' === $license_status['source'] ) {
+									esc_html_e( 'MomentumLab Core / License Server', 'mlab-media-folder' );
+								} elseif ( 'client' === $license_status['source'] ) {
+									esc_html_e( 'MomentumLab License Client', 'mlab-media-folder' );
+								} else {
+									esc_html_e( 'No MomentumLab license client detected', 'mlab-media-folder' );
+								}
+								?>
+							</span>
+							<code><?php echo esc_html( $license_status['product'] ); ?></code>
+						</div>
+						<?php if ( 'none' === $license_status['source'] ) : ?>
+							<div class="mlab-mf-lock"><span class="dashicons dashicons-info-outline" aria-hidden="true"></span><span><?php esc_html_e( 'Pro is unlocked through MomentumLab Core / License Server. Media Folder intentionally does not add a second competing license-key store.', 'mlab-media-folder' ); ?></span></div>
+						<?php endif; ?>
 						<div class="mlab-mf-plan-grid">
 							<div><h3><?php esc_html_e( 'Free', 'mlab-media-folder' ); ?></h3><p><?php esc_html_e( 'Folders, drag & drop, bulk workflow, core Smart Views, global search, inspector, Media Health, migration and mobile workspace.', 'mlab-media-folder' ); ?></p></div>
 							<div class="is-pro"><h3>Pro</h3><p><?php esc_html_e( 'AI metadata, glossary, naming rules, folder permissions, dynamic saved views and advanced automation.', 'mlab-media-folder' ); ?></p><code><?php echo esc_html( Features::PRO_PRODUCT ); ?></code></div>
