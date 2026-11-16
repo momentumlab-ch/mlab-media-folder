@@ -72,6 +72,7 @@ jobs:
           grep -qx 'mlab-media-folder/includes/class-image-optimization.php' archive-files.txt
           grep -qx 'mlab-media-folder/includes/class-folder-permissions.php' archive-files.txt
           grep -qx 'mlab-media-folder/includes/class-dynamic-views.php' archive-files.txt
+          grep -qx 'mlab-media-folder/includes/class-migration-job.php' archive-files.txt
           grep -qx 'mlab-media-folder/assets/js/workspace.js' archive-files.txt
           grep -qx 'mlab-media-folder/assets/css/settings.css' archive-files.txt
           grep -qx 'mlab-media-folder/assets/images/media-folder-mark.svg' archive-files.txt
