@@ -167,14 +167,14 @@ final class Settings_Page {
 			return;
 		}
 
-		$automation   = Automation_Settings::get();
-		$optimization = Optimization_Settings::get();
-		$capabilities = Image_Optimization::capabilities();
-		$is_pro       = Features::is_pro();
-		$views        = Dynamic_Views::all();
-		$folders      = Folders::flattened_tree();
-		$roles        = wp_roles()->roles;
-		$authors      = get_users(
+		$automation       = Automation_Settings::get();
+		$optimization     = Optimization_Settings::get();
+		$capabilities     = Image_Optimization::capabilities();
+		$is_pro           = Features::is_pro();
+		$views            = Dynamic_Views::all();
+		$folders          = Folders::flattened_tree();
+		$roles            = wp_roles()->roles;
+		$authors          = get_users(
 			array(
 				'capability' => 'upload_files',
 				'number'     => 200,
