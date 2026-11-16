@@ -143,6 +143,7 @@ final class Admin {
 				'todo'            => __( 'Smart Views', 'mlab-media-folder' ),
 				'savedViews'      => __( 'Saved Views', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
+				'unused'          => __( 'Potentially unused', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
 				/* translators: 1: number of images shown, 2: number of entries in the library. */
 				'countNote'       => __( '%1$d images shown, %2$d entries in the library. The library shows each file once and hides entries without a file. See "Duplicates" and "File missing".', 'mlab-media-folder' ),
@@ -166,6 +167,8 @@ final class Admin {
 				/* translators: %d: number of images. */
 				'nextNoAlt'       => __( 'Describe %d images.', 'mlab-media-folder' ),
 				/* translators: %d: number of files. */
+				'nextUnused'      => __( 'Review %d files that appear unused after the background usage audit.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
 				'nextUnattached'  => __( 'Review %d files that are not in a page.', 'mlab-media-folder' ),
 				'foundLabel'      => __( 'Found', 'mlab-media-folder' ),
 				'doLabel'         => __( 'What to do', 'mlab-media-folder' ),
@@ -175,6 +178,8 @@ final class Admin {
 				'doUnfiled'       => __( 'Drag them onto a folder, or select them (Bulk select) and use "Move to…".', 'mlab-media-folder' ),
 				'foundNoAlt'      => __( 'Images whose alternative text is empty. Screen readers and search engines depend on it.', 'mlab-media-folder' ),
 				'doNoAlt'         => __( 'Click an image and fill in "Alternative Text" in the details.', 'mlab-media-folder' ),
+				'foundUnused'     => __( 'Files with no attachment parent and no reference found by the completed background usage audit. This is intentionally conservative.', 'mlab-media-folder' ),
+				'doUnused'        => __( 'Review before deleting. External URLs, custom fields or plugin-specific references may not be detectable.', 'mlab-media-folder' ),
 				'foundUnattached' => __( 'Files that were not uploaded from a page or post. Some of them may be unused.', 'mlab-media-folder' ),
 				'doUnattached'    => __( 'Check each file: delete it if you do not need it, otherwise move it to a folder.', 'mlab-media-folder' ),
 				'taskEmpty'       => __( 'Nothing to do here. Well done.', 'mlab-media-folder' ),
