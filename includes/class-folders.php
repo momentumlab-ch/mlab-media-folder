@@ -46,6 +46,8 @@ final class Folders {
 
 	/**
 	 * Per-user cache key because Pro folder permissions can change visible totals.
+	 *
+	 * @param string $scope Cache scope.
 	 */
 	private static function cache_key( string $scope ): string {
 		$generation = absint( get_option( self::CACHE_GENERATION_OPTION, 1 ) );
@@ -208,6 +210,7 @@ final class Folders {
 				$after
 			)
 		);
+		// phpcs:enable
 	}
 
 	/**
@@ -223,7 +226,7 @@ final class Folders {
 
 		$visible = self::visible_sql();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; the visibility clause is internally generated and the generation is prepared.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; visibility clause is internally generated and generation is prepared.
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(DISTINCT p.ID)
@@ -237,6 +240,7 @@ final class Folders {
 				$usage['generation']
 			)
 		);
+		// phpcs:enable
 	}
 
 	/**
