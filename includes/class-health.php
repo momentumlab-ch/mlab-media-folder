@@ -47,7 +47,17 @@ final class Health {
 		add_action( 'delete_attachment', array( $this, 'protect_shared_file' ), 9 );
 		add_action( 'delete_attachment', array( __CLASS__, 'clear_cache' ), 10 );
 		add_action( 'deleted_post', array( $this, 'release' ) );
+		add_action( 'updated_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
+		add_action( 'added_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
+		add_action( 'deleted_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
 		add_filter( 'wp_delete_file', array( $this, 'keep_file' ) );
+	}
+
+	/** Clear health results when the physical attachment path changes. */
+	public static function maybe_clear_file_cache( $meta_id, $post_id, $meta_key, $meta_value ) {
+		if ( '_wp_attached_file' === $meta_key && 'attachment' === get_post_type( $post_id ) ) {
+			self::clear_cache();
+		}
 	}
 
 	/**
