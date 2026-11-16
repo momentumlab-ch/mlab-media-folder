@@ -44,6 +44,7 @@ final class Plugin {
 	private function __construct() {
 		add_action( 'init', array( $this, 'load_textdomain' ), 0 );
 		add_action( 'init', array( Taxonomy::class, 'register' ) );
+		add_action( 'init', array( Tags::class, 'register' ) );
 		add_action( 'init', array( $this, 'maybe_upgrade' ), 20 );
 		add_action( 'rest_api_init', array( new Rest_Controller(), 'register_routes' ) );
 
@@ -52,9 +53,11 @@ final class Plugin {
 		( new Content_Audit() )->hooks();
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
+		( new Image_Optimization() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
+			( new Settings_Page() )->hooks();
 		}
 	}
 
@@ -99,6 +102,20 @@ final class Plugin {
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
 		Background_Audit::restart_scan();
 		Content_Audit::restart_scan();
+	}
+
+	/**
+	 * Capability needed to change plugin-wide settings and automation.
+	 *
+	 * @return string
+	 */
+	public static function settings_capability() {
+		/**
+		 * Filters the capability required to change Media Folder settings.
+		 *
+		 * @param string $capability Default 'manage_options'.
+		 */
+		return (string) apply_filters( 'mlab_media_folder_settings_capability', 'manage_options' );
 	}
 
 	/**
