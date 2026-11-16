@@ -12,7 +12,8 @@
 - Pro upload Naming Rules using token patterns such as `%companyname%`, `%folder%`, `%imagename%`, `%date%` and `%counter%`.
 - Private media tags, Pro role/user folder permissions with inherited rules, folder colours and folder duplication.
 - Pro saved Dynamic Views for media type, uploader, age and audited minimum file size.
-- Non-destructive migration from HappyFiles, current FileBird tables and the legacy FileBird taxonomy.
+- Non-destructive migration from HappyFiles, current FileBird tables and the legacy FileBird taxonomy, with resumable background assignment batches and progress state for large libraries.
+- Portable JSON export of the Media Folder hierarchy, colors and role rules for backup/documentation.
 - Opt-in image optimization for generated WordPress derivatives: Free WebP; Pro AVIF, derivative metadata privacy and explicit background rebuild of existing derivatives.
 - Additional regression tests for naming, feature gates, encrypted secrets and usage-reference parsing.
 
