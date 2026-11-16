@@ -70,6 +70,9 @@ final class Plugin {
 	public static function activate() {
 		Taxonomy::register();
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
+		if ( ! wp_next_scheduled( Background_Audit::HOOK ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Background_Audit::HOOK );
+		}
 	}
 
 	/**
