@@ -52,6 +52,7 @@ final class Plugin {
 		( new Background_Audit() )->hooks();
 		( new Content_Audit() )->hooks();
 		( new Usage_Audit() )->hooks();
+		( new Migration_Job() )->hooks();
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
 		( new Image_Optimization() )->hooks();
@@ -95,6 +96,7 @@ final class Plugin {
 		wp_clear_scheduled_hook( Background_Audit::HOOK );
 		wp_clear_scheduled_hook( Content_Audit::HOOK );
 		wp_clear_scheduled_hook( Usage_Audit::HOOK );
+		wp_clear_scheduled_hook( Migration_Job::HOOK );
 		wp_clear_scheduled_hook( Automation_Queue::HOOK );
 		wp_clear_scheduled_hook( Automation_Queue::BULK_HOOK );
 		wp_clear_scheduled_hook( Bulk_Optimize::HOOK );
