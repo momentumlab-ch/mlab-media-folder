@@ -29,6 +29,7 @@ require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-folders.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-rest-controller.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-health.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-background-audit.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-content-audit.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-query.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-admin.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-updater.php';
