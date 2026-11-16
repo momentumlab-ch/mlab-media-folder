@@ -277,6 +277,33 @@ final class Health {
 	}
 
 	/**
+	 * Other entries whose current physical files have the same SHA-256 content.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @param int $limit Maximum number of IDs.
+	 * @return int[]
+	 */
+	public static function others_sharing_content( $attachment_id, $limit = 3 ) {
+		$hash = (string) get_post_meta( (int) $attachment_id, Content_Audit::HASH_META, true );
+		if ( '' === $hash || empty( Content_Audit::status()['complete'] ) ) {
+			return array();
+		}
+		$ids = get_posts(
+			array(
+				'post_type'        => 'attachment',
+				'post_status'      => 'any',
+				'numberposts'      => max( 1, (int) $limit ),
+				'post__not_in'     => array( (int) $attachment_id ),
+				'fields'           => 'ids',
+				'meta_key'         => Content_Audit::HASH_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => $hash, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'suppress_filters' => true,
+			)
+		);
+		return array_map( 'intval', $ids );
+	}
+
+	/**
 	 * Before an entry is deleted: if another entry uses the same file, keep
 	 * the file on disk. WordPress would otherwise delete it and leave the
 	 * other entry without an image.
