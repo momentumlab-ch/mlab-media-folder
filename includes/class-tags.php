@@ -9,6 +9,9 @@ namespace MomentumLab\MediaFolder;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Registers private attachment tags used by automation and Smart Views.
+ */
 final class Tags {
 
 	const NAME = 'mlab_media_tag';
