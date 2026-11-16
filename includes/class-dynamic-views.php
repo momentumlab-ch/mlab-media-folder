@@ -62,7 +62,6 @@ final class Dynamic_Views {
 		$id = (string) $view['id'];
 
 		$views = self::all();
-
 		$found = false;
 		foreach ( $views as $index => $candidate ) {
 			if ( (string) ( $candidate['id'] ?? '' ) === $id ) {
