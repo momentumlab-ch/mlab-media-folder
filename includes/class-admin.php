@@ -95,20 +95,20 @@ final class Admin {
 	 */
 	private function script_data() {
 		return array(
-			'version'    => MLAB_MEDIA_FOLDER_VERSION,
-			'creditUrl'  => 'https://momentumlab.ch/',
-			'restPath'   => '/' . Rest_Controller::NAMESPACE,
-			'param'      => Query::PARAM,
-			'cleanParam' => Query::CLEAN,
-			'unfiled'    => Query::UNFILED,
-			'canManage'   => current_user_can( Plugin::manage_capability() ),
-			'canSettings' => current_user_can( Plugin::settings_capability() ),
-			'features'    => Features::matrix(),
-			'maxAssign'  => Folders::MAX_ASSIGN,
+			'version'      => MLAB_MEDIA_FOLDER_VERSION,
+			'creditUrl'    => 'https://momentumlab.ch/',
+			'restPath'     => '/' . Rest_Controller::NAMESPACE,
+			'param'        => Query::PARAM,
+			'cleanParam'   => Query::CLEAN,
+			'unfiled'      => Query::UNFILED,
+			'canManage'    => current_user_can( Plugin::manage_capability() ),
+			'canSettings'  => current_user_can( Plugin::settings_capability() ),
+			'features'     => Features::matrix(),
+			'maxAssign'    => Folders::MAX_ASSIGN,
 			'folders'      => Folders::flattened_tree(),
 			'dynamicViews' => Dynamic_Views::all(),
 			'totals'       => Folders::totals(),
-			'i18n'       => array(
+			'i18n'         => array(
 				'title'           => __( 'Folders', 'mlab-media-folder' ),
 				'all'             => __( 'All files', 'mlab-media-folder' ),
 				'unfiled'         => __( 'Unfiled', 'mlab-media-folder' ),
@@ -231,11 +231,11 @@ final class Admin {
 			'mlab-media-folder-workspace',
 			'mlabMediaFolderWorkspace',
 			array(
-				'restPath'   => '/' . Rest_Controller::NAMESPACE,
-				'param'      => Query::PARAM,
-				'settingsUrl'=> admin_url( 'upload.php?page=' . Settings_Page::SLUG ),
-				'brandMark'  => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-mark.svg',
-				'features'   => Features::matrix(),
+				'restPath'      => '/' . Rest_Controller::NAMESPACE,
+				'param'         => Query::PARAM,
+				'settingsUrl'   => admin_url( 'upload.php?page=' . Settings_Page::SLUG ),
+				'brandMark'     => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-mark.svg',
+				'features'      => Features::matrix(),
 				'workspaceI18n' => array(
 					'search'      => __( 'Search files, folders, filenames and alt text…', 'mlab-media-folder' ),
 					'folders'     => __( 'Folders', 'mlab-media-folder' ),
