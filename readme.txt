@@ -40,12 +40,15 @@ Developer hooks
 == Changelog ==
 
 = 2.4.0 =
-* New: resumable full-library missing-file audit in small background batches, with progress on the Media Library screen.
-* Change: completed full-library audit results power the "File missing" task; bounded synchronous checks remain available while an audit is running.
-* Security: attachment paths are constrained to the uploads directory and filesystem checks fail safely when uploads are unavailable or offloaded.
+* New: full-library missing-file audit in small resumable background batches with progress and a protected “Scan again” action.
+* New: SHA-256 content duplicate audit finds copied files even when their names and paths differ.
+* Change: “Duplicates” covers same-path and same-content entries; only entries that truly share one physical file are hidden from the normal library.
+* Change: attachment details link related same-file or same-content entries.
+* Integration: MomentumLab Core can take over updates through the License Server; the GitHub updater automatically stands down to avoid two competing update sources.
+* Security: attachment paths are constrained to uploads; unavailable/offloaded storage fails safely and disabled audits do not reschedule forever.
+* Reliability: audit cron is started on activation/upgrade, cleared on deactivation and audit data is removed on uninstall.
 * Design: scoped MomentumLab styling with Montserrat fallback, improved focus states, tap targets and reduced-motion support.
-* Quality: pull requests lint PHP 8.0–8.4 and JavaScript and verify release version consistency.
-
+* Quality: CI checks PHP 8.0–8.4, JavaScript, executable path-safety regressions, WPCS/PHP compatibility and release version consistency.
 
 = 2.3.1 =
 * Change: the media library shows each file once. Entries without a file are hidden, and of several entries for one file only the first is listed. The counters equal the images shown. "Duplicates" and "File missing" list the hidden entries. The editor's media dialogs still list every entry.
