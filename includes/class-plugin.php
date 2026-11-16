@@ -44,17 +44,25 @@ final class Plugin {
 	private function __construct() {
 		add_action( 'init', array( $this, 'load_textdomain' ), 0 );
 		add_action( 'init', array( Taxonomy::class, 'register' ) );
+		add_action( 'init', array( Tags::class, 'register' ) );
 		add_action( 'init', array( $this, 'maybe_upgrade' ), 20 );
 		add_action( 'rest_api_init', array( new Rest_Controller(), 'register_routes' ) );
 
 		( new Health() )->hooks();
 		( new Background_Audit() )->hooks();
 		( new Content_Audit() )->hooks();
+		( new Usage_Audit() )->hooks();
+		( new Migration_Job() )->hooks();
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
+		( new Image_Optimization() )->hooks();
+		( new Bulk_Optimize() )->hooks();
+		( new Upload_Naming() )->hooks();
+		( new Automation_Queue() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
+			( new Settings_Page() )->hooks();
 		}
 	}
 
@@ -70,6 +78,7 @@ final class Plugin {
 	 */
 	public static function activate() {
 		Taxonomy::register();
+		Tags::register();
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
 		if ( ! wp_next_scheduled( Background_Audit::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Background_Audit::HOOK );
@@ -77,6 +86,7 @@ final class Plugin {
 		if ( ! wp_next_scheduled( Content_Audit::HOOK ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Content_Audit::HOOK );
 		}
+		Usage_Audit::restart();
 	}
 
 	/**
@@ -85,6 +95,11 @@ final class Plugin {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( Background_Audit::HOOK );
 		wp_clear_scheduled_hook( Content_Audit::HOOK );
+		wp_clear_scheduled_hook( Usage_Audit::HOOK );
+		wp_clear_scheduled_hook( Migration_Job::HOOK );
+		wp_clear_scheduled_hook( Automation_Queue::HOOK );
+		wp_clear_scheduled_hook( Automation_Queue::BULK_HOOK );
+		wp_clear_scheduled_hook( Bulk_Optimize::HOOK );
 	}
 
 	/**
@@ -99,6 +114,21 @@ final class Plugin {
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
 		Background_Audit::restart_scan();
 		Content_Audit::restart_scan();
+		Usage_Audit::restart();
+	}
+
+	/**
+	 * Capability needed to change plugin-wide settings and automation.
+	 *
+	 * @return string
+	 */
+	public static function settings_capability() {
+		/**
+		 * Filters the capability required to change Media Folder settings.
+		 *
+		 * @param string $capability Default 'manage_options'.
+		 */
+		return (string) apply_filters( 'mlab_media_folder_settings_capability', 'manage_options' );
 	}
 
 	/**

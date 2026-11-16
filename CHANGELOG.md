@@ -1,5 +1,41 @@
 # Changelog
 
+
+## [3.0.0] - 2026-11-16
+
+### Added
+- Unified Media Library workspace with MomentumLab branding, Montserrat-first typography, global folder/media search and an optional right-side Inspector.
+- Responsive mobile folder drawer and Inspector bottom sheet while preserving native WordPress behaviour when Inspector mode is off.
+- Free Smart Views for recent uploads and conservatively detected potentially-unused media, backed by a resumable usage audit.
+- Pro entitlement gates through MomentumLab Core / License Server using `mlab-media-folder-pro`; all existing 2.x functionality remains Free.
+- Customer-owned OpenAI metadata workflow with encrypted BYOK credentials, suggestion-first approval, glossary/replacement rules, blocked terms and bounded bulk/background automation.
+- Pro upload Naming Rules using token patterns such as `%companyname%`, `%folder%`, `%imagename%`, `%date%` and `%counter%`.
+- Private media tags, Pro role/user folder permissions with inherited rules, folder colours and folder duplication.
+- Pro saved Dynamic Views for media type, uploader, age and audited minimum file size.
+- Non-destructive migration from HappyFiles, current FileBird tables and the legacy FileBird taxonomy, with resumable background assignment batches and progress state for large libraries.
+- Portable JSON export of the Media Folder hierarchy, colors and role rules for backup/documentation.
+- Opt-in image optimization for generated WordPress derivatives: Free WebP; Pro AVIF, derivative metadata privacy and explicit background rebuild of existing derivatives.
+- Additional regression tests for naming, feature gates, encrypted secrets and usage-reference parsing.
+
+### Changed
+- Sidebar information architecture now presents Smart Views separately from real folders.
+- MomentumLab visual language uses the gold ring/folder mark, gold selection accents and Montserrat-first typography.
+- Folder and Smart View counts use a permission-aware generation cache instead of recomputing every aggregate on each request.
+- Bulk AI and image rebuild work is processed in bounded background batches rather than blocking the Media Library.
+
+### Security
+- Pro folder permissions are enforced server-side in direct folder filters, media queries, counts, global search, Inspector, AI endpoints and upload assignment.
+- Stored folder restrictions remain enforced if the Pro entitlement expires or the license service is temporarily unavailable; licensing can disable editing, never security.
+- AI credentials are encrypted at rest and can be supplied from `wp-config.php` instead of the database.
+- Manual AI never changes metadata until the user explicitly applies a suggestion; bulk AI preserves existing alt text.
+- Image optimization never automatically replaces or deletes uploaded originals in 3.0.
+- Uninstall always removes credentials, AI state and automation data even when folder data retention is enabled.
+- Third-party WordPress notices are kept outside the MomentumLab workspace.
+
+### Compatibility
+- Existing 2.4 folder assignments, media URLs, upload URLs, Media Health data model and standalone/Core update paths remain compatible.
+- Existing attachments are never renamed automatically; Naming Rules apply only before storing new uploads.
+
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 

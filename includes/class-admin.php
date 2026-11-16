@@ -95,23 +95,32 @@ final class Admin {
 	 */
 	private function script_data() {
 		return array(
-			'version'    => MLAB_MEDIA_FOLDER_VERSION,
-			'creditUrl'  => 'https://momentumlab.ch/',
-			'restPath'   => '/' . Rest_Controller::NAMESPACE,
-			'param'      => Query::PARAM,
-			'cleanParam' => Query::CLEAN,
-			'unfiled'    => Query::UNFILED,
-			'canManage'  => current_user_can( Plugin::manage_capability() ),
-			'maxAssign'  => Folders::MAX_ASSIGN,
-			'folders'    => Folders::flattened_tree(),
-			'totals'     => Folders::totals(),
-			'i18n'       => array(
+			'version'      => MLAB_MEDIA_FOLDER_VERSION,
+			'creditUrl'    => 'https://momentumlab.ch/',
+			'restPath'     => '/' . Rest_Controller::NAMESPACE,
+			'param'        => Query::PARAM,
+			'cleanParam'   => Query::CLEAN,
+			'unfiled'      => Query::UNFILED,
+			'canManage'    => current_user_can( Plugin::manage_capability() ),
+			'canSettings'  => current_user_can( Plugin::settings_capability() ),
+			'features'     => Features::matrix(),
+			'aiReady'      => 'none' !== Automation_Settings::api_key_source(),
+			'maxAssign'    => Folders::MAX_ASSIGN,
+			'folders'      => Folders::flattened_tree(),
+			'dynamicViews' => Dynamic_Views::all(),
+			'usageAudit'   => Usage_Audit::status(),
+			'totals'       => Folders::totals(),
+			'i18n'         => array(
 				'title'           => __( 'Folders', 'mlab-media-folder' ),
 				'all'             => __( 'All files', 'mlab-media-folder' ),
 				'unfiled'         => __( 'Unfiled', 'mlab-media-folder' ),
+				'recent'          => __( 'Recent uploads', 'mlab-media-folder' ),
 				'newFolder'       => __( 'New folder', 'mlab-media-folder' ),
 				'newSubfolder'    => __( 'New subfolder', 'mlab-media-folder' ),
 				'rename'          => __( 'Rename', 'mlab-media-folder' ),
+				'moveFolder'      => __( 'Move folder to…', 'mlab-media-folder' ),
+				'duplicateFolder' => __( 'Duplicate folder', 'mlab-media-folder' ),
+				'folderColor'     => __( 'Folder color', 'mlab-media-folder' ),
 				'delete'          => __( 'Delete', 'mlab-media-folder' ),
 				'save'            => __( 'Save', 'mlab-media-folder' ),
 				'cancel'          => __( 'Cancel', 'mlab-media-folder' ),
@@ -134,8 +143,11 @@ final class Admin {
 				'selectNone'      => __( 'Clear selection', 'mlab-media-folder' ),
 				'loadingAll'      => __( 'Loading all files…', 'mlab-media-folder' ),
 				'library'         => __( 'Library', 'mlab-media-folder' ),
-				'todo'            => __( 'To do', 'mlab-media-folder' ),
+				'todo'            => __( 'Smart Views', 'mlab-media-folder' ),
+				'savedViews'      => __( 'Saved Views', 'mlab-media-folder' ),
 				'noAlt'           => __( 'No alt text', 'mlab-media-folder' ),
+				'unused'          => __( 'Potentially unused', 'mlab-media-folder' ),
+				'usageScanning'   => __( 'Usage audit running…', 'mlab-media-folder' ),
 				'unattached'      => __( 'Not in a page', 'mlab-media-folder' ),
 				/* translators: 1: number of images shown, 2: number of entries in the library. */
 				'countNote'       => __( '%1$d images shown, %2$d entries in the library. The library shows each file once and hides entries without a file. See "Duplicates" and "File missing".', 'mlab-media-folder' ),
@@ -153,23 +165,35 @@ final class Admin {
 				'open'            => __( 'Open', 'mlab-media-folder' ),
 				'allDone'         => __( 'Everything is in order. New uploads show up here when they need attention.', 'mlab-media-folder' ),
 				/* translators: %d: number of files. */
+				'nextRecent'      => __( 'Review %d new uploads from the last seven days.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
 				'nextUnfiled'     => __( 'Sort %d files into folders.', 'mlab-media-folder' ),
 				/* translators: %d: number of images. */
 				'nextNoAlt'       => __( 'Describe %d images.', 'mlab-media-folder' ),
 				/* translators: %d: number of files. */
+				'nextUnused'      => __( 'Review %d files that appear unused after the background usage audit.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
 				'nextUnattached'  => __( 'Review %d files that are not in a page.', 'mlab-media-folder' ),
 				'foundLabel'      => __( 'Found', 'mlab-media-folder' ),
 				'doLabel'         => __( 'What to do', 'mlab-media-folder' ),
+				'foundRecent'     => __( 'Attachments uploaded during the last seven days.', 'mlab-media-folder' ),
+				'doRecent'        => __( 'Check naming, folder, alt text and metadata while the upload is still fresh.', 'mlab-media-folder' ),
 				'foundUnfiled'    => __( 'Files in the library that are in no folder, for example new uploads.', 'mlab-media-folder' ),
 				'doUnfiled'       => __( 'Drag them onto a folder, or select them (Bulk select) and use "Move to…".', 'mlab-media-folder' ),
 				'foundNoAlt'      => __( 'Images whose alternative text is empty. Screen readers and search engines depend on it.', 'mlab-media-folder' ),
 				'doNoAlt'         => __( 'Click an image and fill in "Alternative Text" in the details.', 'mlab-media-folder' ),
+				'foundUnused'     => __( 'Files with no attachment parent and no reference found by the completed background usage audit. This is intentionally conservative.', 'mlab-media-folder' ),
+				'doUnused'        => __( 'Review before deleting. External URLs, custom fields or plugin-specific references may not be detectable.', 'mlab-media-folder' ),
 				'foundUnattached' => __( 'Files that were not uploaded from a page or post. Some of them may be unused.', 'mlab-media-folder' ),
 				'doUnattached'    => __( 'Check each file: delete it if you do not need it, otherwise move it to a folder.', 'mlab-media-folder' ),
 				'taskEmpty'       => __( 'Nothing to do here. Well done.', 'mlab-media-folder' ),
 				'showAll'         => __( 'Show all files', 'mlab-media-folder' ),
 				'moveTo'          => __( 'Move to…', 'mlab-media-folder' ),
 				'moveSelected'    => __( 'Move selected files to a folder', 'mlab-media-folder' ),
+				'bulkAi'          => __( 'AI alt text & tags', 'mlab-media-folder' ),
+				/* translators: %d: number of images queued. */
+				'bulkAiQueued'    => __( '%d image(s) queued for AI metadata.', 'mlab-media-folder' ),
+				'aiNeedsKey'      => __( 'Add the customer API key in Media Folder settings first.', 'mlab-media-folder' ),
 				/* translators: 1: number of files, 2: folder name. */
 				'movedTo'         => __( '%1$d file(s) moved to "%2$s".', 'mlab-media-folder' ),
 				'undo'            => __( 'Undo', 'mlab-media-folder' ),
@@ -219,6 +243,50 @@ final class Admin {
 		wp_enqueue_style( 'mlab-media-folder', MLAB_MEDIA_FOLDER_URL . 'assets/css/media-folder.css', array(), $this->asset_version( 'assets/css/media-folder.css' ) );
 		wp_enqueue_script( 'mlab-media-folder-library', MLAB_MEDIA_FOLDER_URL . 'assets/js/media-library.js', array( 'jquery', 'wp-api-fetch' ), $this->asset_version( 'assets/js/media-library.js' ), true );
 		wp_localize_script( 'mlab-media-folder-library', 'mlabMediaFolderLibrary', $data );
+
+		wp_enqueue_script( 'mlab-media-folder-workspace', MLAB_MEDIA_FOLDER_URL . 'assets/js/workspace.js', array( 'jquery', 'wp-api-fetch' ), $this->asset_version( 'assets/js/workspace.js' ), true );
+		wp_localize_script(
+			'mlab-media-folder-workspace',
+			'mlabMediaFolderWorkspace',
+			array(
+				'restPath'      => '/' . Rest_Controller::NAMESPACE,
+				'param'         => Query::PARAM,
+				'settingsUrl'   => admin_url( 'upload.php?page=' . Settings_Page::SLUG ),
+				'brandMark'     => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-mark.svg',
+				'features'      => Features::matrix(),
+				'canSettings'   => current_user_can( Plugin::settings_capability() ),
+				'workspaceI18n' => array(
+					'search'      => __( 'Search files, folders, filenames and alt text…', 'mlab-media-folder' ),
+					'folders'     => __( 'Folders', 'mlab-media-folder' ),
+					'media'       => __( 'Media', 'mlab-media-folder' ),
+					'noResults'   => __( 'No matching files or folders.', 'mlab-media-folder' ),
+					'settings'    => __( 'Settings', 'mlab-media-folder' ),
+					'inspector'   => __( 'Inspector', 'mlab-media-folder' ),
+					'inspectHint' => __( 'Search for a media item and open it here to inspect its metadata and health status.', 'mlab-media-folder' ),
+					'close'       => __( 'Close inspector', 'mlab-media-folder' ),
+					'filename'    => __( 'Filename', 'mlab-media-folder' ),
+					'folder'      => __( 'Folder', 'mlab-media-folder' ),
+					'unfiled'     => __( 'Unfiled', 'mlab-media-folder' ),
+					'author'      => __( 'Uploader', 'mlab-media-folder' ),
+					'usage'       => __( 'Usage', 'mlab-media-folder' ),
+					'size'        => __( 'File size', 'mlab-media-folder' ),
+					'altText'     => __( 'Alt text', 'mlab-media-folder' ),
+					'tags'        => __( 'Media tags', 'mlab-media-folder' ),
+					'duplicate'   => __( 'Duplicate', 'mlab-media-folder' ),
+					'missing'     => __( 'File missing', 'mlab-media-folder' ),
+					'noAlt'       => __( 'No alt text', 'mlab-media-folder' ),
+					'aiMetadata'  => __( 'AI metadata', 'mlab-media-folder' ),
+					'aiReady'     => __( 'Generate a suggestion with the API key configured for this site.', 'mlab-media-folder' ),
+					'aiNeedsKey'  => __( 'Add the customer API key in Media Folder settings first.', 'mlab-media-folder' ),
+					'generate'    => __( 'Generate suggestion', 'mlab-media-folder' ),
+					'generating'  => __( 'Generating suggestion…', 'mlab-media-folder' ),
+					'title'       => __( 'Title', 'mlab-media-folder' ),
+					'description' => __( 'Description', 'mlab-media-folder' ),
+					'apply'       => __( 'Apply approved fields', 'mlab-media-folder' ),
+					'error'       => __( 'That did not work. Please try again.', 'mlab-media-folder' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -232,13 +300,14 @@ final class Admin {
 		if ( ! isset( $_POST[ Query::PARAM ] ) ) {
 			return;
 		}
-		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $attachment_id ) ) {
+		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $attachment_id ) || ! Folder_Permissions::can_access_attachment( $attachment_id ) ) {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitised in parse().
 		$folder = Query::parse( wp_unslash( $_POST[ Query::PARAM ] ) );
-		if ( is_int( $folder ) && $folder > 0 ) {
+		if ( is_int( $folder ) && $folder > 0 && Folder_Permissions::can_access( $folder ) ) {
 			wp_set_object_terms( (int) $attachment_id, array( $folder ), Taxonomy::NAME, false );
+			Folders::clear_cache();
 		}
 	}
 
@@ -250,7 +319,7 @@ final class Admin {
 	 * @return array
 	 */
 	public function add_folder_field( $fields, $post ) {
-		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $post->ID ) ) {
+		if ( ! current_user_can( Plugin::use_capability() ) || ! current_user_can( 'edit_post', $post->ID ) || ! Folder_Permissions::can_access_attachment( (int) $post->ID ) ) {
 			return $fields;
 		}
 

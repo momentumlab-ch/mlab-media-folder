@@ -27,6 +27,36 @@ final class Folders {
 	const MAX_ASSIGN = 500;
 
 	/**
+	 * Generation option for folder/Smart View count caches.
+	 */
+	const CACHE_GENERATION_OPTION = 'mlab_media_folder_counts_generation';
+
+	/**
+	 * Object-cache group for count payloads.
+	 */
+	const CACHE_GROUP = 'mlab_media_folder';
+
+	/**
+	 * Invalidate count caches for every user without enumerating cache keys.
+	 */
+	public static function clear_cache(): void {
+		$generation = absint( get_option( self::CACHE_GENERATION_OPTION, 1 ) );
+		update_option( self::CACHE_GENERATION_OPTION, max( 2, $generation + 1 ), false );
+	}
+
+	/**
+	 * Per-user cache key because Pro folder permissions can change visible totals.
+	 *
+	 * @param string $scope Cache scope.
+	 */
+	private static function cache_key( string $scope ): string {
+		$generation = absint( get_option( self::CACHE_GENERATION_OPTION, 1 ) );
+		return sanitize_key(
+			$scope . ':' . $generation . ':' . get_current_user_id() . ':' . ( Features::is_pro() ? 'pro' : 'free' )
+		);
+	}
+
+	/**
 	 * Display name of a term. WordPress stores term names HTML-encoded
 	 * ("&amp;"); the API returns plain text and every output escapes it.
 	 *
@@ -58,11 +88,13 @@ final class Folders {
 		$counts  = self::counts();
 		$folders = array_map(
 			static function ( $term ) use ( $counts ) {
+				$rules = Folder_Permissions::get( (int) $term->term_id );
 				return array(
 					'id'     => (int) $term->term_id,
 					'name'   => self::name( $term ),
 					'parent' => (int) $term->parent,
 					'count'  => $counts[ (int) $term->term_id ] ?? 0,
+					'color'  => Features::available( 'advanced_folder_style' ) ? $rules['color'] : '',
 				);
 			},
 			$terms
@@ -75,7 +107,7 @@ final class Folders {
 			}
 		);
 
-		return $folders;
+		return Folder_Permissions::visible( $folders );
 	}
 
 	/**
@@ -87,10 +119,23 @@ final class Folders {
 	 * @return string
 	 */
 	private static function visible_sql() {
+		global $wpdb;
+
 		$where  = "p.post_type = 'attachment' AND p.post_status <> 'trash'";
 		$hidden = array_map( 'intval', Health::hidden_ids() );
 		if ( $hidden ) {
 			$where .= ' AND p.ID NOT IN (' . implode( ',', $hidden ) . ')';
+		}
+
+		$blocked = Folder_Permissions::inaccessible_ids();
+		if ( $blocked ) {
+			$where .= " AND NOT EXISTS (
+				SELECT 1 FROM {$wpdb->term_relationships} atr
+				INNER JOIN {$wpdb->term_taxonomy} att ON att.term_taxonomy_id = atr.term_taxonomy_id
+				WHERE atr.object_id = p.ID
+				AND att.taxonomy = '" . Taxonomy::NAME . "'
+				AND att.term_id IN (" . implode( ',', array_map( 'intval', $blocked ) ) . ')
+			)';
 		}
 		return $where;
 	}
@@ -102,6 +147,12 @@ final class Folders {
 	 */
 	public static function counts() {
 		global $wpdb;
+
+		$key    = self::cache_key( 'counts' );
+		$cached = wp_cache_get( $key, self::CACHE_GROUP );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
 
 		$where = self::visible_sql();
 
@@ -123,6 +174,7 @@ final class Folders {
 		foreach ( (array) $rows as $row ) {
 			$counts[ (int) $row->term_id ] = (int) $row->files;
 		}
+		wp_cache_set( $key, $counts, self::CACHE_GROUP, 300 );
 		return $counts;
 	}
 
@@ -143,14 +195,70 @@ final class Folders {
 	}
 
 	/**
+	 * Number of visible attachments uploaded in the last seven days.
+	 */
+	private static function count_recent() {
+		global $wpdb;
+
+		$visible = self::visible_sql();
+		$after   = wp_date( 'Y-m-d H:i:s', time() - ( 7 * DAY_IN_SECONDS ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; the visibility clause is generated internally and contains only sanitized IDs/constants.
+		$result = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p WHERE {$visible} AND p.post_date >= %s",
+				$after
+			)
+		);
+		// phpcs:enable
+		return $result;
+	}
+
+	/**
+	 * Number of conservatively unused visible attachments after a complete usage audit.
+	 */
+	private static function count_unused() {
+		global $wpdb;
+
+		$usage = Usage_Audit::status();
+		if ( empty( $usage['complete'] ) || '' === $usage['generation'] ) {
+			return 0;
+		}
+
+		$visible = self::visible_sql();
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; visibility clause is internally generated and generation is prepared.
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT p.ID)
+				FROM {$wpdb->posts} p
+				LEFT JOIN {$wpdb->postmeta} u
+					ON u.post_id = p.ID AND u.meta_key = %s
+				WHERE {$visible}
+				AND p.post_parent = 0
+				AND (u.meta_id IS NULL OR u.meta_value <> %s)",
+				Usage_Audit::SEEN_META,
+				$usage['generation']
+			)
+		);
+		// phpcs:enable
+	}
+
+	/**
 	 * Counts for the virtual entries: all images and the task views. The
 	 * "duplicate" and "missing" views list the entries the library hides, so
 	 * they count those entries.
 	 *
-	 * @return array{all:int, entries:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
+	 * @return array{all:int, entries:int, recent:int, unfiled:int, noalt:int, unused:int, unattached:int, duplicate:int, missing:int}
 	 */
 	public static function totals() {
 		global $wpdb;
+
+		$key    = self::cache_key( 'totals' );
+		$cached = wp_cache_get( $key, self::CACHE_GROUP );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
 
 		$entries = 0;
 		foreach ( (array) wp_count_attachments() as $mime => $count ) {
@@ -166,17 +274,23 @@ final class Folders {
 		$alt_join  = "LEFT JOIN {$wpdb->postmeta} a ON a.post_id = p.ID AND a.meta_key = '_wp_attachment_image_alt'";
 		$no_alt    = "AND p.post_mime_type LIKE 'image/%' AND ( a.meta_id IS NULL OR a.meta_value = '' )";
 
-		$health = Health::scan();
+		$health              = Health::scan();
+		$health['duplicate'] = array_values( array_filter( $health['duplicate'], static fn( int $id ): bool => Folder_Permissions::can_access_attachment( $id ) ) );
+		$health['missing']   = array_values( array_filter( $health['missing'], static fn( int $id ): bool => Folder_Permissions::can_access_attachment( $id ) ) );
 
-		return array(
+		$totals = array(
 			'all'        => self::count_visible(),
 			'entries'    => $entries,
+			'recent'     => self::count_recent(),
 			'unfiled'    => self::count_visible( '', $in_folder ),
 			'noalt'      => self::count_visible( $alt_join, $no_alt ),
+			'unused'     => self::count_unused(),
 			'unattached' => self::count_visible( '', 'AND p.post_parent = 0' ),
 			'duplicate'  => count( $health['duplicate'] ),
 			'missing'    => count( $health['missing'] ),
 		);
+		wp_cache_set( $key, $totals, self::CACHE_GROUP, 300 );
+		return $totals;
 	}
 
 	/**
@@ -254,6 +368,9 @@ final class Folders {
 		if ( $parent_id && ! self::exists( $parent_id ) ) {
 			return new WP_Error( 'mlab_media_folder_bad_parent', __( 'The parent folder does not exist.', 'mlab-media-folder' ), array( 'status' => 400 ) );
 		}
+		if ( $parent_id && ! Folder_Permissions::can_access( $parent_id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 		if ( self::sibling_exists( $name, $parent_id ) ) {
 			return new WP_Error( 'mlab_media_folder_duplicate', __( 'A folder with this name already exists here.', 'mlab-media-folder' ), array( 'status' => 409 ) );
 		}
@@ -270,12 +387,46 @@ final class Folders {
 			return $result;
 		}
 
+		self::clear_cache();
 		return array(
 			'id'     => (int) $result['term_id'],
 			'name'   => $name,
 			'parent' => $parent_id,
 			'count'  => 0,
 		);
+	}
+
+	/**
+	 * Duplicate one folder next to the original. Files are not duplicated.
+	 *
+	 * @param int $id Source folder ID.
+	 * @return array|WP_Error
+	 */
+	public static function duplicate( $id ) {
+		$id = (int) $id;
+		if ( ! Features::is_pro() ) {
+			return new WP_Error( 'mlab_media_folder_pro_required', __( 'Folder duplication requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
+		if ( ! self::exists( $id ) || ! Folder_Permissions::can_access( $id ) ) {
+			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
+		}
+
+		$term   = get_term( $id, Taxonomy::NAME );
+		$base   = self::name( $term );
+		$name   = $base . ' ' . __( 'Copy', 'mlab-media-folder' );
+		$suffix = 2;
+		while ( self::sibling_exists( $name, (int) $term->parent ) ) {
+			$name = $base . ' ' . __( 'Copy', 'mlab-media-folder' ) . ' ' . $suffix;
+			++$suffix;
+		}
+
+		$result = self::create( $name, (int) $term->parent );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		Folder_Permissions::copy( $id, (int) $result['id'] );
+		return $result;
 	}
 
 	/**
@@ -291,6 +442,9 @@ final class Folders {
 		if ( ! self::exists( $id ) ) {
 			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
 		}
+		if ( ! Folder_Permissions::can_access( $id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 		$term = get_term( $id, Taxonomy::NAME );
 		$args = array();
 
@@ -301,6 +455,9 @@ final class Folders {
 			}
 			if ( $new_parent && ! self::exists( $new_parent ) ) {
 				return new WP_Error( 'mlab_media_folder_bad_parent', __( 'The parent folder does not exist.', 'mlab-media-folder' ), array( 'status' => 400 ) );
+			}
+			if ( $new_parent && ! Folder_Permissions::can_access( $new_parent ) ) {
+				return new WP_Error( 'mlab_media_folder_forbidden_parent', __( 'You are not allowed to move a folder there.', 'mlab-media-folder' ), array( 'status' => 403 ) );
 			}
 			$descendants = get_term_children( $id, Taxonomy::NAME );
 			if ( ! is_wp_error( $descendants ) && in_array( $new_parent, array_map( 'intval', $descendants ), true ) ) {
@@ -330,6 +487,7 @@ final class Folders {
 		}
 
 		$term = get_term( $id, Taxonomy::NAME );
+		self::clear_cache();
 		return array(
 			'id'     => (int) $term->term_id,
 			'name'   => self::name( $term ),
@@ -350,8 +508,28 @@ final class Folders {
 		if ( ! self::exists( $id ) ) {
 			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
 		}
+		if ( ! Folder_Permissions::can_access( $id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 		$term      = get_term( $id, Taxonomy::NAME );
 		$parent_id = (int) $term->parent;
+		if ( $parent_id && ! Folder_Permissions::can_access( $parent_id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_parent', __( 'You are not allowed to move this folder content to its parent.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
+
+		$attachment_ids = get_objects_in_term( $id, Taxonomy::NAME );
+		if ( is_wp_error( $attachment_ids ) ) {
+			return $attachment_ids;
+		}
+		foreach ( (array) $attachment_ids as $attachment_id ) {
+			if ( ! current_user_can( 'edit_post', (int) $attachment_id ) ) {
+				return new WP_Error(
+					'mlab_media_folder_delete_attachment_forbidden',
+					__( 'This folder contains media you are not allowed to edit.', 'mlab-media-folder' ),
+					array( 'status' => 403 )
+				);
+			}
+		}
 
 		$children = get_terms(
 			array(
@@ -367,8 +545,7 @@ final class Folders {
 			}
 		}
 
-		$attachment_ids = get_objects_in_term( $id, Taxonomy::NAME );
-		if ( ! is_wp_error( $attachment_ids ) && $attachment_ids && $parent_id ) {
+		if ( $attachment_ids && $parent_id ) {
 			foreach ( $attachment_ids as $attachment_id ) {
 				wp_set_object_terms( (int) $attachment_id, array( $parent_id ), Taxonomy::NAME, false );
 			}
@@ -378,6 +555,7 @@ final class Folders {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		self::clear_cache();
 		return true;
 	}
 
@@ -394,6 +572,9 @@ final class Folders {
 		if ( $folder_id && ! self::exists( $folder_id ) ) {
 			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
 		}
+		if ( $folder_id && ! Folder_Permissions::can_access( $folder_id ) ) {
+			return new WP_Error( 'mlab_media_folder_forbidden_folder', __( 'You are not allowed to use this folder.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
 
 		$attachment_ids = array_slice( array_unique( array_filter( array_map( 'absint', $attachment_ids ) ) ), 0, self::MAX_ASSIGN );
 		$moved          = array();
@@ -401,7 +582,11 @@ final class Folders {
 		$previous       = array();
 
 		foreach ( $attachment_ids as $attachment_id ) {
-			if ( 'attachment' !== get_post_type( $attachment_id ) || ! current_user_can( 'edit_post', $attachment_id ) ) {
+			if (
+				'attachment' !== get_post_type( $attachment_id )
+				|| ! current_user_can( 'edit_post', $attachment_id )
+				|| ! Folder_Permissions::can_access_attachment( $attachment_id )
+			) {
 				$skipped[] = $attachment_id;
 				continue;
 			}

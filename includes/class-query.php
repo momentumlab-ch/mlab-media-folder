@@ -32,9 +32,19 @@ final class Query {
 	const UNFILED = 'none';
 
 	/**
+	 * Value for attachments uploaded in the last seven days.
+	 */
+	const RECENT = 'recent';
+
+	/**
 	 * Value for images that have no alternative text.
 	 */
 	const NO_ALT = 'noalt';
+
+	/**
+	 * Value for files that appear unused after a complete conservative usage audit.
+	 */
+	const UNUSED = 'unused';
 
 	/**
 	 * Value for files that were not uploaded to a page or post.
@@ -54,7 +64,7 @@ final class Query {
 	/**
 	 * Views that list files needing attention instead of a folder.
 	 */
-	const TASKS = array( self::UNFILED, self::NO_ALT, self::UNATTACHED, self::DUPLICATE, self::MISSING );
+	const TASKS = array( self::RECENT, self::UNFILED, self::NO_ALT, self::UNUSED, self::UNATTACHED, self::DUPLICATE, self::MISSING );
 
 	/**
 	 * Registers hooks.
@@ -79,8 +89,11 @@ final class Query {
 		if ( in_array( $raw, self::TASKS, true ) ) {
 			return $raw;
 		}
+		if ( str_starts_with( $raw, 'view-' ) && Dynamic_Views::get( substr( $raw, 5 ) ) ) {
+			return $raw;
+		}
 		$id = absint( $raw );
-		return ( $id && Folders::exists( $id ) ) ? $id : '';
+		return ( $id && Folders::exists( $id ) && Folder_Permissions::can_access( $id ) ) ? $id : '';
 	}
 
 	/**
@@ -117,11 +130,70 @@ final class Query {
 	 * @return array
 	 */
 	public static function apply( array $args, $folder, $clean = false ) {
+		$blocked_folders = Folder_Permissions::inaccessible_ids();
+		if ( $blocked_folders ) {
+			$access_clause     = array(
+				'taxonomy'         => Taxonomy::NAME,
+				'field'            => 'term_id',
+				'terms'            => $blocked_folders,
+				'operator'         => 'NOT IN',
+				'include_children' => false,
+			);
+			$args['tax_query'] = self::merge( $args['tax_query'] ?? array(), $access_clause ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
 		if ( $clean && self::DUPLICATE !== $folder && self::MISSING !== $folder && 'trash' !== ( $args['post_status'] ?? '' ) ) {
 			$hidden = Health::hidden_ids();
 			if ( $hidden ) {
 				$args['post__not_in'] = array_values( array_unique( array_merge( (array) ( $args['post__not_in'] ?? array() ), $hidden ) ) ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 			}
+		}
+
+		if ( is_string( $folder ) && str_starts_with( $folder, 'view-' ) ) {
+			return Dynamic_Views::apply( $args, substr( $folder, 5 ) );
+		}
+
+		if ( self::RECENT === $folder ) {
+			$args['date_query'] = array(
+				array(
+					'after'     => '7 days ago',
+					'inclusive' => true,
+				),
+			);
+			return $args;
+		}
+
+		if ( self::UNUSED === $folder ) {
+			$usage = Usage_Audit::status();
+			if ( empty( $usage['complete'] ) || '' === $usage['generation'] ) {
+				$args['post__in'] = array( 0 );
+				return $args;
+			}
+
+			$args['post_parent'] = 0;
+
+			$unused_clause = array(
+				'relation' => 'OR',
+				array(
+					'key'     => Usage_Audit::SEEN_META,
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => Usage_Audit::SEEN_META,
+					'value'   => $usage['generation'],
+					'compare' => '!=',
+				),
+			);
+			if ( isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ) {
+				$existing = $args['meta_query'];
+			} else {
+				$existing = array();
+			}
+			array_push( $existing, $unused_clause );
+			if ( 1 < count( $existing ) && ! isset( $existing['relation'] ) ) {
+				$existing['relation'] = 'AND';
+			}
+			$args['meta_query'] = $existing; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			return $args;
 		}
 
 		if ( self::UNATTACHED === $folder ) {

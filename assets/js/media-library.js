@@ -29,15 +29,19 @@
 	 * sort, describe, review.
 	 */
 	var TASKS = {};
+	TASKS.recent = { total: 'recent', label: 'recent', icon: 'dashicons-clock', next: 'nextRecent', found: 'foundRecent', todo: 'doRecent' };
 	TASKS[ data.unfiled ] = { total: 'unfiled', label: 'unfiled', icon: 'dashicons-portfolio', next: 'nextUnfiled', found: 'foundUnfiled', todo: 'doUnfiled' };
 	TASKS.noalt = { total: 'noalt', label: 'noAlt', icon: 'dashicons-universal-access-alt', next: 'nextNoAlt', found: 'foundNoAlt', todo: 'doNoAlt' };
+	TASKS.unused = { total: 'unused', label: 'unused', icon: 'dashicons-hidden', next: 'nextUnused', found: 'foundUnused', todo: 'doUnused' };
 	TASKS.unattached = { total: 'unattached', label: 'unattached', icon: 'dashicons-admin-page', next: 'nextUnattached', found: 'foundUnattached', todo: 'doUnattached' };
 	TASKS.duplicate = { total: 'duplicate', label: 'duplicate', icon: 'dashicons-images-alt2', next: 'nextDuplicate', found: 'foundDuplicate', todo: 'doDuplicate' };
 	TASKS.missing = { total: 'missing', label: 'missing', icon: 'dashicons-warning', next: 'nextMissing', found: 'foundMissing', todo: 'doMissing' };
-	var TASK_ORDER = [ data.unfiled, 'noalt', 'unattached', 'duplicate', 'missing' ];
+	var TASK_ORDER = [ 'recent', data.unfiled, 'noalt', 'unused', 'unattached', 'duplicate', 'missing' ];
 
 	var state = {
 		folders: data.folders || [],
+		dynamicViews: data.dynamicViews || [],
+		usageAudit: data.usageAudit || { complete: false },
 		totals: data.totals || { all: 0, unfiled: 0 },
 		current: data.current === '' || data.current === undefined ? '' : String( data.current ),
 		expanded: loadExpanded(),
@@ -292,10 +296,12 @@
 					name: String( folder.name ),
 					parent: parseInt( folder.parent, 10 ) || 0,
 					count: parseInt( folder.count, 10 ) || 0,
+					color: folder.color ? String( folder.color ) : '',
 				};
 			} );
 			state.totals = response.totals || state.totals;
-			if ( state.current && ! isTask( state.current ) && ! findFolder( state.current ) ) {
+			state.usageAudit = response.usage_audit || state.usageAudit;
+			if ( state.current && ! isTask( state.current ) && state.current.indexOf( 'view-' ) !== 0 && ! findFolder( state.current ) ) {
 				applyFilter( '' );
 			}
 			renderTree();
@@ -516,6 +522,46 @@
 		} );
 	}
 
+	function startMoveFolder( folder, $row ) {
+		var $form = $( '<form class="mlab-media-folder-inline mlab-media-folder-inline-move"></form>' );
+		var $select = $( '<select class="mlab-media-folder-move-select"></select>' );
+		var $save = $( '<button type="submit" class="button button-small button-primary"></button>' ).text( i18n.save );
+		var $cancel = $( '<button type="button" class="button button-small"></button>' ).text( i18n.cancel );
+
+		$select.append( $( '<option></option>' ).val( '0' ).text( i18n.all ) );
+		state.folders.forEach( function ( candidate ) {
+			if ( candidate.id === folder.id || isDescendant( candidate.id, folder.id ) ) {
+				return;
+			}
+			var depth = candidate.depth || 0;
+			var prefix = new Array( depth + 1 ).join( '— ' );
+			$select.append( $( '<option></option>' ).val( candidate.id ).text( prefix + candidate.name ) );
+		} );
+		$select.val( String( folder.parent || 0 ) );
+
+		function close() {
+			$form.remove();
+			$row.show();
+		}
+
+		$form.append( $select, $save, $cancel ).on( 'submit', function ( event ) {
+			event.preventDefault();
+			$save.prop( 'disabled', true );
+			moveFolder( folder.id, parseInt( $select.val(), 10 ) || 0 )
+				.then( close );
+		} );
+		$cancel.on( 'click', close );
+		$select.on( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key ) {
+				event.preventDefault();
+				close();
+			}
+		} );
+
+		$row.hide().after( $form );
+		$select.trigger( 'focus' );
+	}
+
 	/* ---------- rendering ---------- */
 
 	function selectedFolderId() {
@@ -576,6 +622,9 @@
 				hasChildren: kids.length > 0,
 				expanded: expanded,
 			} );
+			if ( folder.color ) {
+				$row.css( '--mlab-folder-color', folder.color ).addClass( 'has-folder-color' );
+			}
 
 			if ( data.canManage ) {
 				$row.attr( 'draggable', 'true' ).attr( 'data-drag-folder', folder.id );
@@ -583,11 +632,19 @@
 					.attr( 'aria-label', i18n.actions + ': ' + folder.name )
 					.append( '<span class="dashicons dashicons-ellipsis" aria-hidden="true"></span>' );
 				var $menu = $( '<div class="mlab-media-folder-menu" role="menu" hidden></div>' );
-				[
+				var items = [
 					[ i18n.newSubfolder, 'sub' ],
 					[ i18n.rename, 'rename' ],
-					[ i18n.delete, 'delete' ],
-				].forEach( function ( item ) {
+					[ i18n.moveFolder, 'move' ],
+				];
+				if ( data.features && data.features.advanced_folder_style && data.features.advanced_folder_style.available ) {
+					items.push( [ i18n.duplicateFolder, 'duplicate' ] );
+					if ( data.canSettings ) {
+						items.push( [ i18n.folderColor, 'color' ] );
+					}
+				}
+				items.push( [ i18n.delete, 'delete' ] );
+				items.forEach( function ( item ) {
 					$( '<button type="button" role="menuitem"></button>' ).text( item[ 0 ] ).attr( 'data-action', item[ 1 ] ).appendTo( $menu );
 				} );
 				$row.append( $more, $menu );
@@ -664,11 +721,23 @@
 		var $tasks = $( '<ul class="mlab-media-folder-fixed mlab-media-folder-tasks"></ul>' );
 		TASK_ORDER.forEach( function ( id ) {
 			var count = taskCount( id );
+			var scanning = 'unused' === id && ! state.usageAudit.complete;
 			$( '<li class="mlab-media-folder-item"></li>' )
-				.append( makeRow( { target: id, label: i18n[ TASKS[ id ].label ], count: count, done: 0 === count, icon: TASKS[ id ].icon, current: id === state.current } ) )
+				.append( makeRow( { target: id, label: i18n[ TASKS[ id ].label ], count: scanning ? '…' : count, done: ! scanning && 0 === count, icon: TASKS[ id ].icon, current: id === state.current } ) )
 				.appendTo( $tasks );
 		} );
 		$tree.append( section( i18n.todo ), $tasks );
+
+		if ( state.dynamicViews.length ) {
+			var $views = $( '<ul class="mlab-media-folder-fixed mlab-media-folder-views"></ul>' );
+			state.dynamicViews.forEach( function ( view ) {
+				var target = 'view-' + view.id;
+				$( '<li class="mlab-media-folder-item"></li>' )
+					.append( makeRow( { target: target, label: view.name, count: '', done: false, icon: 'dashicons-filter', current: target === state.current } ) )
+					.appendTo( $views );
+			} );
+			$tree.append( section( i18n.savedViews ), $views );
+		}
 
 		$tree.append( section( i18n.title ) );
 		var $root = $( '<ul class="mlab-media-folder-root"></ul>' );
@@ -700,10 +769,13 @@
 			return;
 		}
 		var count = taskCount( state.current );
+		var scanning = 'unused' === state.current && ! state.usageAudit.complete;
 		var $text = $( '<div class="mlab-media-folder-banner-text"></div>' ).append(
 			$( '<h2></h2>' ).text( i18n[ task.label ] + ' · ' + count )
 		);
-		if ( count ) {
+		if ( scanning ) {
+			$text.append( $( '<p></p>' ).text( i18n.usageScanning ) );
+		} else if ( count ) {
 			$text.append(
 				$( '<p></p>' ).append( $( '<strong></strong>' ).text( i18n.foundLabel + ': ' ), document.createTextNode( i18n[ task.found ] ) ),
 				$( '<p></p>' ).append( $( '<strong></strong>' ).text( i18n.doLabel + ': ' ), document.createTextNode( i18n[ task.todo ] ) )
@@ -877,6 +949,14 @@
 			startCreate( selectedFolderId() );
 		} );
 
+		$sidebar.on( 'contextmenu', '.mlab-media-folder-row', function ( event ) {
+			if ( ! data.canManage || ! $( this ).closest( '.mlab-media-folder-item' ).attr( 'data-folder' ) ) {
+				return;
+			}
+			event.preventDefault();
+			$( this ).find( '.mlab-media-folder-more' ).first().trigger( 'click' );
+		} );
+
 		$sidebar.on( 'click', '.mlab-media-folder-more', function ( event ) {
 			event.stopPropagation();
 			var $menu = $( this ).siblings( '.mlab-media-folder-menu' );
@@ -901,6 +981,25 @@
 				startCreate( folder.id );
 			} else if ( 'rename' === action ) {
 				startRename( folder, $row );
+			} else if ( 'move' === action ) {
+				startMoveFolder( folder, $row );
+			} else if ( 'duplicate' === action ) {
+				api( '/folders/' + folder.id + '/duplicate', { method: 'POST' } )
+					.then( reload )
+					.catch( function ( error ) { announce( errorMessage( error ), true ); } );
+			} else if ( 'color' === action ) {
+				var $picker = $( '<input type="color" class="mlab-media-folder-color-picker" aria-label="' + i18n.folderColor + '">' )
+					.val( folder.color || '#f2aa00' )
+					.appendTo( document.body )
+					.on( 'change', function () {
+						var color = $( this ).val();
+						api( '/folders/' + folder.id, { method: 'PATCH', data: { color: color } } )
+							.then( function () { return reload(); } )
+							.catch( function ( error ) { announce( errorMessage( error ), true ); } );
+						$( this ).remove();
+					} )
+					.on( 'blur', function () { window.setTimeout( function () { $picker.remove(); }, 200 ); } );
+				$picker[ 0 ].click();
 			} else if ( 'delete' === action ) {
 				confirmDelete( folder, $row );
 			}
@@ -1364,12 +1463,20 @@
 		var $hint = $( '<span class="mlab-media-folder-bulkbar-hint"></span>' ).text( i18n.sweepHint );
 		var $all = $( '<button type="button" class="button"></button>' );
 		var $actions = $( '<span class="mlab-media-folder-bulkbar-actions"></span>' );
+		var $ai = null;
+		if ( data.features && data.features.ai_metadata && data.features.ai_metadata.available ) {
+			$ai = $( '<button type="button" class="button mlab-media-folder-bulkbar-ai"></button>' ).text( i18n.bulkAi );
+		}
 		var $cancel = $( '<button type="button" class="button"></button>' ).text( i18n.cancel );
 		var $move = $( '<select class="mlab-media-folder-bulkbar-move"></select>' ).attr( 'aria-label', i18n.moveSelected );
 		var moveSignature = '';
 		var loadingAll = false;
 
-		$bar.append( $count, $hint, $all, $move, $actions, $cancel ).appendTo( $wrap );
+		$bar.append( $count, $hint, $all, $move );
+		if ( $ai ) {
+			$bar.append( $ai );
+		}
+		$bar.append( $actions, $cancel ).appendTo( $wrap );
 
 		/**
 		 * "Move to…" works without dragging, so it also suits touch screens.
@@ -1402,6 +1509,29 @@
 			} );
 		} );
 
+		if ( $ai ) {
+			$ai.on( 'click', function () {
+				var selection = gridSelection();
+				var ids = selection ? selection.pluck( 'id' ).slice( 0, 100 ) : [];
+				if ( ! ids.length || ! data.aiReady ) {
+					if ( ! data.aiReady ) {
+						announce( i18n.aiNeedsKey, true );
+					}
+					return;
+				}
+				$ai.prop( 'disabled', true );
+				api( '/ai/bulk', { method: 'POST', data: { ids: ids } } )
+					.then( function ( response ) {
+						announce( sprintf( i18n.bulkAiQueued, response.queued || 0 ) );
+						update();
+					} )
+					.catch( function ( error ) {
+						announce( errorMessage( error ), true );
+						update();
+					} );
+			} );
+		}
+
 		function coreButtons() {
 			return $( '.attachments-browser .media-toolbar' )
 				.find( '.delete-selected-button, .delete-selected-permanently-button' )
@@ -1430,6 +1560,9 @@
 			$hint.prop( 'hidden', count > 0 );
 			fillMove();
 			$move.prop( 'disabled', ! count );
+			if ( $ai ) {
+				$ai.prop( 'disabled', ! count || ! data.aiReady ).attr( 'title', data.aiReady ? '' : i18n.aiNeedsKey );
+			}
 			$all.text( loadingAll ? i18n.loadingAll : allSelected() ? i18n.selectNone : i18n.selectAll ).prop( 'disabled', loadingAll );
 
 			$actions.empty();

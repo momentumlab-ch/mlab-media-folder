@@ -6,15 +6,33 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 
 | | |
 |---|---|
-| Aktuelle Version | 2.4.0 |
+| Aktuelle Version | 3.0.0 |
 | WordPress | ab 6.5, getestet bis 7.1.3 |
 | PHP | ab 8.0 |
 | Lizenz | GPL-2.0-or-later |
 | Sprachen | Englisch, Deutsch (de_DE, de_DE_formal, de_CH, de_CH_informal) |
 
+## 3.0 Workspace
+
+Version 3.0 erweitert die bestehende Mediathek, ohne die 2.x-Ordner- und Media-Health-Workflows zu ersetzen.
+
+- **Workspace:** globale Suche über Dateien und Ordner, optionaler Inspector rechts, Mobile-Drawer für Ordner und Inspector als Bottom Sheet.
+- **Smart Views:** «Neue Uploads», «Potenziell ungenutzt», «Ohne Ordner», «Ohne Alternativtext», «Nicht in einer Seite», «Doppelt» und «Datei fehlt».
+- **Free bleibt stark:** alle bestehenden 2.x-Funktionen, Global Search, Inspector, Migration, Mobile Workspace und Basis-WebP-Optimierung bleiben ohne Pro-Lizenz nutzbar.
+- **Pro:** AI-Metadaten, Glossar, Naming Rules, Ordnerrechte, Ordnerfarben/-duplizieren, gespeicherte Dynamic Views, AVIF/Privacy, Bulk-AI und erweiterte Automation.
+- **BYOK:** jeder Kunde nutzt seinen eigenen OpenAI-API-Key. Der Key wird lokal verschlüsselt gespeichert oder kann über `MLAB_MEDIA_FOLDER_OPENAI_API_KEY` in `wp-config.php` gesetzt werden.
+- **Sichere Bildoptimierung:** neue WordPress-Derivate können WebP/AVIF verwenden; hochgeladene Originale werden in 3.0 nie automatisch ersetzt oder gelöscht.
+- **Migration:** HappyFiles und FileBird werden nicht-destruktiv in die Media-Folder-Taxonomie kopiert; Quelldaten bleiben bestehen.
+
+### Free / Pro und Lizenzserver
+
+MomentumLab Core entsperrt Pro über den License-Server-Entitlement-Slug `mlab-media-folder-pro`. Auf dem Lizenzserver wird dieser als Unlock ohne eigenes Plugin-Main-File geführt. Ohne diesen Unlock läuft Media Folder vollständig im Free-Modus; bestehende 2.x-Funktionen werden nicht abgeschaltet.
+
 ## Funktionen
 
 **Ordnerbaum.** Neben der Mediathek (Raster- und Listenansicht) erscheint eine Ordner-Leiste mit verschachtelten Ordnern und der Anzahl Dateien pro Ordner. Dazu kommen die Ansichten «Alle Dateien» und «Ohne Ordner».
+
+**Smart Views.** «Neue Uploads» zeigt die letzten sieben Tage. «Potenziell ungenutzt» erscheint erst nach einer vollständigen konservativen Hintergrundprüfung und ist ausdrücklich nur ein Prüfhinweis. Die bestehenden Ansichten für Ordner, Alternativtext, Verwendung, Duplikate und fehlende Dateien bleiben erhalten.
 
 **Workflow «Zu erledigen».** Die Leiste führt durch sortieren, beschreiben und prüfen. «Nächster Schritt» zeigt die erste offene Aufgabe. «Doppelt» erkennt sowohl mehrere Einträge mit derselben physischen Datei als auch Kopien mit identischem SHA-256-Inhalt. «Datei fehlt» basiert nach dem ersten Hintergrundlauf auf einer vollständigen Prüfung der Mediathek. Die normale Mediathek blendet nur zusätzliche Einträge aus, die wirklich dieselbe physische Datei teilen; eigenständige Dateien mit identischem Inhalt bleiben sichtbar, bis sie bewusst bereinigt werden. Gemeinsame Dateien sind beim Löschen eines Attachment-Eintrags geschützt.
 
@@ -35,6 +53,8 @@ Ordner für die WordPress-Mediathek: Ordnerbaum, Drag & Drop, Upload direkt in d
 **Anpassbare Leiste.** Die Ordner-Leiste lässt sich auf einen schmalen Streifen einklappen und am rechten Rand in der Breite ziehen (180 bis 480 px, auch mit den Pfeiltasten; Doppelklick setzt zurück). Breite und Zustand merkt sich der Browser.
 
 **Medienstatus.** Zwei resumierbare Hintergrundprüfungen kontrollieren fehlende Dateien und identische Dateiinhalte. Der Status erscheint direkt in der Mediathek; berechtigte Benutzer können beide Prüfungen mit «Erneut prüfen» neu starten. Grosse Dateien werden in kleinen Batches verarbeitet, damit normale Admin-Aufrufe nicht blockiert werden.
+
+**Migration & Export.** Bestehende Strukturen aus HappyFiles und FileBird werden nicht-destruktiv übernommen. Grosse Zuordnungsmengen laufen resumierbar in kleinen Hintergrund-Batches; zusätzlich lässt sich die Ordnerstruktur als portables JSON sichern.
 
 **Automatische Updates.** Standalone-Installationen prüfen die GitHub-Releases dieses Repos. Wenn MomentumLab Core die Update-Verwaltung für `mlab-media-folder` übernimmt, deaktiviert sich der GitHub-Fallback automatisch; dadurch gibt es nie zwei konkurrierende Updatequellen.
 
@@ -104,6 +124,10 @@ uninstall.php              Aufräumen beim Löschen
 | Filter `mlab_media_folder_manage_capability` | `upload_files` | Wer Ordner anlegt, umbenennt, verschiebt und löscht |
 | Filter `mlab_media_folder_audit_capability` | `manage_options` | Wer vollständige Media-Health-Audits manuell neu starten darf |
 | Filter `mlab_media_folder_update_repository` | `momentumlab-ch/mlab-media-folder` | GitHub-Repo für die Standalone-Update-Prüfung |
+| Filter `mlab_media_folder_settings_capability` | `manage_options` | Wer pluginweite Automation-/Pro-Einstellungen ändern darf |
+| Filter `mlab_media_folder_pro_unlocked` | Lizenzstatus | Pro-Entitlement für Tests oder eigene Lizenzintegration überschreiben |
+| Filter `mlab_media_folder_feature_available` | Feature-Matrix | Einzelne Free/Pro-Features gezielt überschreiben |
+| Filter `mlab_media_folder_migration_sources` | bekannte Quellen | Weitere Taxonomie-basierte Folder-Migrationen registrieren |
 | Filter `mlab_media_folder_check_missing_files` | `true` | Lokale Missing-File-Prüfung deaktivieren, z. B. bei Offload-Speicher |
 | Filter `mlab_media_folder_check_content_duplicates` | `true` | SHA-256-Inhaltsprüfung deaktivieren |
 | Filter `mlab_core_manages_plugin` | `false` | Von MomentumLab Core gesetzter Integrationsvertrag; bei `true` übernimmt Core/Lizenzserver die Updates |

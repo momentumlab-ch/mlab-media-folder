@@ -1,22 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3582c4"/>
-      <stop offset="1" stop-color="#135e96"/>
-    </linearGradient>
-    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e6f0f8"/>
-    </linearGradient>
-  </defs>
-  <rect width="256" height="256" fill="url(#bg)"/>
-  <!-- Back of the folder with its tab -->
-  <path d="M52 76a12 12 0 0 1 12-12h40l16 16h72a12 12 0 0 1 12 12v8H52z" fill="#b8d4ec"/>
-  <!-- Front of the folder -->
-  <path d="M44 104a12 12 0 0 1 12-12h144a12 12 0 0 1 12 12v84a12 12 0 0 1-12 12H56a12 12 0 0 1-12-12z" fill="url(#front)"/>
-  <!-- Folder tree: one parent, two nested children -->
-  <path d="M88 128v44h18M88 146h18" fill="none" stroke="#2271b1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="76" y="110" width="64" height="18" rx="6" fill="#2271b1"/>
-  <rect x="106" y="137" width="74" height="18" rx="6" fill="#72aee6"/>
-  <rect x="106" y="163" width="74" height="18" rx="6" fill="#72aee6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+<title id="title">MomentumLab Media Folder</title>
+<rect width="256" height="256" rx="48" fill="#ffffff"/>
+<path d="M40 88a92 92 0 0 1 176 0" fill="none" stroke="#F2AA00" stroke-width="12" stroke-linecap="round"/>
+<path d="M40 168a92 92 0 0 0 176 0" fill="none" stroke="#F2AA00" stroke-width="12" stroke-linecap="round"/>
+<path d="M66 96h48l16 18h56a16 16 0 0 1 16 16v58a16 16 0 0 1-16 16H66a16 16 0 0 1-16-16v-76a16 16 0 0 1 16-16Z" fill="none" stroke="#111111" stroke-width="11" stroke-linejoin="round"/>
 </svg>

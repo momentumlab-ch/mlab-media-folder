@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       MomentumLab Media Folder
  * Plugin URI:        https://momentumlab.ch/
- * Description:       Organise the media library in folders: folder tree, drag and drop, upload into the current folder and a folder filter in every media dialog.
- * Version:           2.4.0
+ * Description:       A focused Media Library workspace with folders, Smart Views, Media Health, search, optimization and optional Pro automation.
+ * Version:           3.0.0
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Author:            MomentumLab
@@ -19,17 +19,34 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MLAB_MEDIA_FOLDER_VERSION', '2.4.0' );
+define( 'MLAB_MEDIA_FOLDER_VERSION', '3.0.0' );
 define( 'MLAB_MEDIA_FOLDER_FILE', __FILE__ );
 define( 'MLAB_MEDIA_FOLDER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MLAB_MEDIA_FOLDER_URL', plugin_dir_url( __FILE__ ) );
 
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-features.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-secrets.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-automation-settings.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-optimization-settings.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-naming.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-tags.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-folder-permissions.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-dynamic-views.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-migration.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-migration-job.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-ai.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-image-optimization.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-bulk-optimize.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-upload-naming.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-automation-queue.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-settings-page.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-taxonomy.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-folders.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-rest-controller.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-health.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-background-audit.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-content-audit.php';
+require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-usage-audit.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-query.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-admin.php';
 require_once MLAB_MEDIA_FOLDER_DIR . 'includes/class-updater.php';

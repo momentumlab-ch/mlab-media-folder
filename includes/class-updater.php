@@ -151,11 +151,15 @@ final class Updater {
 		$installation .= '<li>' . esc_html__( 'Use Scan again to rebuild the missing-file and duplicate-content audits when required.', 'mlab-media-folder' ) . '</li>';
 		$installation .= '</ol>';
 
-		$other_notes  = '<h3>' . esc_html__( 'Media Health', 'mlab-media-folder' ) . '</h3>';
+		$other_notes  = '<h3>' . esc_html__( 'Media Workspace', 'mlab-media-folder' ) . '</h3>';
+		$other_notes .= '<p>' . esc_html__( 'Version 3 adds global media/folder search, Smart Views, a responsive Inspector, mobile drawer navigation and permission-aware workflows while keeping the native WordPress Media Library underneath.', 'mlab-media-folder' ) . '</p>';
+		$other_notes .= '<h3>' . esc_html__( 'Media Health', 'mlab-media-folder' ) . '</h3>';
 		$other_notes .= '<p>' . esc_html__(
 			'Missing files are checked against the local uploads directory in resumable background batches. Duplicate content is fingerprinted with SHA-256 in small batches. Shared physical files are protected when duplicate attachment entries are deleted.',
 			'mlab-media-folder'
 		) . '</p>';
+		$other_notes .= '<h3>' . esc_html__( 'Free & Pro', 'mlab-media-folder' ) . '</h3>';
+		$other_notes .= '<p>' . esc_html__( 'Folders, core Smart Views, search, Inspector, Media Health, migration and safe WebP optimization stay Free. Pro unlocks AI metadata, glossary and naming automation, folder permissions, saved Dynamic Views, AVIF/privacy controls and bounded bulk automation through MomentumLab Core / License Server.', 'mlab-media-folder' ) . '</p>';
 		$other_notes .= '<h3>' . esc_html__( 'Updates', 'mlab-media-folder' ) . '</h3>';
 		$other_notes .= '<p>' . esc_html__(
 			'Standalone installations update from published GitHub release assets. When MomentumLab Core manages this plugin, the built-in GitHub updater stands down so only the Core and License Server update path remains active.',

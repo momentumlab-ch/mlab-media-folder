@@ -4,13 +4,26 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.4.0
+Stable tag: 3.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Folders for the WordPress media library: folder tree, drag and drop, upload into the open folder and a folder filter in every media dialog.
 
 == Description ==
+
+Version 3.0 extends the native WordPress Media Library without replacing its core workflows.
+
+* Unified workspace with global search across folders, filenames, titles and alt text.
+* Optional Inspector with folder, uploader, file size, alt text, tags and Media Health status.
+* Mobile folder drawer and Inspector bottom sheet.
+* Smart Views for Recent uploads, Potentially unused, Unfiled, No alt text, Not in a page, Duplicates and File missing.
+* Existing 2.x folder, drag-and-drop, bulk, undo and Media Health functionality remains available in Free.
+* Free image optimization can create WebP derivatives for new uploads while uploaded originals remain untouched.
+* Pro unlock `mlab-media-folder-pro` adds customer-owned AI metadata, glossary rules, naming rules, folder permissions, saved Dynamic Views, AVIF/privacy and bounded bulk automation.
+* AI uses the API key configured by each customer/site. Suggestions are explicit and manual AI never overwrites media until approved.
+* Migration copies supported HappyFiles and FileBird folder structures into Media Folder without modifying the source data. Large assignment sets run in resumable background batches with progress state.
+* Folder structures can be exported as portable JSON for backup/documentation.
 
 * Folder tree next to the media library (grid and list view), with nested folders.
 * Create, rename, move (drag a folder onto another) and delete folders.
@@ -41,6 +54,18 @@ Developer hooks
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 3.0.0 =
+* New workspace: unified MomentumLab header, global search across media and folders, right-side Inspector, mobile folder drawer and Inspector bottom sheet.
+* Smart Views: Recent uploads and a conservative Potentially unused view backed by a resumable background usage audit; existing Unfiled, No alt text, Duplicates and File missing views remain.
+* Pro: customer-owned OpenAI metadata suggestions, glossary rules, blocked terms, upload naming rules, role/user folder permissions, folder colors/duplication, saved Dynamic Views and bounded bulk AI.
+* Image optimization: opt-in WebP optimization for new WordPress derivatives in Free; Pro adds AVIF, derivative metadata privacy and explicit background rebuild of existing derivatives. Uploaded originals are never automatically replaced or deleted.
+* Migration: non-destructive copy from HappyFiles, current FileBird tables and the legacy FileBird taxonomy. Media assignments run in resumable background batches and source data is never modified.
+* Tools: portable JSON export for folder hierarchy, colors and role rules.
+* Licensing: Pro features unlock through MomentumLab Core / License Server entitlement `mlab-media-folder-pro`. Existing 2.x functionality remains available in Free.
+* Performance: permission-aware folder and Smart View counters are cached with targeted generation invalidation; audits and bulk work run in bounded background batches.
+* Security: AI API keys are customer-owned and encrypted at rest; manual AI is suggestion-first; folder permissions are enforced in queries, search, Inspector, AI and upload assignment.
+* Compatibility: existing folder URLs, media URLs and uploaded originals are not changed by the upgrade.
 
 = 2.4.0 =
 * New: full-library missing-file audit in small resumable background batches with progress and a protected “Scan again” action.
