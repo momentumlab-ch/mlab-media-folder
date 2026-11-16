@@ -38,36 +38,19 @@ final class Folder_Permissions {
 			return true;
 		}
 
-		$rules = self::effective_rules( $folder_id );
-		if ( ! $rules['roles'] && ! $rules['users'] ) {
-			return true;
-		}
-		if ( in_array( $user_id, $rules['users'], true ) ) {
-			return true;
-		}
-		return (bool) array_intersect( $rules['roles'], (array) $user->roles );
-	}
-
-	/**
-	 * Access rules inherit from the nearest ancestor that defines them.
-	 *
-	 * @param int $folder_id Folder ID.
-	 * @return array{roles:string[],users:int[]}
-	 */
-	private static function effective_rules( int $folder_id ): array {
 		$id    = $folder_id;
 		$guard = 0;
-
 		while ( 0 < $id && 30 > $guard ) {
 			++$guard;
 			$roles = array_values( array_filter( array_map( 'sanitize_key', (array) get_term_meta( $id, self::ROLES_META, true ) ) ) );
 			$users = array_values( array_filter( array_map( 'absint', (array) get_term_meta( $id, self::USERS_META, true ) ) ) );
 
 			if ( $roles || $users ) {
-				return array(
-					'roles' => $roles,
-					'users' => $users,
-				);
+				$allowed_user = in_array( $user_id, $users, true );
+				$allowed_role = (bool) array_intersect( $roles, (array) $user->roles );
+				if ( ! $allowed_user && ! $allowed_role ) {
+					return false;
+				}
 			}
 
 			$term = get_term( $id, Taxonomy::NAME );
@@ -77,11 +60,10 @@ final class Folder_Permissions {
 			$id = (int) $term->parent;
 		}
 
-		return array(
-			'roles' => array(),
-			'users' => array(),
-		);
+		return true;
 	}
+
+	/**
 
 	/**
 	 * Folder IDs the current user must not see.
