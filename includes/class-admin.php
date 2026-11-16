@@ -20,6 +20,7 @@ final class Admin {
 	public function hooks() {
 		add_action( 'wp_enqueue_media', array( $this, 'enqueue_media_assets' ) );
 		add_action( 'admin_notices', array( $this, 'audit_notice' ) );
+		add_action( 'admin_post_mlab_media_folder_rescan', array( $this, 'rescan' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_library_assets' ) );
 		add_action( 'add_attachment', array( $this, 'assign_uploaded_attachment' ) );
 		add_filter( 'attachment_fields_to_edit', array( $this, 'add_folder_field' ), 10, 2 );
@@ -35,13 +36,36 @@ final class Admin {
 		if ( 'upload.php' !== $pagenow || ! current_user_can( Plugin::use_capability() ) ) {
 			return;
 		}
-		$state = Background_Audit::status();
-		$checked = absint( $state['checked'] );
-		$missing = count( (array) $state['missing'] );
-		$label = ! empty( $state['complete'] )
-			? sprintf( /* translators: 1: number checked, 2: missing files. */ __( 'Media audit complete: %1$d checked, %2$d missing.', 'mlab-media-folder' ), $checked, $missing )
-			: sprintf( /* translators: number checked so far. */ __( 'Media audit running in the background: %d checked so far.', 'mlab-media-folder' ), $checked );
-		echo '<div class="notice notice-info mlab-media-folder-audit-notice"><p>' . esc_html( $label ) . '</p></div>';
+		$files   = Background_Audit::status();
+		$content = Content_Audit::status();
+		$checked = absint( $files['checked'] );
+		$missing = count( (array) $files['missing'] );
+		$file_label = ! empty( $files['complete'] )
+			? sprintf( /* translators: 1: number checked, 2: missing files. */ __( 'Files checked: %1$d · Missing: %2$d', 'mlab-media-folder' ), $checked, $missing )
+			: sprintf( /* translators: number checked so far. */ __( 'File audit running: %d checked so far', 'mlab-media-folder' ), $checked );
+		$content_label = ! empty( $content['complete'] )
+			? sprintf( /* translators: number fingerprinted. */ __( 'Duplicate-content audit complete: %d checked', 'mlab-media-folder' ), absint( $content['checked'] ) )
+			: sprintf( /* translators: number fingerprinted so far. */ __( 'Duplicate-content audit running: %d checked so far', 'mlab-media-folder' ), absint( $content['checked'] ) );
+		echo '<div class="notice notice-info mlab-media-folder-audit-notice"><p><strong>' . esc_html__( 'Media health', 'mlab-media-folder' ) . '</strong><br>' . esc_html( $file_label ) . '<br>' . esc_html( $content_label ) . '</p>';
+		if ( current_user_can( Plugin::manage_capability() ) ) {
+			$url = wp_nonce_url( admin_url( 'admin-post.php?action=mlab_media_folder_rescan' ), 'mlab_media_folder_rescan' );
+			echo '<p><a class="button button-secondary" href="' . esc_url( $url ) . '">' . esc_html__( 'Scan again', 'mlab-media-folder' ) . '</a></p>';
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Restarts both read-only health audits from the Media Library.
+	 */
+	public function rescan() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to run the media audit.', 'mlab-media-folder' ), 403 );
+		}
+		check_admin_referer( 'mlab_media_folder_rescan' );
+		Background_Audit::restart_scan();
+		Content_Audit::restart_scan();
+		wp_safe_redirect( admin_url( 'upload.php' ) );
+		exit;
 	}
 
 	/**
@@ -112,7 +136,7 @@ final class Admin {
 				'nextDuplicate'   => __( 'Check %d entries that share a file with another entry.', 'mlab-media-folder' ),
 				/* translators: %d: number of entries. */
 				'nextMissing'     => __( 'Fix %d entries whose file is missing.', 'mlab-media-folder' ),
-				'foundDuplicate'  => __( 'Entries that point to the same file in the uploads folder. The library lists entries, not files, so the same image shows up more than once.', 'mlab-media-folder' ),
+				'foundDuplicate'  => __( 'Entries that point to the same physical file or have identical file contents. The background audit fingerprints files with SHA-256 so copies with different names can also be found.', 'mlab-media-folder' ),
 				'doDuplicate'     => __( 'Open each entry and check "Origin" to see where it is used. Keep one, then delete the others. A file that another entry still uses is never removed from the server.', 'mlab-media-folder' ),
 				'foundMissing'    => __( 'Entries in the library whose file is no longer in the uploads folder. They show a broken preview. Files stored outside this server are not checked.', 'mlab-media-folder' ),
 				'doMissing'       => __( 'Upload the file again and replace the entry, or delete the entry if you do not need it.', 'mlab-media-folder' ),
