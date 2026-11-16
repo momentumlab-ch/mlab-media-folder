@@ -166,7 +166,7 @@ final class Folders {
 		$visible = self::visible_sql();
 		$after   = wp_date( 'Y-m-d H:i:s', time() - ( 7 * DAY_IN_SECONDS ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; the visibility clause is generated internally.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; the visibility clause is generated internally and contains only sanitized IDs/constants.
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p WHERE {$visible} AND p.post_date >= %s",
