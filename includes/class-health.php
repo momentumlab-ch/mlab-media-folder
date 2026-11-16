@@ -83,6 +83,7 @@ final class Health {
 		}
 
 		$groups = self::find_duplicates();
+		$content_duplicates = self::find_content_duplicates();
 		$audit = Background_Audit::status();
 		// The incremental audit covers the entire library only after completion.
 		// During a scan, keep the bounded synchronous results available.
@@ -90,7 +91,7 @@ final class Health {
 			? array_map( 'absint', $audit['missing'] )
 			: self::find_missing();
 		$result = array(
-			'duplicate' => $groups['all'],
+			'duplicate' => array_values( array_unique( array_merge( $groups['all'], $content_duplicates ) ) ),
 			'extra'     => $groups['extra'],
 			'missing'   => $missing,
 		);
@@ -149,6 +150,40 @@ final class Health {
 			'all'   => $all,
 			'extra' => $extra,
 		);
+	}
+
+	/**
+	 * Entries whose physical files have identical SHA-256 content hashes.
+	 * Only complete background-audit results are used to avoid partial groups.
+	 *
+	 * @return int[]
+	 */
+	private static function find_content_duplicates() {
+		global $wpdb;
+		$status = Content_Audit::status();
+		if ( empty( $status['complete'] ) ) {
+			return array();
+		}
+		$hash_key = Content_Audit::HASH_META;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal fixed meta key, aggregate query.
+		$rows = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT m.post_id
+				FROM {$wpdb->postmeta} m
+				INNER JOIN {$wpdb->posts} p ON p.ID = m.post_id
+				INNER JOIN (
+					SELECT meta_value
+					FROM {$wpdb->postmeta}
+					WHERE meta_key = %s AND meta_value <> ''
+					GROUP BY meta_value HAVING COUNT(*) > 1
+				) d ON d.meta_value = m.meta_value
+				WHERE m.meta_key = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+				ORDER BY m.post_id ASC",
+				$hash_key,
+				$hash_key
+			)
+		);
+		return array_map( 'intval', (array) $rows );
 	}
 
 	/**
