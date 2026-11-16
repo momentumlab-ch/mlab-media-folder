@@ -198,6 +198,297 @@ final class Migration {
 	}
 
 	/**
+	 * Prepare a deterministic source-folder to target-folder map.
+	 *
+	 * Folder creation is intentionally separated from attachment assignment so
+	 * large libraries can copy relationships in resumable background batches.
+	 *
+	 * @param string $taxonomy Source identifier.
+	 * @return array{map:array<int,array{target:int,depth:int}>,created:int}|\WP_Error
+	 */
+	public static function prepare_map( string $taxonomy ) {
+		$sources = self::sources();
+		if ( ! isset( $sources[ $taxonomy ] ) ) {
+			return new \WP_Error( 'mlab_media_folder_migration_source', __( 'The selected migration source is not available.', 'mlab-media-folder' ) );
+		}
+
+		if ( '__filebird_fbv' === $taxonomy ) {
+			return self::prepare_filebird_map();
+		}
+
+		self::ensure_source_taxonomy( $taxonomy );
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'orderby'    => 'term_id',
+				'order'      => 'ASC',
+			)
+		);
+		if ( is_wp_error( $terms ) ) {
+			return $terms;
+		}
+
+		$map     = array();
+		$created = 0;
+		$pending = (array) $terms;
+		$guard   = 0;
+
+		while ( $pending && 100 > $guard ) {
+			++$guard;
+			$next     = array();
+			$progress = false;
+
+			foreach ( $pending as $term ) {
+				$source_id     = (int) $term->term_id;
+				$source_parent = (int) $term->parent;
+				if ( 0 !== $source_parent && ! isset( $map[ $source_parent ] ) ) {
+					$next[] = $term;
+					continue;
+				}
+
+				$parent_target = 0 === $source_parent ? 0 : (int) $map[ $source_parent ]['target'];
+				$depth         = 0 === $source_parent ? 0 : (int) $map[ $source_parent ]['depth'] + 1;
+				$target        = self::find_child_by_name( Folders::name( $term ), $parent_target );
+				if ( ! $target ) {
+					$result = Folders::create( Folders::name( $term ), $parent_target );
+					if ( is_wp_error( $result ) ) {
+						return $result;
+					}
+					$target = (int) $result['id'];
+					++$created;
+				}
+				$map[ $source_id ] = array(
+					'target' => $target,
+					'depth'  => $depth,
+				);
+				$progress = true;
+			}
+
+			if ( ! $progress ) {
+				break;
+			}
+			$pending = $next;
+		}
+
+		if ( $pending ) {
+			return new \WP_Error( 'mlab_media_folder_migration_hierarchy', __( 'The source folder hierarchy could not be resolved safely.', 'mlab-media-folder' ) );
+		}
+
+		return array(
+			'map'     => $map,
+			'created' => $created,
+		);
+	}
+
+	/**
+	 * Copy one bounded batch of attachment relationships.
+	 *
+	 * When a source permits multiple folders per attachment, the deepest source
+	 * folder wins deterministically because Media Folder intentionally uses one
+	 * organisational folder per attachment.
+	 *
+	 * @param string                                      $taxonomy Source identifier.
+	 * @param array<int,array{target:int,depth:int}>       $map      Prepared folder map.
+	 * @param int                                         $cursor   Last processed attachment ID.
+	 * @param int                                         $limit    Maximum attachments in this batch.
+	 * @return array{cursor:int,checked:int,assignments:int,complete:bool}|\WP_Error
+	 */
+	public static function assignment_batch( string $taxonomy, array $map, int $cursor, int $limit = 100 ) {
+		global $wpdb;
+
+		$limit = max( 10, min( 250, $limit ) );
+		$ids   = array();
+
+		if ( '__filebird_fbv' === $taxonomy ) {
+			$table = $wpdb->prefix . 'fbv_attachment_folder';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Read-only verified migration source table.
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT attachment_id FROM {$table} WHERE attachment_id > %d ORDER BY attachment_id ASC LIMIT %d",
+					$cursor,
+					$limit
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Read-only keyset scan of source taxonomy relationships.
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT tr.object_id
+					FROM {$wpdb->term_relationships} tr
+					INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+					WHERE tt.taxonomy = %s AND tr.object_id > %d
+					ORDER BY tr.object_id ASC
+					LIMIT %d",
+					$taxonomy,
+					$cursor,
+					$limit
+				)
+			);
+		}
+
+		$ids = array_values( array_filter( array_map( 'absint', (array) $ids ) ) );
+		if ( ! $ids ) {
+			return array(
+				'cursor'      => $cursor,
+				'checked'     => 0,
+				'assignments' => 0,
+				'complete'    => true,
+			);
+		}
+
+		$relations = self::relations_for_attachments( $taxonomy, $ids );
+		if ( is_wp_error( $relations ) ) {
+			return $relations;
+		}
+
+		$assignments = 0;
+		foreach ( $ids as $attachment_id ) {
+			if ( 'attachment' !== get_post_type( $attachment_id ) ) {
+				continue;
+			}
+			$source_ids = $relations[ $attachment_id ] ?? array();
+			$best       = 0;
+			$best_depth = -1;
+			foreach ( $source_ids as $source_id ) {
+				if ( ! isset( $map[ $source_id ] ) ) {
+					continue;
+				}
+				$depth = (int) $map[ $source_id ]['depth'];
+				if ( $depth > $best_depth || ( $depth === $best_depth && $source_id < $best ) ) {
+					$best       = $source_id;
+					$best_depth = $depth;
+				}
+			}
+			if ( ! $best ) {
+				continue;
+			}
+
+			$result = wp_set_object_terms( $attachment_id, array( (int) $map[ $best ]['target'] ), Taxonomy::NAME, false );
+			if ( ! is_wp_error( $result ) ) {
+				++$assignments;
+			}
+		}
+
+		return array(
+			'cursor'      => max( $ids ),
+			'checked'     => count( $ids ),
+			'assignments' => $assignments,
+			'complete'    => count( $ids ) < $limit,
+		);
+	}
+
+	/**
+	 * Read all source folder relations for a bounded attachment ID set.
+	 *
+	 * @param string $taxonomy Source identifier.
+	 * @param int[]  $ids      Attachment IDs.
+	 * @return array<int,int[]>|\WP_Error
+	 */
+	private static function relations_for_attachments( string $taxonomy, array $ids ) {
+		global $wpdb;
+
+		$out = array();
+		if ( ! $ids ) {
+			return $out;
+		}
+		$id_list = implode( ',', array_map( 'absint', $ids ) );
+
+		if ( '__filebird_fbv' === $taxonomy ) {
+			$table = $wpdb->prefix . 'fbv_attachment_folder';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are absint and table derives from trusted prefix.
+			$rows = $wpdb->get_results( "SELECT attachment_id AS object_id, folder_id AS source_id FROM {$table} WHERE attachment_id IN ({$id_list})" );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are absint; taxonomy is prepared below.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT tr.object_id, tt.term_id AS source_id
+					FROM {$wpdb->term_relationships} tr
+					INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+					WHERE tt.taxonomy = %s AND tr.object_id IN ({$id_list})",
+					$taxonomy
+				)
+			);
+		}
+
+		foreach ( (array) $rows as $row ) {
+			$object_id = absint( $row->object_id );
+			$source_id = absint( $row->source_id );
+			if ( $object_id && $source_id ) {
+				$out[ $object_id ][] = $source_id;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Prepare FileBird folder hierarchy only.
+	 *
+	 * @return array{map:array<int,array{target:int,depth:int}>,created:int}|\WP_Error
+	 */
+	private static function prepare_filebird_map() {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'fbv';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Read-only verified migration source.
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+		if ( $table !== $exists ) {
+			return new \WP_Error( 'mlab_media_folder_filebird_missing', __( 'FileBird migration tables were not found.', 'mlab-media-folder' ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Verified table name derives from trusted WordPress prefix.
+		$folders = $wpdb->get_results( "SELECT id, name, parent FROM {$table} ORDER BY id ASC" );
+
+		$map     = array();
+		$created = 0;
+		$pending = (array) $folders;
+		$guard   = 0;
+
+		while ( $pending && 100 > $guard ) {
+			++$guard;
+			$next     = array();
+			$progress = false;
+			foreach ( $pending as $folder ) {
+				$source_id     = absint( $folder->id );
+				$source_parent = absint( $folder->parent );
+				if ( 0 !== $source_parent && ! isset( $map[ $source_parent ] ) ) {
+					$next[] = $folder;
+					continue;
+				}
+				$parent_target = 0 === $source_parent ? 0 : (int) $map[ $source_parent ]['target'];
+				$depth         = 0 === $source_parent ? 0 : (int) $map[ $source_parent ]['depth'] + 1;
+				$name          = sanitize_text_field( (string) $folder->name );
+				$target        = self::find_child_by_name( $name, $parent_target );
+				if ( ! $target ) {
+					$result = Folders::create( $name, $parent_target );
+					if ( is_wp_error( $result ) ) {
+						return $result;
+					}
+					$target = (int) $result['id'];
+					++$created;
+				}
+				$map[ $source_id ] = array(
+					'target' => $target,
+					'depth'  => $depth,
+				);
+				$progress = true;
+			}
+			if ( ! $progress ) {
+				break;
+			}
+			$pending = $next;
+		}
+
+		if ( $pending ) {
+			return new \WP_Error( 'mlab_media_folder_migration_hierarchy', __( 'The FileBird folder hierarchy could not be resolved safely.', 'mlab-media-folder' ) );
+		}
+		return array(
+			'map'     => $map,
+			'created' => $created,
+		);
+	}
+
+	/**
 	 * Whether a taxonomy has stored terms even when its source plugin is inactive.
 	 *
 	 * @param string $taxonomy Source taxonomy.
