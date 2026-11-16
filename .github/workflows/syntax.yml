@@ -1,0 +1,28 @@
+name: PHP and JavaScript syntax
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax (minimum supported PHP 8.0)
+        run: |
+          find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: JavaScript syntax
+        run: |
+          find assets/js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Validate version consistency
+        run: |
+          header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folder.php)
+          constant=$(sed -n "s/^define( 'MLAB_MEDIA_FOLDER_VERSION', '\(.*\)' );/\1/p" mlab-media-folder.php)
+          stable=$(sed -n 's/^Stable tag:[[:space:]]*//p' readme.txt)
+          test "$header" = "$constant"
+          test "$header" = "$stable"
