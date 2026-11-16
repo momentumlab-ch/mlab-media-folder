@@ -112,6 +112,7 @@ final class Admin {
 				'title'           => __( 'Folders', 'mlab-media-folder' ),
 				'all'             => __( 'All files', 'mlab-media-folder' ),
 				'unfiled'         => __( 'Unfiled', 'mlab-media-folder' ),
+				'recent'          => __( 'Recent uploads', 'mlab-media-folder' ),
 				'newFolder'       => __( 'New folder', 'mlab-media-folder' ),
 				'newSubfolder'    => __( 'New subfolder', 'mlab-media-folder' ),
 				'rename'          => __( 'Rename', 'mlab-media-folder' ),
@@ -159,6 +160,8 @@ final class Admin {
 				'open'            => __( 'Open', 'mlab-media-folder' ),
 				'allDone'         => __( 'Everything is in order. New uploads show up here when they need attention.', 'mlab-media-folder' ),
 				/* translators: %d: number of files. */
+				'nextRecent'      => __( 'Review %d new uploads from the last seven days.', 'mlab-media-folder' ),
+				/* translators: %d: number of files. */
 				'nextUnfiled'     => __( 'Sort %d files into folders.', 'mlab-media-folder' ),
 				/* translators: %d: number of images. */
 				'nextNoAlt'       => __( 'Describe %d images.', 'mlab-media-folder' ),
@@ -166,6 +169,8 @@ final class Admin {
 				'nextUnattached'  => __( 'Review %d files that are not in a page.', 'mlab-media-folder' ),
 				'foundLabel'      => __( 'Found', 'mlab-media-folder' ),
 				'doLabel'         => __( 'What to do', 'mlab-media-folder' ),
+				'foundRecent'     => __( 'Attachments uploaded during the last seven days.', 'mlab-media-folder' ),
+				'doRecent'        => __( 'Check naming, folder, alt text and metadata while the upload is still fresh.', 'mlab-media-folder' ),
 				'foundUnfiled'    => __( 'Files in the library that are in no folder, for example new uploads.', 'mlab-media-folder' ),
 				'doUnfiled'       => __( 'Drag them onto a folder, or select them (Bulk select) and use "Move to…".', 'mlab-media-folder' ),
 				'foundNoAlt'      => __( 'Images whose alternative text is empty. Screen readers and search engines depend on it.', 'mlab-media-folder' ),
