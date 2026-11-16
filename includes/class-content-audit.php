@@ -161,7 +161,7 @@ final class Content_Audit {
 		$processed_all      = true;
 
 		foreach ( (array) $rows as $row ) {
-			if ( $processed_this_run > 0 && 12 <= microtime( true ) - $started ) {
+			if ( 0 < $processed_this_run && 12 <= microtime( true ) - $started ) {
 				$processed_all = false;
 				break;
 			}
