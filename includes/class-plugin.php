@@ -116,6 +116,20 @@ final class Plugin {
 	}
 
 	/**
+	 * Capability needed to manually restart full Media Health audits.
+	 *
+	 * @return string
+	 */
+	public static function audit_capability() {
+		/**
+		 * Filters the capability required to run a full media audit.
+		 *
+		 * @param string $capability Default 'manage_options'.
+		 */
+		return (string) apply_filters( 'mlab_media_folder_audit_capability', 'manage_options' );
+	}
+
+	/**
 	 * Capability needed to create, rename, move and delete folders.
 	 *
 	 * @return string
