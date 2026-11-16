@@ -54,6 +54,7 @@ final class Plugin {
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
 		( new Image_Optimization() )->hooks();
+		( new Upload_Naming() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
