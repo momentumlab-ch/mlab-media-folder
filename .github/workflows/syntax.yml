@@ -78,6 +78,7 @@ jobs:
           grep -qx 'mlab-media-folder/assets/css/settings.css' archive-files.txt
           grep -qx 'mlab-media-folder/assets/images/media-folder-mark.svg' archive-files.txt
           grep -qx 'mlab-media-folder/assets/images/icon.svg' archive-files.txt
+          grep -qx 'mlab-media-folder/assets/images/media-folder-logo.png' archive-files.txt
           grep -qx 'mlab-media-folder/assets/screenshots/media-library-preview.svg' archive-files.txt
           grep -qx 'mlab-media-folder/assets/screenshots/media-health-preview.svg' archive-files.txt
           ! grep -q '^mlab-media-folder/.github/' archive-files.txt
