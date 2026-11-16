@@ -254,6 +254,7 @@ final class Admin {
 				'settingsUrl'   => admin_url( 'upload.php?page=' . Settings_Page::SLUG ),
 				'brandMark'     => MLAB_MEDIA_FOLDER_URL . 'assets/images/media-folder-mark.svg',
 				'features'      => Features::matrix(),
+				'canSettings'   => current_user_can( Plugin::settings_capability() ),
 				'workspaceI18n' => array(
 					'search'      => __( 'Search files, folders, filenames and alt text…', 'mlab-media-folder' ),
 					'folders'     => __( 'Folders', 'mlab-media-folder' ),
@@ -267,6 +268,7 @@ final class Admin {
 					'folder'      => __( 'Folder', 'mlab-media-folder' ),
 					'unfiled'     => __( 'Unfiled', 'mlab-media-folder' ),
 					'author'      => __( 'Uploader', 'mlab-media-folder' ),
+					'usage'       => __( 'Usage', 'mlab-media-folder' ),
 					'size'        => __( 'File size', 'mlab-media-folder' ),
 					'altText'     => __( 'Alt text', 'mlab-media-folder' ),
 					'tags'        => __( 'Media tags', 'mlab-media-folder' ),
@@ -279,6 +281,7 @@ final class Admin {
 					'generate'    => __( 'Generate suggestion', 'mlab-media-folder' ),
 					'generating'  => __( 'Generating suggestion…', 'mlab-media-folder' ),
 					'title'       => __( 'Title', 'mlab-media-folder' ),
+					'description' => __( 'Description', 'mlab-media-folder' ),
 					'apply'       => __( 'Apply approved fields', 'mlab-media-folder' ),
 					'error'       => __( 'That did not work. Please try again.', 'mlab-media-folder' ),
 				),
