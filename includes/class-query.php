@@ -139,7 +139,7 @@ final class Query {
 			if ( empty( $args['post_mime_type'] ) ) {
 				$args['post_mime_type'] = 'image';
 			}
-			$missing = array(
+			$missing  = array(
 				'relation' => 'OR',
 				array(
 					'key'     => '_wp_attachment_image_alt',
