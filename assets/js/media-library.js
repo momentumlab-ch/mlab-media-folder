@@ -293,6 +293,7 @@
 					name: String( folder.name ),
 					parent: parseInt( folder.parent, 10 ) || 0,
 					count: parseInt( folder.count, 10 ) || 0,
+					color: folder.color ? String( folder.color ) : '',
 				};
 			} );
 			state.totals = response.totals || state.totals;
@@ -577,6 +578,9 @@
 				hasChildren: kids.length > 0,
 				expanded: expanded,
 			} );
+			if ( folder.color ) {
+				$row.css( '--mlab-folder-color', folder.color ).addClass( 'has-folder-color' );
+			}
 
 			if ( data.canManage ) {
 				$row.attr( 'draggable', 'true' ).attr( 'data-drag-folder', folder.id );
@@ -584,11 +588,15 @@
 					.attr( 'aria-label', i18n.actions + ': ' + folder.name )
 					.append( '<span class="dashicons dashicons-ellipsis" aria-hidden="true"></span>' );
 				var $menu = $( '<div class="mlab-media-folder-menu" role="menu" hidden></div>' );
-				[
+				var items = [
 					[ i18n.newSubfolder, 'sub' ],
 					[ i18n.rename, 'rename' ],
-					[ i18n.delete, 'delete' ],
-				].forEach( function ( item ) {
+				];
+				if ( data.features && data.features.advanced_folder_style && data.features.advanced_folder_style.available ) {
+					items.push( [ i18n.duplicateFolder, 'duplicate' ], [ i18n.folderColor, 'color' ] );
+				}
+				items.push( [ i18n.delete, 'delete' ] );
+				items.forEach( function ( item ) {
 					$( '<button type="button" role="menuitem"></button>' ).text( item[ 0 ] ).attr( 'data-action', item[ 1 ] ).appendTo( $menu );
 				} );
 				$row.append( $more, $menu );
@@ -889,6 +897,14 @@
 			startCreate( selectedFolderId() );
 		} );
 
+		$sidebar.on( 'contextmenu', '.mlab-media-folder-row', function ( event ) {
+			if ( ! data.canManage || ! $( this ).closest( '.mlab-media-folder-item' ).attr( 'data-folder' ) ) {
+				return;
+			}
+			event.preventDefault();
+			$( this ).find( '.mlab-media-folder-more' ).first().trigger( 'click' );
+		} );
+
 		$sidebar.on( 'click', '.mlab-media-folder-more', function ( event ) {
 			event.stopPropagation();
 			var $menu = $( this ).siblings( '.mlab-media-folder-menu' );
@@ -913,6 +929,23 @@
 				startCreate( folder.id );
 			} else if ( 'rename' === action ) {
 				startRename( folder, $row );
+			} else if ( 'duplicate' === action ) {
+				api( '/folders/' + folder.id + '/duplicate', { method: 'POST' } )
+					.then( reload )
+					.catch( function ( error ) { announce( errorMessage( error ), true ); } );
+			} else if ( 'color' === action ) {
+				var $picker = $( '<input type="color" class="mlab-media-folder-color-picker" aria-label="' + i18n.folderColor + '">' )
+					.val( folder.color || '#f2aa00' )
+					.appendTo( document.body )
+					.on( 'change', function () {
+						var color = $( this ).val();
+						api( '/folders/' + folder.id, { method: 'PATCH', data: { color: color } } )
+							.then( function () { return reload(); } )
+							.catch( function ( error ) { announce( errorMessage( error ), true ); } );
+						$( this ).remove();
+					} )
+					.on( 'blur', function () { window.setTimeout( function () { $picker.remove(); }, 200 ); } );
+				$picker[ 0 ].click();
 			} else if ( 'delete' === action ) {
 				confirmDelete( folder, $row );
 			}
