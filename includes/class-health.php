@@ -161,7 +161,7 @@ final class Health {
 	private static function find_content_duplicates() {
 		global $wpdb;
 		$status = Content_Audit::status();
-		if ( empty( $status['complete'] ) ) {
+		if ( empty( $status['complete'] ) || ! empty( $status['disabled'] ) ) {
 			return array();
 		}
 		$hash_key = Content_Audit::HASH_META;
