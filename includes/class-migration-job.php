@@ -9,11 +9,17 @@ namespace MomentumLab\MediaFolder;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Copies source relationships in bounded WP-Cron batches.
+ */
 final class Migration_Job {
 
 	const OPTION = 'mlab_media_folder_migration_job';
 	const HOOK   = 'mlab_media_folder_migration_batch';
 
+	/**
+	 * Register the background worker.
+	 */
 	public function hooks(): void {
 		add_action( self::HOOK, array( $this, 'run_batch' ) );
 	}
@@ -21,6 +27,7 @@ final class Migration_Job {
 	/**
 	 * Start a fresh migration job.
 	 *
+	 * @param string $taxonomy Source identifier.
 	 * @return true|\WP_Error
 	 */
 	public static function start( string $taxonomy ) {
@@ -51,6 +58,9 @@ final class Migration_Job {
 		return true;
 	}
 
+	/**
+	 * Process one bounded relationship batch.
+	 */
 	public function run_batch(): void {
 		$state = self::status();
 		if ( ! $state || ! empty( $state['complete'] ) || empty( $state['taxonomy'] ) ) {
@@ -65,9 +75,10 @@ final class Migration_Job {
 		);
 
 		if ( is_wp_error( $result ) ) {
-			$state['error']   = sanitize_text_field( $result->get_error_message() );
+			$state['error']    = sanitize_text_field( $result->get_error_message() );
 			$state['complete'] = true;
-			$state['updated'] = time();
+			$state['updated']  = time();
+			unset( $state['map'] );
 			update_option( self::OPTION, $state, false );
 			return;
 		}
@@ -77,6 +88,9 @@ final class Migration_Job {
 		$state['assignments'] = (int) $state['assignments'] + (int) $result['assignments'];
 		$state['complete']    = ! empty( $result['complete'] );
 		$state['updated']     = time();
+		if ( $state['complete'] ) {
+			unset( $state['map'] );
+		}
 		update_option( self::OPTION, $state, false );
 
 		if ( ! $state['complete'] && ! wp_next_scheduled( self::HOOK ) ) {
@@ -84,6 +98,11 @@ final class Migration_Job {
 		}
 	}
 
+	/**
+	 * Return the persisted migration state.
+	 *
+	 * @return array<string,mixed>
+	 */
 	public static function status(): array {
 		$state = get_option( self::OPTION, array() );
 		return is_array( $state ) ? $state : array();
