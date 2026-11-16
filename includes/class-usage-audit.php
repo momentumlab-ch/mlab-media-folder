@@ -154,6 +154,7 @@ final class Usage_Audit {
 	/**
 	 * Extract attachment IDs from common WordPress/Gutenberg content patterns.
 	 *
+	 * @param string $content Post content.
 	 * @return int[]
 	 */
 	public static function ids_from_content( string $content ): array {
@@ -167,7 +168,7 @@ final class Usage_Audit {
 		}
 		if ( preg_match_all( '/\bids=["\']([0-9,\s]+)["\']/', $content, $matches ) ) {
 			foreach ( $matches[1] as $list ) {
-				$ids = array_merge( $ids, array_map( 'absint', preg_split( '/\s*,\s*/', $list ) ?: array() ) );
+				$ids = array_merge( $ids, array_map( 'absint', false === preg_split( '/\s*,\s*/', $list ) ? array() : preg_split( '/\s*,\s*/', $list ) ) );
 			}
 		}
 
