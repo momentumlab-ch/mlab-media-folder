@@ -95,6 +95,7 @@
 				'<div><dt>' + escapeHtml( data.workspaceI18n.filename ) + '</dt><dd>' + escapeHtml( item.filename ) + '</dd></div>' +
 				'<div><dt>' + escapeHtml( data.workspaceI18n.folder ) + '</dt><dd>' + escapeHtml( item.folder || data.workspaceI18n.unfiled ) + '</dd></div>' +
 				'<div><dt>' + escapeHtml( data.workspaceI18n.author ) + '</dt><dd>' + escapeHtml( item.author || '—' ) + '</dd></div>' +
+				'<div><dt>' + escapeHtml( data.workspaceI18n.usage ) + '</dt><dd>' + escapeHtml( item.usage && item.usage.length ? item.usage.join( ' · ' ) : '—' ) + '</dd></div>' +
 				'<div><dt>' + escapeHtml( data.workspaceI18n.size ) + '</dt><dd>' + escapeHtml( size ) + '</dd></div>' +
 				'<div><dt>' + escapeHtml( data.workspaceI18n.altText ) + '</dt><dd>' + escapeHtml( item.alt_text || '—' ) + '</dd></div>' +
 				'<div><dt>' + escapeHtml( data.workspaceI18n.tags ) + '</dt><dd>' + tags + '</dd></div>' +
@@ -136,6 +137,7 @@
 				$out.empty().append(
 					$( '<label></label>' ).text( data.workspaceI18n.altText ).append( $( '<textarea class="mlab-mf-ai-alt" rows="3"></textarea>' ).val( suggestion.alt_text || '' ) ),
 					$( '<label></label>' ).text( data.workspaceI18n.title ).append( $( '<input class="mlab-mf-ai-title" type="text">' ).val( suggestion.title || '' ) ),
+					$( '<label></label>' ).text( data.workspaceI18n.description ).append( $( '<textarea class="mlab-mf-ai-description" rows="4"></textarea>' ).val( suggestion.description || '' ) ),
 					$( '<label></label>' ).text( data.workspaceI18n.tags ).append( $( '<input class="mlab-mf-ai-tags" type="text">' ).val( tags.join( ', ' ) ) ),
 					$( '<button type="button" class="button button-primary mlab-mf-ai-apply"></button>' ).attr( 'data-id', id ).text( data.workspaceI18n.apply )
 				);
@@ -154,6 +156,7 @@
 			data: {
 				alt_text: $inspector.find( '.mlab-mf-ai-alt' ).val(),
 				title: $inspector.find( '.mlab-mf-ai-title' ).val(),
+				description: $inspector.find( '.mlab-mf-ai-description' ).val(),
 				tags: tags,
 			},
 		} ).then( renderInspector );
@@ -175,11 +178,11 @@
 		$searchWrap.append( '<span class="dashicons dashicons-search" aria-hidden="true"></span>', $search, $results );
 
 		var $actions = $( '<div class="mlab-mf-workspace-actions"></div>' );
-		$actions.append(
-			$( '<button type="button" class="button mlab-mf-folder-drawer-toggle"></button>' ).text( data.workspaceI18n.folders ),
-			$( '<a class="button"></a>' ).attr( 'href', data.settingsUrl ).text( data.workspaceI18n.settings ),
-			$( '<button type="button" class="button mlab-mf-inspector-toggle"></button>' ).text( data.workspaceI18n.inspector )
-		);
+		$actions.append( $( '<button type="button" class="button mlab-mf-folder-drawer-toggle"></button>' ).text( data.workspaceI18n.folders ) );
+		if ( data.canSettings ) {
+			$actions.append( $( '<a class="button"></a>' ).attr( 'href', data.settingsUrl ).text( data.workspaceI18n.settings ) );
+		}
+		$actions.append( $( '<button type="button" class="button mlab-mf-inspector-toggle"></button>' ).text( data.workspaceI18n.inspector ) );
 		$workspace.append( $brand, $searchWrap, $actions );
 		$wrap.before( $workspace );
 
