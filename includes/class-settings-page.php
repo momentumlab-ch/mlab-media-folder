@@ -42,6 +42,8 @@ final class Settings_Page {
 
 	/**
 	 * Enqueue only on our own page.
+	 *
+	 * @param string $hook_suffix Current admin hook.
 	 */
 	public function assets( string $hook_suffix ): void {
 		if ( 'media_page_' . self::SLUG !== $hook_suffix ) {
@@ -64,24 +66,22 @@ final class Settings_Page {
 		}
 		check_admin_referer( 'mlab_media_folder_save_settings' );
 
-		$automation = isset( $_POST['automation'] ) && is_array( $_POST['automation'] )
-			? wp_unslash( $_POST['automation'] )
-			: array();
-		$optimization = isset( $_POST['optimization'] ) && is_array( $_POST['optimization'] )
-			? wp_unslash( $_POST['optimization'] )
-			: array();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Automation_Settings sanitizes every supported field.
+		$automation   = isset( $_POST['automation'] ) && is_array( $_POST['automation'] ) ? wp_unslash( $_POST['automation'] ) : array();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Optimization_Settings sanitizes every supported field.
+		$optimization = isset( $_POST['optimization'] ) && is_array( $_POST['optimization'] ) ? wp_unslash( $_POST['optimization'] ) : array();
 
 		Automation_Settings::save( $automation );
 		Optimization_Settings::save( $optimization );
 
 		if ( Features::available( 'dynamic_views' ) ) {
-			$views = isset( $_POST['dynamic_views'] ) && is_array( $_POST['dynamic_views'] )
-				? wp_unslash( $_POST['dynamic_views'] )
-				: array();
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Dynamic_Views::replace normalizes every row.
+			$views = isset( $_POST['dynamic_views'] ) && is_array( $_POST['dynamic_views'] ) ? wp_unslash( $_POST['dynamic_views'] ) : array();
 			Dynamic_Views::replace( $views );
 		}
 
 		if ( Features::available( 'folder_permissions' ) && isset( $_POST['permissions'] ) && is_array( $_POST['permissions'] ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each nested value is sanitized below before persistence.
 			$permissions = wp_unslash( $_POST['permissions'] );
 			foreach ( $permissions as $folder_id => $rules ) {
 				$folder_id = absint( $folder_id );
@@ -160,7 +160,7 @@ final class Settings_Page {
 			return;
 		}
 
-		$automation = Automation_Settings::get();
+		$automation   = Automation_Settings::get();
 		$optimization = Optimization_Settings::get();
 		$capabilities = Image_Optimization::capabilities();
 		$is_pro       = Features::is_pro();
@@ -175,8 +175,8 @@ final class Settings_Page {
 				'order'      => 'ASC',
 			)
 		);
-		$migrations   = Migration::detect();
-		$bulk_status  = Bulk_Optimize::status();
+		$migrations  = Migration::detect();
+		$bulk_status = Bulk_Optimize::status();
 		?>
 		<div class="wrap mlab-mf-settings">
 			<div class="mlab-mf-brandbar">
@@ -424,6 +424,8 @@ final class Settings_Page {
 
 	/**
 	 * Render a visible, non-blocking license explanation.
+	 *
+	 * @param string $feature Feature key.
 	 */
 	private static function locked_note( string $feature ): void {
 		if ( Features::available( $feature ) ) {
