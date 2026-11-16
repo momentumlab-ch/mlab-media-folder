@@ -182,7 +182,7 @@ final class Migration {
 						}
 					}
 				}
-				$progress = true;
+				$progress         = true;
 			}
 
 			if ( ! $progress ) {
@@ -288,10 +288,10 @@ final class Migration {
 	 * folder wins deterministically because Media Folder intentionally uses one
 	 * organisational folder per attachment.
 	 *
-	 * @param string                                      $taxonomy Source identifier.
-	 * @param array<int,array{target:int,depth:int}>       $map      Prepared folder map.
-	 * @param int                                         $cursor   Last processed attachment ID.
-	 * @param int                                         $limit    Maximum attachments in this batch.
+	 * @param string $taxonomy Source identifier.
+	 * @param array  $map      Prepared folder map.
+	 * @param int    $cursor   Last processed attachment ID.
+	 * @param int    $limit    Maximum attachments in this batch.
 	 * @return array{cursor:int,checked:int,assignments:int,complete:bool}|\WP_Error
 	 */
 	public static function assignment_batch( string $taxonomy, array $map, int $cursor, int $limit = 100 ) {
@@ -302,7 +302,7 @@ final class Migration {
 
 		if ( '__filebird_fbv' === $taxonomy ) {
 			$table = $wpdb->prefix . 'fbv_attachment_folder';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Read-only verified migration source table.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Verified table name derives from trusted WordPress prefix.
 			$ids = $wpdb->get_col(
 				$wpdb->prepare(
 					"SELECT DISTINCT attachment_id FROM {$table} WHERE attachment_id > %d ORDER BY attachment_id ASC LIMIT %d",
@@ -310,6 +310,7 @@ final class Migration {
 					$limit
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Read-only keyset scan of source taxonomy relationships.
 			$ids = $wpdb->get_col(
@@ -368,6 +369,31 @@ final class Migration {
 	}
 
 	/**
+	 * Pick the deterministic source folder for a single-folder target model.
+	 *
+	 * @param int[] $source_ids Source folder IDs.
+	 * @param array $map        Prepared folder map.
+	 * @return int
+	 */
+	public static function select_source_folder( array $source_ids, array $map ): int {
+		$best       = 0;
+		$best_depth = -1;
+
+		foreach ( array_map( 'absint', $source_ids ) as $source_id ) {
+			if ( ! isset( $map[ $source_id ] ) ) {
+				continue;
+			}
+			$depth = (int) $map[ $source_id ]['depth'];
+			if ( $depth > $best_depth || ( $depth === $best_depth && ( 0 === $best || $source_id < $best ) ) ) {
+				$best       = $source_id;
+				$best_depth = $depth;
+			}
+		}
+
+		return $best;
+	}
+
+	/**
 	 * Read all source folder relations for a bounded attachment ID set.
 	 *
 	 * @param string $taxonomy Source identifier.
@@ -385,19 +411,23 @@ final class Migration {
 
 		if ( '__filebird_fbv' === $taxonomy ) {
 			$table = $wpdb->prefix . 'fbv_attachment_folder';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are absint and table derives from trusted prefix.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table derives from trusted prefix and IDs are absint.
 			$rows = $wpdb->get_results( "SELECT attachment_id AS object_id, folder_id AS source_id FROM {$table} WHERE attachment_id IN ({$id_list})" );
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		} else {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are absint; taxonomy is prepared below.
+			$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			$params       = array_merge( array( $taxonomy ), $ids );
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Placeholder list is generated internally from bounded integer IDs.
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT tr.object_id, tt.term_id AS source_id
 					FROM {$wpdb->term_relationships} tr
 					INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
-					WHERE tt.taxonomy = %s AND tr.object_id IN ({$id_list})",
-					$taxonomy
+					WHERE tt.taxonomy = %s AND tr.object_id IN ({$placeholders})",
+					...$params
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}
 
 		foreach ( (array) $rows as $row ) {
@@ -460,7 +490,7 @@ final class Migration {
 					'target' => $target,
 					'depth'  => $depth,
 				);
-				$progress = true;
+				$progress         = true;
 			}
 			if ( ! $progress ) {
 				break;
