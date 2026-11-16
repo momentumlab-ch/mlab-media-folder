@@ -102,6 +102,7 @@ uninstall.php              Aufräumen beim Löschen
 |---|---|---|
 | Filter `mlab_media_folder_use_capability` | `upload_files` | Wer Ordner sieht und Dateien verschiebt |
 | Filter `mlab_media_folder_manage_capability` | `upload_files` | Wer Ordner anlegt, umbenennt, verschiebt und löscht |
+| Filter `mlab_media_folder_audit_capability` | `manage_options` | Wer vollständige Media-Health-Audits manuell neu starten darf |
 | Filter `mlab_media_folder_update_repository` | `momentumlab-ch/mlab-media-folder` | GitHub-Repo für die Standalone-Update-Prüfung |
 | Filter `mlab_media_folder_check_missing_files` | `true` | Lokale Missing-File-Prüfung deaktivieren, z. B. bei Offload-Speicher |
 | Filter `mlab_media_folder_check_content_duplicates` | `true` | SHA-256-Inhaltsprüfung deaktivieren |
