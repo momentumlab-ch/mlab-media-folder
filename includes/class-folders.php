@@ -58,11 +58,13 @@ final class Folders {
 		$counts  = self::counts();
 		$folders = array_map(
 			static function ( $term ) use ( $counts ) {
+				$rules = Folder_Permissions::get( (int) $term->term_id );
 				return array(
 					'id'     => (int) $term->term_id,
 					'name'   => self::name( $term ),
 					'parent' => (int) $term->parent,
 					'count'  => $counts[ (int) $term->term_id ] ?? 0,
+					'color'  => Features::available( 'advanced_folder_style' ) ? $rules['color'] : '',
 				);
 			},
 			$terms
@@ -279,6 +281,39 @@ final class Folders {
 			'parent' => $parent_id,
 			'count'  => 0,
 		);
+	}
+
+	/**
+	 * Duplicate one folder next to the original. Files are not duplicated.
+	 *
+	 * @param int $id Source folder ID.
+	 * @return array|WP_Error
+	 */
+	public static function duplicate( $id ) {
+		$id = (int) $id;
+		if ( ! Features::is_pro() ) {
+			return new WP_Error( 'mlab_media_folder_pro_required', __( 'Folder duplication requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ), array( 'status' => 403 ) );
+		}
+		if ( ! self::exists( $id ) || ! Folder_Permissions::can_access( $id ) ) {
+			return new WP_Error( 'mlab_media_folder_not_found', __( 'Folder not found.', 'mlab-media-folder' ), array( 'status' => 404 ) );
+		}
+
+		$term = get_term( $id, Taxonomy::NAME );
+		$base = self::name( $term );
+		$name = $base . ' ' . __( 'Copy', 'mlab-media-folder' );
+		$suffix = 2;
+		while ( self::sibling_exists( $name, (int) $term->parent ) ) {
+			$name = $base . ' ' . __( 'Copy', 'mlab-media-folder' ) . ' ' . $suffix++;
+		}
+
+		$result = self::create( $name, (int) $term->parent );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		$rules = Folder_Permissions::get( $id );
+		Folder_Permissions::save( (int) $result['id'], $rules['roles'], $rules['users'], $rules['color'] );
+		return $result;
 	}
 
 	/**
