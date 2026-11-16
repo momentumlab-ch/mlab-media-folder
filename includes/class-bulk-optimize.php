@@ -78,10 +78,11 @@ final class Bulk_Optimize {
 				"SELECT ID FROM {$wpdb->posts}
 				WHERE post_type = 'attachment'
 				AND post_status <> 'trash'
-				AND post_mime_type LIKE 'image/%%'
+				AND post_mime_type LIKE %s
 				AND ID > %d
 				ORDER BY ID ASC
 				LIMIT %d",
+				'image/%',
 				$cursor,
 				self::BATCH
 			)
