@@ -181,6 +181,27 @@ final class Rest_Controller {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/ai/bulk',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'ai_bulk' ),
+				'permission_callback' => array( $this, 'can_use' ),
+				'args'                => array(
+					'ids' => array(
+						'type'     => 'array',
+						'required' => true,
+						'maxItems' => 100,
+						'items'    => array(
+							'type'    => 'integer',
+							'minimum' => 1,
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/ai/apply/(?P<id>\d+)',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -365,6 +386,49 @@ final class Rest_Controller {
 	public function ai_suggest( WP_REST_Request $request ) {
 		$result = AI::suggest( (int) $request['id'] );
 		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
+	}
+
+	/**
+	 * Queue explicit bulk AI enrichment.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function ai_bulk( WP_REST_Request $request ) {
+		if ( ! Features::available( 'ai_metadata' ) ) {
+			return new \WP_Error(
+				'mlab_media_folder_pro_required',
+				__( 'Media AI requires MomentumLab Media Folder Pro.', 'mlab-media-folder' ),
+				array( 'status' => 403 )
+			);
+		}
+		if ( 'none' === Automation_Settings::api_key_source() ) {
+			return new \WP_Error(
+				'mlab_media_folder_ai_key_missing',
+				__( 'Add your OpenAI API key under Media Folder settings first.', 'mlab-media-folder' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$ids     = array_values( array_unique( array_filter( array_map( 'absint', (array) $request['ids'] ) ) ) );
+		$allowed = array();
+
+		foreach ( $ids as $id ) {
+			if (
+				'attachment' === get_post_type( $id )
+				&& current_user_can( 'edit_post', $id )
+				&& Folder_Permissions::can_access_attachment( $id )
+			) {
+				$allowed[] = $id;
+			}
+		}
+
+		$queued = Automation_Queue::schedule_bulk( $allowed );
+		return rest_ensure_response(
+			array(
+				'queued'  => $queued,
+				'skipped' => count( $ids ) - count( $allowed ),
+			)
+		);
 	}
 
 	/**
