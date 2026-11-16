@@ -227,6 +227,17 @@ final class Settings_Page {
 									<input type="text" name="automation[language]" value="<?php echo esc_attr( (string) $automation['language'] ); ?>">
 								</label>
 							</div>
+							<?php if ( Features::available( 'advanced_automation' ) ) : ?>
+								<div class="mlab-mf-safe">
+									<span class="dashicons dashicons-clock" aria-hidden="true"></span>
+									<div>
+										<strong><?php esc_html_e( 'Optional background automation', 'mlab-media-folder' ); ?></strong>
+										<p><?php esc_html_e( 'Runs after upload in WP-Cron so uploads stay responsive. Disabled by default.', 'mlab-media-folder' ); ?></p>
+										<label class="mlab-mf-check"><input type="checkbox" name="automation[auto_alt]" value="1" <?php checked( ! empty( $automation['auto_alt'] ) ); ?>> <?php esc_html_e( 'Automatically create alt text for new images', 'mlab-media-folder' ); ?></label>
+										<label class="mlab-mf-check"><input type="checkbox" name="automation[auto_tags]" value="1" <?php checked( ! empty( $automation['auto_tags'] ) ); ?>> <?php esc_html_e( 'Automatically create media tags for new images', 'mlab-media-folder' ); ?></label>
+									</div>
+								</div>
+							<?php endif; ?>
 						</div>
 					</section>
 
