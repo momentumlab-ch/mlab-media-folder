@@ -271,7 +271,7 @@ final class Health {
 		$ids = get_posts(
 			array(
 				'post_type'        => 'attachment',
-				'post_status'      => 'any',
+				'post_status'      => array_values( get_post_stati() ),
 				'numberposts'      => (int) $limit,
 				'post__not_in'     => array( (int) $attachment_id ),
 				'fields'           => 'ids',
@@ -299,7 +299,7 @@ final class Health {
 		$ids = get_posts(
 			array(
 				'post_type'        => 'attachment',
-				'post_status'      => 'any',
+				'post_status'      => array_values( get_post_stati() ),
 				'numberposts'      => max( 1, (int) $limit ),
 				'post__not_in'     => array( (int) $attachment_id ),
 				'fields'           => 'ids',
