@@ -176,11 +176,40 @@ final class Folders {
 	}
 
 	/**
+	 * Number of conservatively unused visible attachments after a complete usage audit.
+	 */
+	private static function count_unused() {
+		global $wpdb;
+
+		$usage = Usage_Audit::status();
+		if ( empty( $usage['complete'] ) || '' === $usage['generation'] ) {
+			return 0;
+		}
+
+		$visible = self::visible_sql();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Aggregate count; the visibility clause is internally generated and the generation is prepared.
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT p.ID)
+				FROM {$wpdb->posts} p
+				LEFT JOIN {$wpdb->postmeta} u
+					ON u.post_id = p.ID AND u.meta_key = %s
+				WHERE {$visible}
+				AND p.post_parent = 0
+				AND (u.meta_id IS NULL OR u.meta_value <> %s)",
+				Usage_Audit::SEEN_META,
+				$usage['generation']
+			)
+		);
+	}
+
+	/**
 	 * Counts for the virtual entries: all images and the task views. The
 	 * "duplicate" and "missing" views list the entries the library hides, so
 	 * they count those entries.
 	 *
-	 * @return array{all:int, entries:int, recent:int, unfiled:int, noalt:int, unattached:int, duplicate:int, missing:int}
+	 * @return array{all:int, entries:int, recent:int, unfiled:int, noalt:int, unused:int, unattached:int, duplicate:int, missing:int}
 	 */
 	public static function totals() {
 		global $wpdb;
@@ -209,6 +238,7 @@ final class Folders {
 			'recent'     => self::count_recent(),
 			'unfiled'    => self::count_visible( '', $in_folder ),
 			'noalt'      => self::count_visible( $alt_join, $no_alt ),
+			'unused'     => self::count_unused(),
 			'unattached' => self::count_visible( '', 'AND p.post_parent = 0' ),
 			'duplicate'  => count( $health['duplicate'] ),
 			'missing'    => count( $health['missing'] ),
