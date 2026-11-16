@@ -78,12 +78,26 @@ final class Rest_Controller {
 							'type'    => 'integer',
 							'minimum' => 0,
 						),
+						'color' => array( 'type' => 'string' ),
 					),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_folder' ),
 					'permission_callback' => array( $this, 'can_manage' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/folders/(?P<id>\d+)/duplicate',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'duplicate_folder' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+				'args'                => array(
+					'id' => array( 'type' => 'integer', 'minimum' => 1 ),
 				),
 			)
 		);
@@ -390,7 +404,25 @@ final class Rest_Controller {
 		$name   = $request->has_param( 'name' ) ? $request['name'] : null;
 		$parent = $request->has_param( 'parent' ) ? (int) $request['parent'] : null;
 		$result = Folders::update( (int) $request['id'], $name, $parent );
-		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		if ( $request->has_param( 'color' ) && Features::available( 'advanced_folder_style' ) ) {
+			$rules = Folder_Permissions::get( (int) $request['id'] );
+			Folder_Permissions::save( (int) $request['id'], $rules['roles'], $rules['users'], (string) $request['color'] );
+			$result['color'] = Folder_Permissions::get( (int) $request['id'] )['color'];
+		}
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * POST /folders/{id}/duplicate
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function duplicate_folder( WP_REST_Request $request ) {
+		$result = Folders::duplicate( (int) $request['id'] );
+		return is_wp_error( $result ) ? $result : new WP_REST_Response( $result, 201 );
 	}
 
 	/**
