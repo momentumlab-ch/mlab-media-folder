@@ -44,3 +44,13 @@ if ( ! is_wp_error( $mlab_media_folder_terms ) ) {
 }
 
 delete_option( 'mlab_media_folder_version' );
+delete_option( 'mlab_media_folder_audit_state' );
+delete_option( 'mlab_media_folder_content_audit_state' );
+delete_site_transient( 'mlab_media_folder_health' );
+delete_site_transient( 'mlab_media_folder_github_release' );
+
+delete_post_meta_by_key( '_mlab_media_folder_sha256' );
+delete_post_meta_by_key( '_mlab_media_folder_signature' );
+
+wp_clear_scheduled_hook( 'mlab_media_folder_audit_batch' );
+wp_clear_scheduled_hook( 'mlab_media_folder_content_audit_batch' );

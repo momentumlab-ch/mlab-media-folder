@@ -130,7 +130,7 @@ final class Query {
 		}
 
 		if ( self::DUPLICATE === $folder || self::MISSING === $folder ) {
-			$ids               = Health::scan()[ self::DUPLICATE === $folder ? 'duplicate' : 'missing' ];
+			$ids              = Health::scan()[ self::DUPLICATE === $folder ? 'duplicate' : 'missing' ];
 			$args['post__in'] = $ids ? $ids : array( 0 );
 			return $args;
 		}
@@ -139,7 +139,7 @@ final class Query {
 			if ( empty( $args['post_mime_type'] ) ) {
 				$args['post_mime_type'] = 'image';
 			}
-			$missing = array(
+			$missing  = array(
 				'relation' => 'OR',
 				array(
 					'key'     => '_wp_attachment_image_alt',
@@ -151,8 +151,15 @@ final class Query {
 					'compare' => '=',
 				),
 			);
-			$existing           = $args['meta_query'] ?? array();
-			$args['meta_query'] = $existing ? array( 'relation' => 'AND', $existing, $missing ) : $missing; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			$existing = $args['meta_query'] ?? array();
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			$args['meta_query'] = $existing
+				? array(
+					'relation' => 'AND',
+					$existing,
+					$missing,
+				)
+				: $missing;
 			return $args;
 		}
 
@@ -217,8 +224,8 @@ final class Query {
 		$folder = isset( $_GET[ self::PARAM ] ) ? self::parse( wp_unslash( $_GET[ self::PARAM ] ) ) : '';
 		$args   = self::apply(
 			array(
-				'tax_query'      => $query->get( 'tax_query' ),
-				'meta_query'     => $query->get( 'meta_query' ),
+				'tax_query'      => $query->get( 'tax_query' ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'meta_query'     => $query->get( 'meta_query' ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'post_mime_type' => $query->get( 'post_mime_type' ),
 				'post__in'       => $query->get( 'post__in' ),
 				'post__not_in'   => $query->get( 'post__not_in' ),

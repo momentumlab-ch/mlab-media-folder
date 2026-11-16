@@ -48,6 +48,8 @@ final class Plugin {
 		add_action( 'rest_api_init', array( new Rest_Controller(), 'register_routes' ) );
 
 		( new Health() )->hooks();
+		( new Background_Audit() )->hooks();
+		( new Content_Audit() )->hooks();
 		( new Query() )->hooks();
 		( new Updater() )->hooks();
 
@@ -69,6 +71,20 @@ final class Plugin {
 	public static function activate() {
 		Taxonomy::register();
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
+		if ( ! wp_next_scheduled( Background_Audit::HOOK ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Background_Audit::HOOK );
+		}
+		if ( ! wp_next_scheduled( Content_Audit::HOOK ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Content_Audit::HOOK );
+		}
+	}
+
+	/**
+	 * Deactivation: remove pending one-shot audits. They are scheduled again on activation.
+	 */
+	public static function deactivate() {
+		wp_clear_scheduled_hook( Background_Audit::HOOK );
+		wp_clear_scheduled_hook( Content_Audit::HOOK );
 	}
 
 	/**
@@ -81,6 +97,8 @@ final class Plugin {
 		}
 
 		update_option( self::VERSION_OPTION, MLAB_MEDIA_FOLDER_VERSION, false );
+		Background_Audit::restart_scan();
+		Content_Audit::restart_scan();
 	}
 
 	/**
@@ -95,6 +113,20 @@ final class Plugin {
 		 * @param string $capability Default 'upload_files'.
 		 */
 		return (string) apply_filters( 'mlab_media_folder_use_capability', 'upload_files' );
+	}
+
+	/**
+	 * Capability needed to manually restart full Media Health audits.
+	 *
+	 * @return string
+	 */
+	public static function audit_capability() {
+		/**
+		 * Filters the capability required to run a full media audit.
+		 *
+		 * @param string $capability Default 'manage_options'.
+		 */
+		return (string) apply_filters( 'mlab_media_folder_audit_capability', 'manage_options' );
 	}
 
 	/**

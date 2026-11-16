@@ -4,7 +4,7 @@ Tags: media, folders, media library, organize, drag and drop
 Requires at least: 6.5
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 2.3.1
+Stable tag: 2.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,6 +16,8 @@ Folders for the WordPress media library: folder tree, drag and drop, upload into
 * Create, rename, move (drag a folder onto another) and delete folders.
 * Move files by dragging them onto a folder. In bulk-select mode all selected files move together.
 * "All files" and "Unfiled" views with counts.
+* Media Health runs resumable full-library checks for missing files and SHA-256 content duplicates, with a protected manual rescan action.
+* "Duplicates" finds both repeated attachment paths and copied files with identical content while keeping independent physical files visible until you decide what to remove.
 * New uploads land in the folder that is open.
 * "Folder" filter in every media dialog (block editor, gallery, featured image).
 * "Folder" field in the attachment details, as a keyboard-friendly alternative to drag and drop.
@@ -27,17 +29,29 @@ Security
 * Every REST route checks capabilities (`upload_files` by default) and uses the core REST nonce.
 * Each moved file is checked against `edit_post` for the current user.
 * Input is validated (types, ranges, existing folders, no cycles) and folder names are sanitised and escaped on output.
-* No tracking and no custom database tables (uses a private taxonomy). The only external request is the update check against the public GitHub releases of the plugin (when WordPress checks for updates, no site data is sent).
+* No tracking and no custom database tables (uses a private taxonomy). Standalone installations only contact the public GitHub releases during WordPress update checks. If MomentumLab Core manages this plugin, the standalone GitHub updater does not register and Core/License Server becomes the single update path.
 
 Developer hooks
 
 * `mlab_media_folder_use_capability` (default `upload_files`): who can see folders and move files.
 * `mlab_media_folder_manage_capability` (default `upload_files`): who can create, rename, move and delete folders.
+* `mlab_media_folder_audit_capability` (default `manage_options`): who can manually restart full Media Health audits.
 * REST namespace `mlab-media-folder/v1`: `GET/POST /folders`, `PATCH/DELETE /folders/{id}`, `POST /assign`.
 * `mlab_media_folder_update_repository` (default `momentumlab-ch/mlab-media-folder`): GitHub repository that is checked for updates.
 * Define `MLAB_MEDIA_FOLDER_KEEP_DATA` as `true` to keep the folders when the plugin is deleted.
 
 == Changelog ==
+
+= 2.4.0 =
+* New: full-library missing-file audit in small resumable background batches with progress and a protected “Scan again” action.
+* New: SHA-256 content duplicate audit finds copied files even when their names and paths differ.
+* Change: “Duplicates” covers same-path and same-content entries; only entries that truly share one physical file are hidden from the normal library.
+* Change: attachment details link related same-file or same-content entries.
+* Integration: MomentumLab Core can take over updates through the License Server; the GitHub updater automatically stands down to avoid two competing update sources.
+* Security: attachment paths are constrained to uploads; unavailable/offloaded storage fails safely and disabled audits do not reschedule forever.
+* Reliability: audit cron is started on activation/upgrade, cleared on deactivation and audit data is removed on uninstall.
+* Design: scoped MomentumLab styling with Montserrat fallback, improved focus states, tap targets and reduced-motion support.
+* Quality: CI checks PHP 8.0–8.4, JavaScript, executable path-safety regressions, WPCS/PHP compatibility and release version consistency.
 
 = 2.3.1 =
 * Change: the media library shows each file once. Entries without a file are hidden, and of several entries for one file only the first is listed. The counters equal the images shown. "Duplicates" and "File missing" list the hidden entries. The editor's media dialogs still list every entry.

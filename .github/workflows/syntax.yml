@@ -1,0 +1,80 @@
+name: PHP and JavaScript syntax
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - uses: actions/checkout@v4
+      - name: PHP syntax (minimum supported PHP 8.0)
+        run: |
+          find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: JavaScript syntax
+        run: |
+          find assets/js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Behaviour regression tests
+        run: |
+          for test in tests/test-*.php; do php "$test"; done
+      - name: Validate version consistency
+        run: |
+          header=$(sed -n 's/^ \* Version:[[:space:]]*//p' mlab-media-folder.php)
+          constant=$(sed -n "s/^define( 'MLAB_MEDIA_FOLDER_VERSION', '\(.*\)' );/\1/p" mlab-media-folder.php)
+          stable=$(sed -n 's/^Stable tag:[[:space:]]*//p' readme.txt)
+          test "$header" = "$constant"
+          test "$header" = "$stable"
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - uses: actions/checkout@v4
+      - name: Install coding standards
+        run: composer install --no-interaction --no-progress
+      - name: WordPress Coding Standards and PHP compatibility
+        run: vendor/bin/phpcs --standard=phpcs.xml.dist .
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release archive exactly like release.yml
+        run: |
+          version=$(sed -n "s/^define( 'MLAB_MEDIA_FOLDER_VERSION', '\(.*\)' );/\1/p" mlab-media-folder.php)
+          git archive --format=zip --prefix=mlab-media-folder/ -o "mlab-media-folder-$version.zip" HEAD
+          unzip -t "mlab-media-folder-$version.zip"
+          unzip -Z1 "mlab-media-folder-$version.zip" > archive-files.txt
+          grep -qx 'mlab-media-folder/mlab-media-folder.php' archive-files.txt
+          grep -qx 'mlab-media-folder/readme.txt' archive-files.txt
+          grep -qx 'mlab-media-folder/includes/class-background-audit.php' archive-files.txt
+          grep -qx 'mlab-media-folder/includes/class-content-audit.php' archive-files.txt
+          ! grep -q '^mlab-media-folder/.github/' archive-files.txt
+          ! grep -q '^mlab-media-folder/tests/' archive-files.txt
+          ! grep -qx 'mlab-media-folder/composer.json' archive-files.txt
+          ! grep -qx 'mlab-media-folder/README.md' archive-files.txt
+          cp "mlab-media-folder-$version.zip" mlab-media-folder.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlab-media-folder-release-candidate
+          path: |
+            mlab-media-folder.zip
+            mlab-media-folder-*.zip
+          retention-days: 7

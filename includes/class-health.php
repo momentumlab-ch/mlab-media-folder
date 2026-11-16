@@ -30,11 +30,11 @@ final class Health {
 	const CACHE_TTL = HOUR_IN_SECONDS;
 
 	/**
-	 * True while a file that other entries share must not be removed from disk.
+	 * Absolute normalized paths that surviving attachments still reference.
 	 *
-	 * @var bool
+	 * @var array<string,bool>
 	 */
-	private $protecting = false;
+	private $protected_paths = array();
 
 	/**
 	 * Registers hooks.
@@ -46,8 +46,25 @@ final class Health {
 		add_action( 'untrashed_post', array( __CLASS__, 'clear_cache' ) );
 		add_action( 'delete_attachment', array( $this, 'protect_shared_file' ), 9 );
 		add_action( 'delete_attachment', array( __CLASS__, 'clear_cache' ), 10 );
-		add_action( 'deleted_post', array( $this, 'release' ) );
+		add_action( 'updated_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
+		add_action( 'added_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
+		add_action( 'deleted_post_meta', array( __CLASS__, 'maybe_clear_file_cache' ), 10, 4 );
 		add_filter( 'wp_delete_file', array( $this, 'keep_file' ) );
+	}
+
+	/**
+	 * Clears health results when the physical attachment path changes.
+	 *
+	 * @param int    $meta_id    Meta row ID.
+	 * @param int    $post_id    Attachment ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 */
+	public static function maybe_clear_file_cache( $meta_id, $post_id, $meta_key, $meta_value ) {
+		unset( $meta_id, $meta_value );
+		if ( '_wp_attached_file' === $meta_key && 'attachment' === get_post_type( $post_id ) ) {
+			self::clear_cache();
+		}
 	}
 
 	/**
@@ -72,11 +89,18 @@ final class Health {
 			return $cached;
 		}
 
-		$groups = self::find_duplicates();
-		$result = array(
-			'duplicate' => $groups['all'],
+		$groups             = self::find_duplicates();
+		$content_duplicates = self::find_content_duplicates();
+		$audit              = Background_Audit::status();
+		// The incremental audit covers the entire library only after completion.
+		// During a scan, keep the bounded synchronous results available.
+		$missing = ! empty( $audit['complete'] ) && isset( $audit['missing'] ) && is_array( $audit['missing'] )
+			? array_map( 'absint', $audit['missing'] )
+			: self::find_missing();
+		$result  = array(
+			'duplicate' => array_values( array_unique( array_merge( $groups['all'], $content_duplicates ) ) ),
 			'extra'     => $groups['extra'],
-			'missing'   => self::find_missing(),
+			'missing'   => $missing,
 		);
 		set_site_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
 		return $result;
@@ -110,11 +134,11 @@ final class Health {
 				SELECT m2.meta_value AS file
 				FROM {$wpdb->postmeta} m2
 				INNER JOIN {$wpdb->posts} p2 ON p2.ID = m2.post_id
-				WHERE m2.meta_key = '_wp_attached_file' AND p2.post_type = 'attachment' AND p2.post_status <> 'trash'
+				WHERE m2.meta_key = '_wp_attached_file' AND m2.meta_value <> '' AND p2.post_type = 'attachment' AND p2.post_status <> 'trash'
 				GROUP BY m2.meta_value
 				HAVING COUNT(*) > 1
 			) d ON d.file = m.meta_value
-			WHERE m.meta_key = '_wp_attached_file' AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+			WHERE m.meta_key = '_wp_attached_file' AND m.meta_value <> '' AND p.post_type = 'attachment' AND p.post_status <> 'trash'
 			ORDER BY m.post_id ASC"
 		);
 
@@ -122,6 +146,9 @@ final class Health {
 		$extra = array();
 		$seen  = array();
 		foreach ( (array) $rows as $row ) {
+			if ( null === Content_Audit::safe_relative_path( (string) $row->file ) ) {
+				continue;
+			}
 			$id    = (int) $row->post_id;
 			$all[] = $id;
 			if ( isset( $seen[ $row->file ] ) ) {
@@ -133,6 +160,40 @@ final class Health {
 			'all'   => $all,
 			'extra' => $extra,
 		);
+	}
+
+	/**
+	 * Entries whose physical files have identical SHA-256 content hashes.
+	 * Only complete background-audit results are used to avoid partial groups.
+	 *
+	 * @return int[]
+	 */
+	private static function find_content_duplicates() {
+		global $wpdb;
+		$status = Content_Audit::status();
+		if ( empty( $status['complete'] ) || ! empty( $status['disabled'] ) ) {
+			return array();
+		}
+		$hash_key = Content_Audit::HASH_META;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal fixed meta key, aggregate query.
+		$rows = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT m.post_id
+				FROM {$wpdb->postmeta} m
+				INNER JOIN {$wpdb->posts} p ON p.ID = m.post_id
+				INNER JOIN (
+					SELECT meta_value
+					FROM {$wpdb->postmeta}
+					WHERE meta_key = %s AND meta_value <> ''
+					GROUP BY meta_value HAVING COUNT(*) > 1
+				) d ON d.meta_value = m.meta_value
+				WHERE m.meta_key = %s AND p.post_type = 'attachment' AND p.post_status <> 'trash'
+				ORDER BY m.post_id ASC",
+				$hash_key,
+				$hash_key
+			)
+		);
+		return array_map( 'intval', (array) $rows );
 	}
 
 	/**
@@ -160,8 +221,13 @@ final class Health {
 		 *
 		 * @param int $limit Default 5000.
 		 */
-		$limit = max( 1, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) );
-		$base  = wp_get_upload_dir()['basedir'];
+		$limit   = max( 1, min( 50000, (int) apply_filters( 'mlab_media_folder_missing_scan_limit', 5000 ) ) );
+		$uploads = wp_get_upload_dir();
+		$base    = isset( $uploads['basedir'] ) ? realpath( $uploads['basedir'] ) : false;
+		if ( false === $base ) {
+			// Do not classify the entire library as missing when uploads is unavailable.
+			return array();
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- One bounded lookup per scan, cached.
 		$rows = $wpdb->get_results(
@@ -181,7 +247,12 @@ final class Health {
 			if ( '' === $row->file || preg_match( '#^[a-z][a-z0-9+.-]*://#i', $row->file ) ) {
 				continue;
 			}
-			if ( ! file_exists( $base . '/' . ltrim( $row->file, '/' ) ) ) {
+			$relative = Content_Audit::safe_relative_path( (string) $row->file );
+			if ( null === $relative ) {
+				continue;
+			}
+			$path = $base . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $relative );
+			if ( ! file_exists( $path ) ) {
 				$missing[] = (int) $row->ID;
 			}
 		}
@@ -197,18 +268,46 @@ final class Health {
 	 */
 	public static function others_sharing_file( $attachment_id, $limit = 3 ) {
 		$file = (string) get_post_meta( (int) $attachment_id, '_wp_attached_file', true );
-		if ( '' === $file ) {
+		if ( null === Content_Audit::safe_relative_path( $file ) ) {
 			return array();
 		}
 		$ids = get_posts(
 			array(
 				'post_type'        => 'attachment',
-				'post_status'      => 'any',
+				'post_status'      => array_values( get_post_stati() ),
 				'numberposts'      => (int) $limit,
 				'post__not_in'     => array( (int) $attachment_id ),
 				'fields'           => 'ids',
 				'meta_key'         => '_wp_attached_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				'meta_value'       => $file, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'suppress_filters' => true,
+			)
+		);
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * Other entries whose current physical files have the same SHA-256 content.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @param int $limit Maximum number of IDs.
+	 * @return int[]
+	 */
+	public static function others_sharing_content( $attachment_id, $limit = 3 ) {
+		$hash   = (string) get_post_meta( (int) $attachment_id, Content_Audit::HASH_META, true );
+		$status = Content_Audit::status();
+		if ( '' === $hash || empty( $status['complete'] ) || ! empty( $status['disabled'] ) ) {
+			return array();
+		}
+		$ids = get_posts(
+			array(
+				'post_type'        => 'attachment',
+				'post_status'      => array_values( get_post_stati() ),
+				'numberposts'      => max( 1, (int) $limit ),
+				'post__not_in'     => array( (int) $attachment_id ),
+				'fields'           => 'ids',
+				'meta_key'         => Content_Audit::HASH_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => $hash, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 				'suppress_filters' => true,
 			)
 		);
@@ -223,23 +322,63 @@ final class Health {
 	 * @param int $attachment_id Attachment about to be deleted.
 	 */
 	public function protect_shared_file( $attachment_id ) {
-		$this->protecting = (bool) self::others_sharing_file( $attachment_id, 1 );
+		$this->protected_paths = array();
+		foreach ( self::others_sharing_file( $attachment_id, -1 ) as $other_id ) {
+			foreach ( self::attachment_paths( $other_id ) as $path ) {
+				$this->protected_paths[ wp_normalize_path( $path ) ] = true;
+			}
+		}
+	}
+
+	/**
+	 * All physical files currently referenced by one attachment.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string[]
+	 */
+	private static function attachment_paths( $attachment_id ) {
+		$file = get_attached_file( (int) $attachment_id );
+		if ( ! is_string( $file ) || '' === $file ) {
+			return array();
+		}
+
+		$paths = array( $file );
+		$dir   = dirname( $file );
+		$meta  = wp_get_attachment_metadata( (int) $attachment_id );
+		if ( is_array( $meta ) ) {
+			if ( ! empty( $meta['thumb'] ) ) {
+				$paths[] = path_join( $dir, wp_basename( (string) $meta['thumb'] ) );
+			}
+			if ( ! empty( $meta['original_image'] ) ) {
+				$paths[] = path_join( $dir, wp_basename( (string) $meta['original_image'] ) );
+			}
+			foreach ( (array) ( $meta['sizes'] ?? array() ) as $size ) {
+				if ( is_array( $size ) && ! empty( $size['file'] ) ) {
+					$paths[] = path_join( $dir, wp_basename( (string) $size['file'] ) );
+				}
+			}
+		}
+
+		$backups = get_post_meta( (int) $attachment_id, '_wp_attachment_backup_sizes', true );
+		foreach ( (array) $backups as $backup ) {
+			if ( is_array( $backup ) && ! empty( $backup['file'] ) ) {
+				$paths[] = path_join( $dir, wp_basename( (string) $backup['file'] ) );
+			}
+		}
+
+		return array_values( array_unique( $paths ) );
 	}
 
 	/**
 	 * Filter for every file WordPress is about to delete.
 	 *
+	 * Only paths still referenced by a surviving attachment are suppressed.
+	 *
 	 * @param string $path Absolute file path.
-	 * @return string Empty to skip the delete.
+	 * @return string Empty to skip a protected delete.
 	 */
 	public function keep_file( $path ) {
-		return $this->protecting ? '' : $path;
-	}
-
-	/**
-	 * After the delete: later deletes in the same request are checked on their own.
-	 */
-	public function release() {
-		$this->protecting = false;
+		$normalized = wp_normalize_path( (string) $path );
+		return isset( $this->protected_paths[ $normalized ] ) ? '' : $path;
 	}
 }

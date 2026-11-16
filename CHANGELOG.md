@@ -3,6 +3,30 @@
 All notable changes to MomentumLab Media Folder (called MomentumLab Media Folders up to 1.1.6) are documented here.
 The project follows [Semantic Versioning](https://semver.org/): MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
 
+## [2.4.0] - 2026-11-16
+
+### Added
+- Resumable full-library missing-file audit using bounded WP-Cron batches with persisted progress.
+- Incremental SHA-256 content fingerprint audit, so duplicate copies with different file names can be found after the background scan completes.
+- Media Health status in the Media Library with separate file/content progress and a capability- and nonce-protected “Scan again” action.
+- Executable path-safety regression tests plus PHP 8.0–8.4 and JavaScript syntax checks in CI.
+- WordPress Coding Standards and PHP compatibility checks through Composer tooling.
+
+### Changed
+- Completed full-library audit results drive the “File missing” task; the bounded synchronous scan remains the safe fallback while the initial audit is incomplete.
+- “Duplicates” now includes both attachments pointing to the same physical file and different files with identical SHA-256 content. Only true shared-file entries are hidden from the normal library.
+- Attachment details show related entries for both same-path and same-content duplicates.
+- MomentumLab visual refinement uses the brand accent, Montserrat fallback, larger tap targets, improved focus states and reduced-motion support.
+- When MomentumLab Core reports that it manages `mlab-media-folder`, the built-in GitHub updater stands down so the License Server/Core update path is the single source of updates.
+
+### Security and reliability
+- Attachment paths are normalized and rejected when absolute, traversal-based, URL-based or otherwise outside the uploads directory.
+- Missing-file checks fail safely when the uploads directory is unavailable.
+- Disabled/offloaded filesystem checks settle into a disabled audit state instead of rescheduling forever.
+- Shared physical files remain protected during attachment deletion.
+- Audit jobs are scheduled on activation/upgrade, cleared on deactivation and fully removed with audit fingerprints on uninstall.
+- Release creation is blocked unless plugin header, version constant and `Stable tag` match.
+
 ## [2.3.1] - 2026-11-14
 
 ### Changed
