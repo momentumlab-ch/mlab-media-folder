@@ -68,20 +68,25 @@
 				props: { mlab_folder: 'noalt' },
 				priority: 4,
 			};
+			filters.unused = {
+				text: _.escape( i18n.unused ),
+				props: { mlab_folder: 'unused' },
+				priority: 5,
+			};
 			filters.unattached = {
 				text: _.escape( i18n.unattached ),
 				props: { mlab_folder: 'unattached' },
-				priority: 5,
+				priority: 6,
 			};
 			filters.duplicate = {
 				text: _.escape( i18n.duplicate ),
 				props: { mlab_folder: 'duplicate' },
-				priority: 6,
+				priority: 7,
 			};
 			filters.missing = {
 				text: _.escape( i18n.missing ),
 				props: { mlab_folder: 'missing' },
-				priority: 7,
+				priority: 8,
 			};
 			_.each( data.folders, function ( folder, index ) {
 				filters[ 'folder-' + folder.id ] = {
